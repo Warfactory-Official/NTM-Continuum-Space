@@ -1,0 +1,10 @@
+{
+  "type": "ntmspace:mun",
+  "generator": {
+    "type": "ntmspace:mun",
+    "biome_source": {
+      "type": "minecraft:fixed",
+      "biome": "ntmspace:mun"
+    }
+  }
+}

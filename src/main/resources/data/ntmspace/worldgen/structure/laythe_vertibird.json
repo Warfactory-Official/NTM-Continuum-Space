@@ -1,0 +1,14 @@
+{
+  "type": "ntmspace:body_nbt",
+  "biomes": [
+    "ntmspace:laythe_islands",
+    "ntmspace:laythe_ocean",
+    "ntmspace:laythe_polar",
+    "ntmspace:laythe_coast"
+  ],
+  "spawn_overrides": {},
+  "step": "surface_structures",
+  "terrain_adaptation": "none",
+  "spawn": "laythe_vertibird",
+  "body": "laythe"
+}

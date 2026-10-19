@@ -1,0 +1,14 @@
+{
+  "type": "ntmspace:dres",
+  "generator": {
+    "type": "ntmspace:dres",
+    "biome_source": {
+      "type": "ntmspace:layered",
+      "body": "dres",
+      "biomes": {
+        "plains": "ntmspace:dres_plains",
+        "canyon": "ntmspace:dres_canyon"
+      }
+    }
+  }
+}

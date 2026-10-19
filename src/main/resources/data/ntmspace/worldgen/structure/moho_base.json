@@ -1,0 +1,14 @@
+{
+  "type": "ntmspace:body_nbt",
+  "biomes": [
+    "ntmspace:moho_crag",
+    "ntmspace:moho_basalt",
+    "ntmspace:moho_lava_sea",
+    "ntmspace:moho_plateau"
+  ],
+  "spawn_overrides": {},
+  "step": "surface_structures",
+  "terrain_adaptation": "none",
+  "spawn": "moho_base",
+  "body": "moho"
+}

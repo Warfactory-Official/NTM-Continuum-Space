@@ -1,0 +1,189 @@
+# Publishes an NTM: Space release: builds every node against Golem Core and NTM - Continuum and uploads NTM: Space's six
+# jars to Modrinth and CurseForge (Golem-Core/gradle/mod/publish.gradle.kts), then attaches them to a GitHub release.
+# Golem Core and NTM - Continuum are released from their own repositories' Release workflows; release them first when
+# NTM: Space needs a new version of either.
+#
+# Trigger it by pushing a tag that matches mod.version in gradle.properties:
+#     git tag -a v0.2.0 -m "changelog text"        -> release
+#     git tag -a v0.2.0-beta.1 -m "changelog text" -> beta   (alpha likewise)
+#     git push origin v0.2.0
+# The changelog is the "## <version>" section of CHANGELOG.md, else the tag message. Or run it from the
+# Actions tab (workflow_dispatch).
+#
+# Repository secrets: MODRINTH_TOKEN, CURSEFORGE_TOKEN, HBM_TOKEN while NTM - Continuum is private (and
+# GOLEM_CORE_TOKEN if Golem Core is private again).
+name: Release
+
+on:
+  push:
+    # Not the pre-release workflow's v<version>-build.<n> tags.
+    tags: ['v*', '!v*-build.*']
+  workflow_dispatch:
+    inputs:
+      type:
+        description: Release type
+        type: choice
+        options: [beta, alpha, release]
+        default: beta
+      changelog:
+        description: Changelog (blank uses this version's section of CHANGELOG.md)
+        default: ''
+      golem_ref:
+        description: Golem Core branch, tag or commit to build against
+        default: main
+      hbm_ref:
+        description: NTM - Continuum branch, tag or commit to build against
+        default: main
+      dry_run:
+        description: Dry run (build and log the uploads, upload nothing)
+        type: boolean
+        default: false
+
+permissions:
+  contents: write
+
+concurrency:
+  group: release
+  cancel-in-progress: false
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    timeout-minutes: 330
+    env:
+      MODRINTH_TOKEN: ${{ secrets.MODRINTH_TOKEN }}
+      CURSEFORGE_TOKEN: ${{ secrets.CURSEFORGE_TOKEN }}
+      # ModDevGradle builds Minecraft through its binary pipeline whenever CI=true (GitHub always sets it).
+      # That jar keeps Forge's signature digests over remapped classes and loses parameter names, so build
+      # with the local recompile pipeline (same as prerelease.yml).
+      CI: "false"
+    steps:
+      # settings.gradle.kts includes ../Golem-Core and ../new-hbm as composite builds: check all three out side by side.
+      - uses: actions/checkout@v4
+        with:
+          path: new-hbm-space
+
+      - uses: actions/checkout@v4
+        with:
+          repository: Warfactory-Official/Golem-Core
+          ref: ${{ inputs.golem_ref || 'main' }}
+          path: Golem-Core
+          token: ${{ secrets.GOLEM_CORE_TOKEN || github.token }}
+
+      - uses: actions/checkout@v4
+        with:
+          repository: Warfactory-Official/NTM-Continuum
+          ref: ${{ inputs.hbm_ref || 'main' }}
+          path: new-hbm
+          token: ${{ secrets.HBM_TOKEN || github.token }}
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: |
+            17
+            21
+            25
+
+      - uses: gradle/actions/setup-gradle@v4
+
+      - name: Release settings
+        id: cfg
+        env:
+          INPUT_TYPE: ${{ inputs.type }}
+          INPUT_CHANGELOG: ${{ inputs.changelog }}
+          INPUT_DRY: ${{ inputs.dry_run }}
+        run: |
+          prop() { grep -E "^$2=" "$1/gradle.properties" | cut -d= -f2- | tr -d '[:space:]'; }
+          version=$(prop new-hbm-space mod.version)
+          golem_version=$(prop Golem-Core mod.version)
+          hbm_version=$(prop new-hbm mod.version)
+          changelog="$RUNNER_TEMP/changelog.md"
+          : > "$changelog"
+
+          if [ "$GITHUB_EVENT_NAME" = push ]; then
+            tag="$GITHUB_REF_NAME"
+            case "$tag" in
+              "v$version"|"v$version"-*) ;;
+              *) echo "::error::Tag $tag does not match mod.version $version in gradle.properties"; exit 1 ;;
+            esac
+            case "$tag" in *alpha*) type=alpha ;; *beta*|*pre*|*rc*) type=beta ;; *) type=release ;; esac
+            # actions/checkout fetches the tag as a lightweight ref; fetch the annotated object for its message.
+            git -C new-hbm-space fetch --force origin "refs/tags/$tag:refs/tags/$tag"
+            git -C new-hbm-space tag -l --format='%(contents)' "$tag" | sed '/-----BEGIN PGP SIGNATURE-----/,$d' > "$changelog"
+            dry=false
+          else
+            tag="v$version"
+            type="$INPUT_TYPE"
+            printf '%s\n' "$INPUT_CHANGELOG" > "$changelog"
+            dry="$INPUT_DRY"
+          fi
+          # This version's "## <version>" section of CHANGELOG.md wins over the tag message; typed text wins over both.
+          if [ -f new-hbm-space/CHANGELOG.md ] && { [ "$GITHUB_EVENT_NAME" = push ] || [ -z "$INPUT_CHANGELOG" ]; }; then
+            awk -v v="$version" '
+              /^## / { h=$2; gsub(/[][]/, "", h); sub(/^v/, "", h); if (on) exit; on = (h == v); next }
+              on' new-hbm-space/CHANGELOG.md > "$RUNNER_TEMP/section.md"
+            if [ -n "$(tr -d '[:space:]' < "$RUNNER_TEMP/section.md")" ]; then mv "$RUNNER_TEMP/section.md" "$changelog"; fi
+          fi
+          # Blank: let the Gradle script fall back to its placeholder.
+          if [ -z "$(tr -d '[:space:]' < "$changelog")" ]; then changelog=""; fi
+
+          # Players get Golem Core and NTM - Continuum from the sites, so the versions this is built against should be
+          # released already. Authenticated, so an unapproved (draft) project is visible too.
+          check_released() {
+            local name="$1" project="$2" want="$3"
+            if [ -n "$project" ] && ! curl -fsSL -H "Authorization: $MODRINTH_TOKEN" "https://api.modrinth.com/v2/project/$project/version" \
+                 | jq -e --arg v "$want+" 'any(.[]; .version_number | startswith($v))' > /dev/null; then
+              echo "::warning::$name $want is not on Modrinth yet. Run its Release workflow first."
+            fi
+          }
+          check_released "Golem Core" "$(prop Golem-Core golem.build.publish.modrinthProject)" "$golem_version"
+          check_released "NTM - Continuum" "$(prop new-hbm golem.build.publish.modrinthProject)" "$hbm_version"
+
+          {
+            echo "version=$version"; echo "tag=$tag"; echo "type=$type"
+            echo "changelog=$changelog"; echo "dry=$dry"
+          } >> "$GITHUB_OUTPUT"
+          echo "NTM: Space $version ($type), tag $tag, built against Golem Core $golem_version and NTM - Continuum $hbm_version, dry run=$dry"
+
+      # Golem Core, then HBM: the obfuscated Fabric nodes refuse an upstream jar older than its sources.
+      - name: Build Golem Core
+        working-directory: Golem-Core
+        run: bash ./gradlew chiseledBuild --no-daemon --stacktrace
+
+      - name: Build NTM - Continuum
+        working-directory: new-hbm
+        run: bash ./gradlew chiseledBuild --no-daemon --stacktrace
+
+      - name: Build NTM Space
+        working-directory: new-hbm-space
+        run: bash ./gradlew chiseledBuild --no-daemon --stacktrace
+
+      - name: Publish NTM Space
+        working-directory: new-hbm-space
+        env:
+          CHANGELOG_FILE: ${{ steps.cfg.outputs.changelog }}
+        run: |
+          bash ./gradlew publishAllMods --no-daemon --stacktrace \
+            -Ppublish.type=${{ steps.cfg.outputs.type }} \
+            -Ppublish.dryRun=${{ steps.cfg.outputs.dry }} \
+            ${CHANGELOG_FILE:+-Ppublish.changelogFile=$CHANGELOG_FILE}
+
+      - name: Collect release jars
+        if: steps.cfg.outputs.dry != 'true'
+        run: |
+          mkdir -p dist
+          find new-hbm-space/versions/*/build/libs -maxdepth 1 -name '*.jar' ! -name '*-sources.jar' -exec cp {} dist/ \;
+          ls -l dist
+
+      - name: GitHub release
+        if: steps.cfg.outputs.dry != 'true'
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ steps.cfg.outputs.tag }}
+          target_commitish: ${{ github.sha }}
+          name: "NTM: Space ${{ steps.cfg.outputs.version }}"
+          prerelease: ${{ steps.cfg.outputs.type != 'release' }}
+          body_path: ${{ steps.cfg.outputs.changelog || '' }}
+          generate_release_notes: ${{ steps.cfg.outputs.changelog == '' }}
+          files: dist/*.jar

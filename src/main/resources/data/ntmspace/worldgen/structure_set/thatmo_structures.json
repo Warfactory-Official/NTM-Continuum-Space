@@ -1,0 +1,13 @@
+{
+  "structures": [
+    {
+      "structure": "ntmspace:meteor_dungeon_thatmo",
+      "weight": 1
+    }
+  ],
+  "placement": {
+    "type": "hbm:config_spread",
+    "salt": 996583971,
+    "key": "ntm"
+  }
+}

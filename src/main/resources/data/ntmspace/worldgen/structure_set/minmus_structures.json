@@ -1,0 +1,17 @@
+{
+  "structures": [
+    {
+      "structure": "ntmspace:meteor_dungeon_minmus",
+      "weight": 1
+    },
+    {
+      "structure": "ntmspace:minmus_base",
+      "weight": 6
+    }
+  ],
+  "placement": {
+    "type": "hbm:config_spread",
+    "salt": 996583975,
+    "key": "ntm"
+  }
+}

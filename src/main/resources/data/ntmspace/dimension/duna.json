@@ -1,0 +1,17 @@
+{
+  "type": "ntmspace:duna",
+  "generator": {
+    "type": "ntmspace:duna",
+    "biome_source": {
+      "type": "ntmspace:layered",
+      "body": "duna",
+      "biomes": {
+        "plains": "ntmspace:duna_plains",
+        "lowlands": "ntmspace:duna_lowlands",
+        "polar": "ntmspace:duna_polar",
+        "hills": "ntmspace:duna_hills",
+        "polar_hills": "ntmspace:duna_polar_hills"
+      }
+    }
+  }
+}

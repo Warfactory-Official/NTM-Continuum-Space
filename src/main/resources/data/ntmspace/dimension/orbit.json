@@ -1,0 +1,10 @@
+{
+  "type": "ntmspace:orbit",
+  "generator": {
+    "type": "ntmspace:orbit",
+    "biome_source": {
+      "type": "minecraft:fixed",
+      "biome": "ntmspace:orbit"
+    }
+  }
+}

@@ -1,0 +1,17 @@
+{
+  "type": "ntmspace:tekto",
+  "generator": {
+    "type": "ntmspace:tekto",
+    "biome_source": {
+      "type": "ntmspace:layered",
+      "body": "tekto",
+      "biomes": {
+        "polyvinyl_plains": "ntmspace:tekto_polyvinyl_plains",
+        "halogen_hills": "ntmspace:tekto_halogen_hills",
+        "tetrachloric_river": "ntmspace:tekto_tetrachloric_river",
+        "forest": "ntmspace:tekto_forest",
+        "vinyl_sands": "ntmspace:tekto_vinyl_sands"
+      }
+    }
+  }
+}

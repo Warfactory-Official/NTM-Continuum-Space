@@ -1,0 +1,12 @@
+{
+  "type": "ntmspace:body_nbt",
+  "biomes": [
+    "ntmspace:minmus_hills",
+    "ntmspace:minmus_basins"
+  ],
+  "spawn_overrides": {},
+  "step": "surface_structures",
+  "terrain_adaptation": "none",
+  "spawn": "minmus_base",
+  "body": "minmus"
+}

@@ -1,0 +1,8 @@
+{
+  "replace": false,
+  "values": {
+    "ntmspace:powder_coke_coal": 1,
+    "minecraft:feather": 50
+  },
+  "remove": ["hbm:briquette_wood"]
+}

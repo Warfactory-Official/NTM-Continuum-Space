@@ -1,0 +1,18 @@
+# Authored JSON under Dejson-owned folders (exact paths, or a folder ending in a slash).
+assets/ntmspace/models/block/ore_overlay.json
+data/ntmspace/dimension/
+data/ntmspace/dimension_type/
+data/ntmspace/worldgen/
+# Recipes are not here: machine rows are generated from src/recipes, crafting/smelting is declared (SpaceCraftingRecipes).
+# Laythe/Tekto: vinyl vines (vanilla vine multipart, hand-tuned)
+assets/ntmspace/blockstates/vinyl_vine.json
+assets/ntmspace/models/block/vinyl_vine.json
+# Leftovers: the chain-link fence gate (custom panel geometry, open panel half out of the block)
+assets/ntmspace/blockstates/fence_gate.json
+assets/ntmspace/models/block/fence_gate_bottom_closed.json
+assets/ntmspace/models/block/fence_gate_bottom_open_left.json
+assets/ntmspace/models/block/fence_gate_bottom_open_right.json
+assets/ntmspace/models/block/fence_gate_top_closed.json
+assets/ntmspace/models/block/fence_gate_top_open_left.json
+assets/ntmspace/models/block/fence_gate_top_open_right.json
+assets/ntmspace/models/block/capacitor_complex.json

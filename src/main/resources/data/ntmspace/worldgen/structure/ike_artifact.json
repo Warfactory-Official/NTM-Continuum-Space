@@ -1,0 +1,11 @@
+{
+  "type": "ntmspace:body_nbt",
+  "biomes": [
+    "ntmspace:ike"
+  ],
+  "spawn_overrides": {},
+  "step": "surface_structures",
+  "terrain_adaptation": "none",
+  "spawn": "ike_artifact",
+  "body": "ike"
+}

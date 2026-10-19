@@ -1,0 +1,16 @@
+{
+  "type": "ntmspace:laythe",
+  "generator": {
+    "type": "ntmspace:laythe",
+    "biome_source": {
+      "type": "ntmspace:layered",
+      "body": "laythe",
+      "biomes": {
+        "islands": "ntmspace:laythe_islands",
+        "ocean": "ntmspace:laythe_ocean",
+        "polar": "ntmspace:laythe_polar",
+        "coast": "ntmspace:laythe_coast"
+      }
+    }
+  }
+}

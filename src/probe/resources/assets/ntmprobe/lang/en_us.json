@@ -1,0 +1,8 @@
+{
+  "fluid.ntmprobe.probe_gas": "Probe Gas",
+  "ntmprobefluid.probe_gas": "Probe Gas",
+  "ntmprobefluid.probe_fuel": "Probe Fuel",
+  "entity.ntmprobe.probe_cow": "Probe Cow",
+  "effect.ntmprobe.probe": "Probe",
+  "generator.ntmprobe.probe": "Probe World"
+}

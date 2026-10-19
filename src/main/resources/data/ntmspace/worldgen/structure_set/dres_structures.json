@@ -1,0 +1,17 @@
+{
+  "structures": [
+    {
+      "structure": "ntmspace:meteor_dungeon_dres",
+      "weight": 1
+    },
+    {
+      "structure": "ntmspace:dres_rbmk",
+      "weight": 8
+    }
+  ],
+  "placement": {
+    "type": "hbm:config_spread",
+    "salt": 996583977,
+    "key": "ntm"
+  }
+}

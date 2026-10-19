@@ -1,0 +1,13 @@
+{
+  "structures": [
+    {
+      "structure": "ntmspace:meteor_dungeon_tekto",
+      "weight": 1
+    }
+  ],
+  "placement": {
+    "type": "hbm:config_spread",
+    "salt": 996583972,
+    "key": "ntm"
+  }
+}

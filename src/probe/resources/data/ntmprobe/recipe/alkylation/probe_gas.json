@@ -1,0 +1,13 @@
+{
+  "type": "ntmspace:alkylation",
+  "name": "alkylation.probe_gas",
+  "input_fluids": [
+    {"type": "ntmprobe:probe_gas", "amount": 100}
+  ],
+  "output_fluids": [
+    {"type": "hbm:xylene", "amount": 50},
+    {"type": "ntmprobe:probe_fuel", "amount": 50}
+  ],
+  "duration": 2,
+  "power": 4000
+}

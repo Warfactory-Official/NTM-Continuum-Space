@@ -1,0 +1,9 @@
+{
+  "add": {
+    "flags": ["ntmprobe:inert"],
+    "traits": {
+      "ntmprobe:marker": {"level": 5},
+      "ntmspace:rocket": {"isp": 1, "thrust": 1}
+    }
+  }
+}

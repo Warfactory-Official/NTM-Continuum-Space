@@ -1,0 +1,24 @@
+{
+  "type": "hbm:chemical_plant",
+  "name": "chem.probe_gas",
+  "input_items": [
+    {
+      "ingredient": "minecraft:slime_ball",
+      "count": 2
+    }
+  ],
+  "input_fluids": [
+    {
+      "type": "minecraft:water",
+      "amount": 1000
+    }
+  ],
+  "output_fluids": [
+    {
+      "type": "ntmprobe:probe_gas",
+      "amount": 500
+    }
+  ],
+  "duration": 40,
+  "power": 200
+}

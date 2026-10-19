@@ -1,0 +1,17 @@
+{
+  "type": "ntmspace:eve",
+  "generator": {
+    "type": "ntmspace:eve",
+    "biome_source": {
+      "type": "ntmspace:layered",
+      "body": "eve",
+      "biomes": {
+        "plains": "ntmspace:eve_plains",
+        "mountains": "ntmspace:eve_mountains",
+        "ocean": "ntmspace:eve_ocean",
+        "seismic_plains": "ntmspace:eve_seismic_plains",
+        "river": "ntmspace:eve_river"
+      }
+    }
+  }
+}

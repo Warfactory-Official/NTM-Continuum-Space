@@ -1,0 +1,8 @@
+{
+  "type": "hbm:legacy_flowers",
+  "config": {
+    "state": {
+      "Name": "ntmspace:plant_flower_mint"
+    }
+  }
+}

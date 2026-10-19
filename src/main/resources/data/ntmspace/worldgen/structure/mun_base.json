@@ -1,0 +1,11 @@
+{
+  "type": "ntmspace:body_nbt",
+  "biomes": [
+    "ntmspace:mun"
+  ],
+  "spawn_overrides": {},
+  "step": "surface_structures",
+  "terrain_adaptation": "none",
+  "spawn": "mun_base",
+  "body": "mun"
+}

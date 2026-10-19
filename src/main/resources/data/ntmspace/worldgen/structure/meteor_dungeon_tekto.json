@@ -1,0 +1,15 @@
+{
+  "type": "ntmspace:body_nbt",
+  "biomes": [
+    "ntmspace:tekto_polyvinyl_plains",
+    "ntmspace:tekto_halogen_hills",
+    "ntmspace:tekto_tetrachloric_river",
+    "ntmspace:tekto_forest",
+    "ntmspace:tekto_vinyl_sands"
+  ],
+  "spawn_overrides": {},
+  "step": "surface_structures",
+  "terrain_adaptation": "none",
+  "spawn": "meteor_dungeon",
+  "body": "tekto"
+}

@@ -1,0 +1,16 @@
+{
+  "type": "ntmspace:moho",
+  "generator": {
+    "type": "ntmspace:moho",
+    "biome_source": {
+      "type": "ntmspace:layered",
+      "body": "moho",
+      "biomes": {
+        "crag": "ntmspace:moho_crag",
+        "basalt": "ntmspace:moho_basalt",
+        "lava_sea": "ntmspace:moho_lava_sea",
+        "plateau": "ntmspace:moho_plateau"
+      }
+    }
+  }
+}

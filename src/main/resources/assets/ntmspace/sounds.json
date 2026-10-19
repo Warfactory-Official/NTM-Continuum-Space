@@ -1,0 +1,321 @@
+{
+  "entity.beep": {
+    "category": "hostile",
+    "sounds": [
+      {
+        "name": "ntmspace:footsteps/deepbeep",
+        "stream": false
+      }
+    ]
+  },
+  "entity.bfatalk": {
+    "category": "player",
+    "sounds": [
+      {
+        "name": "ntmspace:entity/bfa_talk",
+        "stream": false
+      }
+    ]
+  },
+  "entity.bfashoot": {
+    "category": "player",
+    "sounds": [
+      {
+        "name": "ntmspace:entity/bfa_shoot",
+        "stream": false
+      }
+    ]
+  },
+  "misc.htrstart": {
+    "category": "block",
+    "sounds": [
+      {
+        "name": "ntmspace:misc/htr3start",
+        "stream": false
+      }
+    ]
+  },
+  "misc.htrstop": {
+    "category": "block",
+    "sounds": [
+      {
+        "name": "ntmspace:misc/htrstop",
+        "stream": false
+      }
+    ]
+  },
+  "misc.htrloop": {
+    "category": "block",
+    "sounds": [
+      {
+        "name": "ntmspace:misc/htrloop",
+        "stream": false
+      }
+    ]
+  },
+  "misc.htrfstart": {
+    "category": "block",
+    "sounds": [
+      {
+        "name": "ntmspace:misc/htrstart",
+        "stream": false
+      }
+    ]
+  },
+  "misc.lpwstart": {
+    "category": "block",
+    "sounds": [
+      {
+        "name": "ntmspace:misc/lpw2start",
+        "stream": false
+      }
+    ]
+  },
+  "misc.lpwstop": {
+    "category": "block",
+    "sounds": [
+      {
+        "name": "ntmspace:misc/lpwstop",
+        "stream": false
+      }
+    ]
+  },
+  "misc.lpwloop": {
+    "category": "block",
+    "sounds": [
+      {
+        "name": "ntmspace:misc/lpwloop",
+        "stream": false
+      }
+    ]
+  },
+  "block.hatchopen": {
+    "category": "block",
+    "sounds": [
+      {
+        "name": "ntmspace:misc/bomb_open",
+        "stream": false
+      }
+    ]
+  },
+  "block.hatchimpact": {
+    "category": "block",
+    "sounds": [
+      {
+        "name": "ntmspace:misc/bombimpact",
+        "stream": false
+      }
+    ]
+  },
+  "entity.rocket_ignition": {
+    "category": "player",
+    "sounds": [
+      {
+        "name": "ntmspace:entity/rocketignition",
+        "stream": false
+      }
+    ]
+  },
+  "entity.rocket_fly_light": {
+    "category": "player",
+    "sounds": [
+      {
+        "name": "ntmspace:entity/rocketflylight",
+        "stream": false
+      }
+    ]
+  },
+  "entity.rocket_fly_heavy": {
+    "category": "player",
+    "sounds": [
+      {
+        "name": "ntmspace:entity/rocketflyheavy",
+        "stream": false
+      }
+    ]
+  },
+  "entity.rocket_stage": {
+    "category": "player",
+    "sounds": [
+      {
+        "name": "ntmspace:entity/rocketstage",
+        "stream": false
+      }
+    ]
+  },
+  "alarm.ping": {
+    "category": "player",
+    "sounds": [
+      {
+        "name": "ntmspace:alarm/alarmping",
+        "stream": false
+      }
+    ]
+  },
+  "misc.impact": {
+    "category": "player",
+    "sounds": [
+      {
+        "name": "ntmspace:misc/cenimp",
+        "stream": false
+      }
+    ]
+  },
+  "misc.fireflash": {
+    "category": "player",
+    "sounds": [
+      {
+        "name": "ntmspace:misc/flashfire",
+        "stream": false
+      }
+    ]
+  },
+  "misc.spinshot": {
+    "category": "block",
+    "sounds": [
+      {
+        "name": "ntmspace:misc/spinshot1",
+        "stream": false
+      },
+      {
+        "name": "ntmspace:misc/spinshot2",
+        "stream": false
+      }
+    ]
+  },
+  "misc.spincharge": {
+    "category": "block",
+    "sounds": [
+      {
+        "name": "ntmspace:misc/spincharge",
+        "stream": false
+      }
+    ]
+  },
+  "block.dyson_beam": {
+    "category": "block",
+    "sounds": [
+      {
+        "name": "ntmspace:block/dyson_beam",
+        "stream": false
+      }
+    ]
+  },
+  "player.oil": {
+    "category": "player",
+    "sounds": [
+      {
+        "name": "ntmspace:player/oil",
+        "stream": false
+      }
+    ]
+  },
+  "music.record_god_speed": {
+    "category": "record",
+    "sounds": [
+      {
+        "name": "ntmspace:music/recordgodspeed",
+        "stream": true
+      }
+    ]
+  },
+  "music.record_goop": {
+    "category": "record",
+    "sounds": [
+      {
+        "name": "ntmspace:music/recordgoop",
+        "stream": true
+      }
+    ]
+  },
+  "music.record_ethereal": {
+    "category": "record",
+    "sounds": [
+      {
+        "name": "ntmspace:music/recordethereal",
+        "stream": true
+      }
+    ]
+  },
+  "player.plss_breathing": {
+    "category": "player",
+    "sounds": [
+      {
+        "name": "ntmspace:player/plss_breathing",
+        "stream": false
+      }
+    ]
+  },
+  "block.fencegate": {
+    "category": "block",
+    "sounds": [
+      {
+        "name": "ntmspace:block/fence_gate",
+        "stream": false
+      }
+    ]
+  },
+  "block.teto": {
+    "category": "block",
+    "sounds": [
+      {
+        "name": "ntmspace:block/teto",
+        "stream": false
+      }
+    ]
+  },
+  "block.miku": {
+    "category": "block",
+    "sounds": [
+      {
+        "name": "ntmspace:block/miku",
+        "stream": false
+      }
+    ]
+  },
+  "block.akita": {
+    "category": "block",
+    "sounds": [
+      {
+        "name": "ntmspace:block/akita",
+        "stream": false
+      }
+    ]
+  },
+  "misc.rumble": {
+    "category": "player",
+    "sounds": [
+      {
+        "name": "ntmspace:misc/rumble",
+        "stream": false
+      }
+    ]
+  },
+  "alarm.ducc": {
+    "category": "record",
+    "sounds": [
+      {
+        "name": "ntmspace:alarm/ducc",
+        "stream": false
+      }
+    ]
+  },
+  "alarm.mama": {
+    "category": "record",
+    "sounds": [
+      {
+        "name": "ntmspace:alarm/mama",
+        "stream": false
+      }
+    ]
+  },
+  "entity.jetloopbomb": {
+    "category": "player",
+    "sounds": [
+      {
+        "name": "ntmspace:entity/jetbomb2",
+        "stream": false
+      }
+    ]
+  }
+}

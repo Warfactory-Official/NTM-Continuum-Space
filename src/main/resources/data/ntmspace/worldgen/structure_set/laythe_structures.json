@@ -1,0 +1,25 @@
+{
+  "structures": [
+    {
+      "structure": "ntmspace:meteor_dungeon_laythe",
+      "weight": 1
+    },
+    {
+      "structure": "ntmspace:laythe_nuke_sub",
+      "weight": 6
+    },
+    {
+      "structure": "ntmspace:laythe_vertibird",
+      "weight": 6
+    },
+    {
+      "structure": "ntmspace:laythe_crashed_vertibird",
+      "weight": 6
+    }
+  ],
+  "placement": {
+    "type": "hbm:config_spread",
+    "salt": 996583974,
+    "key": "ntm"
+  }
+}

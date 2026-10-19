@@ -1,0 +1,9 @@
+{
+  "type": "liquid",
+  "color": "#40FF40",
+  "temperature": 77,
+  "flags": ["ntmprobe:inert"],
+  "traits": {
+    "ntmprobe:marker": {"level": 3}
+  }
+}

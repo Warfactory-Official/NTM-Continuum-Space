@@ -1,0 +1,9 @@
+{
+  "golem:conditions": [{"type": "not", "value": {"type": "mod_loaded", "mod": "ntmspace"}}],
+  "type": "hbm:chemical_plant",
+  "name": "chem.probe_conditional_off",
+  "input_fluids": [{"type": "minecraft:water", "amount": 100}],
+  "output_fluids": [{"type": "ntmprobe:probe_gas", "amount": 10}],
+  "duration": 20,
+  "power": 10
+}

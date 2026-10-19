@@ -1,0 +1,17 @@
+{
+  "structures": [
+    {
+      "structure": "ntmspace:meteor_dungeon_mun",
+      "weight": 1
+    },
+    {
+      "structure": "ntmspace:mun_base",
+      "weight": 6
+    }
+  ],
+  "placement": {
+    "type": "hbm:config_spread",
+    "salt": 996583981,
+    "key": "ntm"
+  }
+}

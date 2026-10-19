@@ -1,0 +1,24 @@
+modLoader = "javafml"
+loaderVersion = "${forge_loader_range}"
+license = "${mod_license}"
+
+[[mods]]
+modId = "ntmprobe"
+version = "${mod_version}"
+displayName = "NTM Probe (dev only)"
+authors = "${mod_author}"
+description = '''A second addon, never shipped: it hooks the same HBM extension points as NTM: Space so that two addons are tested together.'''
+
+[[dependencies.ntmprobe]]
+modId = "hbm"
+mandatory = true
+versionRange = "[0.1.0,)"
+ordering = "AFTER"
+side = "BOTH"
+
+[[dependencies.ntmprobe]]
+modId = "ntmspace"
+mandatory = true
+versionRange = "[0.1.0,)"
+ordering = "AFTER"
+side = "BOTH"

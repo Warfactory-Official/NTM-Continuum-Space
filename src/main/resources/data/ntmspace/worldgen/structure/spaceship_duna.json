@@ -1,0 +1,15 @@
+{
+  "type": "ntmspace:body_dungeon",
+  "biomes": [
+    "ntmspace:duna_plains",
+    "ntmspace:duna_lowlands",
+    "ntmspace:duna_polar",
+    "ntmspace:duna_hills",
+    "ntmspace:duna_polar_hills"
+  ],
+  "spawn_overrides": {},
+  "step": "top_layer_modification",
+  "terrain_adaptation": "none",
+  "dungeon": "spaceship",
+  "body": "duna"
+}

@@ -1,0 +1,17 @@
+{
+  "structures": [
+    {
+      "structure": "ntmspace:meteor_dungeon_moho",
+      "weight": 1
+    },
+    {
+      "structure": "ntmspace:moho_base",
+      "weight": 4
+    }
+  ],
+  "placement": {
+    "type": "hbm:config_spread",
+    "salt": 996583976,
+    "key": "ntm"
+  }
+}

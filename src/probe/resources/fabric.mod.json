@@ -1,0 +1,23 @@
+{
+    "schemaVersion": 1,
+    "id": "ntmprobe",
+    "version": "${mod_version}",
+    "name": "NTM Probe (dev only)",
+    "description": "A second addon, never shipped: it hooks the same HBM extension points as NTM: Space so that two addons are tested together.",
+    "environment": "*",
+    "entrypoints": {
+        "golemcore:entry": [
+            "com.ntmspace.probe.ProbeEntry"
+        ],
+        "client": [
+            "com.ntmspace.probe.platform.fabric.ProbeFabricClient"
+        ],
+        "fabric-gametest": [
+            "com.ntmspace.probe.ProbeFabricGameTests"
+        ]
+    },
+    "depends": {
+        "hbm": "*",
+        "ntmspace": "*"
+    }
+}

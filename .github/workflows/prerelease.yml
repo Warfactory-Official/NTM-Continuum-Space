@@ -1,0 +1,151 @@
+# Builds every node (chiseledBuild) against Golem Core's and NTM - Continuum's main branches and publishes the release
+# jars, NTM: Space's plus the matching NTM - Continuum and Golem Core jars it was built against, as a GitHub pre-release.
+# Runs on pushes to main that change a build input (see paths below) and on demand.
+#
+# Repository secrets: HBM_TOKEN, a fine-grained token with read access to Warfactory-Official/NTM-Continuum while
+# that repository is private (and GOLEM_CORE_TOKEN if Golem Core is private again).
+name: Pre-release
+
+on:
+  push:
+    branches: [main]
+    # Only changes that can alter a jar: sources, build scripts and per-node versions, and the license
+    # files packed into every jar. Docs, CHANGELOG.md, harness scenarios, tools/ and .github/ do not start a build.
+    paths:
+      - 'src/**'
+      - 'versions/**'
+      - 'gradle/**'
+      - '*.gradle.kts'
+      - 'gradle.properties'
+      - 'gradlew'
+      - 'gradlew.bat'
+      - 'LICENSE*'
+  workflow_dispatch:
+    inputs:
+      golem_ref:
+        description: Golem Core branch, tag or commit to build against
+        default: main
+      hbm_ref:
+        description: NTM - Continuum branch, tag or commit to build against
+        default: main
+
+permissions:
+  contents: write
+
+concurrency:
+  group: prerelease-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 300
+    steps:
+      # settings.gradle.kts includes ../Golem-Core and ../new-hbm as composite builds, so the three repos are
+      # checked out side by side exactly as in the development layout.
+      - uses: actions/checkout@v4
+        with:
+          path: new-hbm-space
+
+      - uses: actions/checkout@v4
+        with:
+          repository: Warfactory-Official/Golem-Core
+          ref: ${{ inputs.golem_ref || 'main' }}
+          path: Golem-Core
+          token: ${{ secrets.GOLEM_CORE_TOKEN || github.token }}
+
+      - uses: actions/checkout@v4
+        with:
+          repository: Warfactory-Official/NTM-Continuum
+          ref: ${{ inputs.hbm_ref || 'main' }}
+          path: new-hbm
+          token: ${{ secrets.HBM_TOKEN || github.token }}
+
+      # Each node compiles on its own toolchain (1.20.1 -> 17, 1.21.1 -> 21, 26.1 -> 25). The last
+      # one listed becomes JAVA_HOME, which runs Gradle itself.
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: |
+            17
+            21
+            25
+
+      - uses: gradle/actions/setup-gradle@v4
+
+      # Golem Core, then HBM: the obfuscated Fabric nodes resolve each upstream's jar at configuration time and refuse
+      # one older than its sources (checkCompositeJarFreshness), so both must be on disk before NTM: Space configures.
+      - name: Build Golem Core
+        # ModDevGradle builds Minecraft through its binary pipeline whenever CI=true (GitHub always sets
+        # it). That jar keeps Forge's signature digests over remapped classes (SecurityException in the
+        # 1.20.1 Forge tests) and loses parameter names, so build with the local recompile pipeline.
+        env:
+          CI: "false"
+        working-directory: Golem-Core
+        run: bash ./gradlew chiseledBuild --no-daemon --stacktrace
+
+      - name: Build NTM - Continuum
+        env:
+          CI: "false"
+        working-directory: new-hbm
+        run: bash ./gradlew chiseledBuild --no-daemon --stacktrace
+
+      - name: Build NTM Space
+        env:
+          CI: "false"
+        working-directory: new-hbm-space
+        run: bash ./gradlew chiseledBuild --no-daemon --stacktrace
+
+      - name: Collect release jars
+        id: jars
+        run: |
+          mkdir -p dist
+          # build/libs holds the release jar per node (remapJar/reobfJar/jar); devlibs is not shipped.
+          for repo in new-hbm-space new-hbm Golem-Core; do
+            find $repo/versions/*/build/libs -maxdepth 1 -name '*.jar' ! -name '*-sources.jar' -exec cp {} dist/ \;
+          done
+          # Tag every jar with this build's number, so jars from different builds never share a file name:
+          # ntmspace-fabric-1.20.1-0.1.0+1.20.1.jar -> ntmspace-fabric-1.20.1-0.1.0+1.20.1-build.42.jar
+          for jar in dist/*.jar; do
+            mv "$jar" "${jar%.jar}-build.${{ github.run_number }}.jar"
+          done
+          ls -l dist
+          ls dist | grep -q '^ntmspace-' || { echo "No NTM: Space jars produced"; exit 1; }
+          version=$(grep -E '^mod.version=' new-hbm-space/gradle.properties | cut -d= -f2 | tr -d '[:space:]')
+          echo "tag=v${version}-build.${{ github.run_number }}" >> "$GITHUB_OUTPUT"
+          echo "version=${version}" >> "$GITHUB_OUTPUT"
+          echo "golem=$(git -C Golem-Core rev-parse --short HEAD)" >> "$GITHUB_OUTPUT"
+          echo "hbm=$(git -C new-hbm rev-parse --short HEAD)" >> "$GITHUB_OUTPUT"
+
+      - name: Create pre-release
+        uses: softprops/action-gh-release@v2
+        with:
+          repository: ${{ github.repository }}
+          tag_name: ${{ steps.jars.outputs.tag }}
+          target_commitish: ${{ github.sha }}
+          name: "NTM: Space ${{ steps.jars.outputs.version }} build ${{ github.run_number }}"
+          prerelease: true
+          generate_release_notes: true
+          body: |
+            Automated pre-release build. Not for general use.
+
+            Each `ntmspace-<loader>-<mc>` jar needs the matching `hbm-<loader>-<mc>` jar (NTM - Continuum, built from
+            `${{ steps.jars.outputs.hbm }}`) and `golemcore-<loader>-<mc>` jar (Golem Core, built from
+            `${{ steps.jars.outputs.golem }}`), both included.
+          files: dist/*.jar
+
+      # Keep only the newest automated build: delete every older pre-release this workflow made (its tags
+      # end in -build.<run number>) along with its tag. Real releases and beta/alpha tags never match.
+      - name: Delete previous pre-releases
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REPO: ${{ github.repository }}
+          KEEP: ${{ steps.jars.outputs.tag }}
+        run: |
+          gh release list --repo "$REPO" --limit 200 --json tagName,isPrerelease \
+            --jq '.[] | select(.isPrerelease) | .tagName' \
+            | { grep -E '^v.+-build\.[0-9]+$' || true; } | { grep -vxF "$KEEP" || true; } \
+            | while read -r tag; do
+                echo "Deleting pre-release $tag"
+                gh release delete "$tag" --repo "$REPO" --cleanup-tag --yes
+              done

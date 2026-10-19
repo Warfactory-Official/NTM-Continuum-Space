@@ -1,0 +1,12 @@
+{
+  "type": "ntmspace:body_nbt",
+  "biomes": [
+    "ntmspace:dres_plains",
+    "ntmspace:dres_canyon"
+  ],
+  "spawn_overrides": {},
+  "step": "surface_structures",
+  "terrain_adaptation": "none",
+  "spawn": "meteor_dungeon",
+  "body": "dres"
+}

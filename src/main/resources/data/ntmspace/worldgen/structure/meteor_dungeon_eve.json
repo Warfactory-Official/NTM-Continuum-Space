@@ -1,0 +1,15 @@
+{
+  "type": "ntmspace:body_nbt",
+  "biomes": [
+    "ntmspace:eve_plains",
+    "ntmspace:eve_mountains",
+    "ntmspace:eve_ocean",
+    "ntmspace:eve_seismic_plains",
+    "ntmspace:eve_river"
+  ],
+  "spawn_overrides": {},
+  "step": "surface_structures",
+  "terrain_adaptation": "none",
+  "spawn": "meteor_dungeon",
+  "body": "eve"
+}

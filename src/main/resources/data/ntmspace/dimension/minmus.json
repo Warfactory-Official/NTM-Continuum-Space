@@ -1,0 +1,14 @@
+{
+  "type": "ntmspace:minmus",
+  "generator": {
+    "type": "ntmspace:minmus",
+    "biome_source": {
+      "type": "ntmspace:layered",
+      "body": "minmus",
+      "biomes": {
+        "hills": "ntmspace:minmus_hills",
+        "basins": "ntmspace:minmus_basins"
+      }
+    }
+  }
+}

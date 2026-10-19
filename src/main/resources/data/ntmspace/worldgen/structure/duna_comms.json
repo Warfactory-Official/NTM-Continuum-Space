@@ -1,0 +1,15 @@
+{
+  "type": "ntmspace:body_nbt",
+  "biomes": [
+    "ntmspace:duna_plains",
+    "ntmspace:duna_lowlands",
+    "ntmspace:duna_polar",
+    "ntmspace:duna_hills",
+    "ntmspace:duna_polar_hills"
+  ],
+  "spawn_overrides": {},
+  "step": "surface_structures",
+  "terrain_adaptation": "none",
+  "spawn": "duna_comms",
+  "body": "duna"
+}

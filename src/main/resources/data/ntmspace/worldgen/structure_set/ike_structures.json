@@ -1,0 +1,17 @@
+{
+  "structures": [
+    {
+      "structure": "ntmspace:meteor_dungeon_ike",
+      "weight": 1
+    },
+    {
+      "structure": "ntmspace:ike_artifact",
+      "weight": 4
+    }
+  ],
+  "placement": {
+    "type": "hbm:config_spread",
+    "salt": 996583979,
+    "key": "ntm"
+  }
+}
