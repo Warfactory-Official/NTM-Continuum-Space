@@ -129,7 +129,7 @@ tasks.named<ProcessResources>("processProbeResources") {
 }
 
 tasks.jar {
-    from(files(rootProject.file("LICENSE"), rootProject.file("LICENSE.LESSER"))) { rename { "${it}_${prop("mod.id")}" } }
+    from(files(rootProject.file("LICENSE"), rootProject.file("LICENSE.LESSER"), rootProject.file("CREDITS.txt"))) { rename { "${it}_${prop("mod.id")}" } }
 }
 
 tasks.named("createMinecraftArtifacts") { dependsOn(tasks.named("stonecutterGenerate")) }
@@ -228,6 +228,8 @@ if (project.name == "26.1-neoforge") {
     }
 }
 
+// Credits and links in the loader metadata, from the mod.* properties.
+apply(from = rootProject.file("../Golem-Core/gradle/mod/mod-metadata.gradle.kts"))
 // Modrinth + CurseForge upload of this node's jar; run every node with the root `publishAllMods`.
 apply(from = rootProject.file("../Golem-Core/gradle/mod/publish.gradle.kts"))
 
