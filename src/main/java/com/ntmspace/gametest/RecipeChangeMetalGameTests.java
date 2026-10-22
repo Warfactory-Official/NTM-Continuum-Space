@@ -145,12 +145,12 @@ public final class RecipeChangeMetalGameTests {
             errors.add("blast furnace nickel + steel -> " + (blast == null ? "none" : blast.getInternalName() + " " + blast.duration));
         }
         // RotaryFurnaceRecipes gunmetal: 3 copper + 1 ZINC (was aluminium) -> 4 ingots, 200 ticks, 100 steam
-        RotaryFurnaceRecipes.RotaryFurnaceRecipe zinc = RotaryFurnaceRecipes.getRecipe(Fluids.NONE, stack("hbm:ingot_copper", 3), stack("ntmspace:ingot_zinc", 1));
+        RotaryFurnaceRecipes.RotaryFurnaceRecipe zinc = RotaryFurnaceRecipes.getRecipe(Fluids.NONE, stack("minecraft:copper_ingot", 3), stack("ntmspace:ingot_zinc", 1));
         if (zinc == null || !zinc.output.material.name.equals("gunmetal") || zinc.output.amount != 288 || zinc.duration != 200
                 || zinc.steam != 100 || zinc.fluid != null) {
             errors.add("rotary copper + zinc -> " + (zinc == null ? "none" : RotaryFurnaceRecipes.describe(zinc)));
         }
-        RotaryFurnaceRecipes.RotaryFurnaceRecipe al = RotaryFurnaceRecipes.getRecipe(Fluids.NONE, stack("hbm:ingot_copper", 3), stack("hbm:ingot_aluminium", 1));
+        RotaryFurnaceRecipes.RotaryFurnaceRecipe al = RotaryFurnaceRecipes.getRecipe(Fluids.NONE, stack("minecraft:copper_ingot", 3), stack("hbm:ingot_aluminium", 1));
         if (al != null) errors.add("rotary copper + aluminium still makes " + RotaryFurnaceRecipes.describe(al));
         RecipeChangeGameTests.finish(helper, errors);
     }
@@ -201,8 +201,8 @@ public final class RecipeChangeMetalGameTests {
         for (AnvilSmithingRecipe r : AnvilRecipes.getSmithing()) {
             if (id(r.getSimpleOutput()).equals("hbm:ingot_gunmetal")) gunmetal = r;
         }
-        if (gunmetal == null || gunmetal.tier != 1 || !gunmetal.matches(stack("hbm:ingot_copper", 1), stack("ntmspace:ingot_zinc", 1))
-                || gunmetal.matches(stack("hbm:ingot_copper", 1), stack("hbm:ingot_aluminium", 1))) {
+        if (gunmetal == null || gunmetal.tier != 1 || !gunmetal.matches(stack("minecraft:copper_ingot", 1), stack("ntmspace:ingot_zinc", 1))
+                || gunmetal.matches(stack("minecraft:copper_ingot", 1), stack("hbm:ingot_aluminium", 1))) {
             errors.add("smithing ingot_gunmetal is not copper + zinc");
         }
         int smithing = 0;

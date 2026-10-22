@@ -229,6 +229,8 @@ if (project.name == "26.1-neoforge") {
 }
 
 // Credits and links in the loader metadata, from the mod.* properties.
+// The uploaded jar: no GameTests (see the script).
+apply(from = rootProject.file("../Golem-Core/gradle/mod/release-jar.gradle.kts"))
 apply(from = rootProject.file("../Golem-Core/gradle/mod/mod-metadata.gradle.kts"))
 // Modrinth + CurseForge upload of this node's jar; run every node with the root `publishAllMods`.
 apply(from = rootProject.file("../Golem-Core/gradle/mod/publish.gradle.kts"))

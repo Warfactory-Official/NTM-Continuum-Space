@@ -80,7 +80,9 @@ public final class RecipeChangeSpecialGameTests {
         if (item("insert_cmb") instanceof ItemModInsert insert) {
             ItemStack stack = new ItemStack(insert);
             if (stack.getMaxDamage() != 9999) errors.add("insert_cmb durability " + stack.getMaxDamage());
-            if (insert.speed() != 1F) errors.add("insert_cmb speed " + insert.speed());
+            List<ItemArmorMod.Modifier> mods = new ArrayList<>();
+            insert.collectModifiers(stack, ArmorSlot.CHESTPLATE, mods);
+            if (!mods.isEmpty()) errors.add("insert_cmb has speed modifiers " + mods);
             if (!stack.is(Sealing.CORROSION_PROTECTION)) errors.add("insert_cmb is not corrosion protection");
         }
         // tools and misc

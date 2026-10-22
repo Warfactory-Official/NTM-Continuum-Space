@@ -16,7 +16,8 @@
     "environment": "*",
     "entrypoints": {
         "golemcore:entry": [
-            "com.ntmspace.SpaceEntry"
+            "com.ntmspace.SpaceEntry",
+            "com.ntmspace.gametest.GameTestEntry"
         ],
         "client": [
             "com.ntmspace.platform.fabric.FabricClientInit"

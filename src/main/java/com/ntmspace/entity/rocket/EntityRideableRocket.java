@@ -8,6 +8,7 @@ import com.hbm.particle.helper.HbmEffectNT;
 import com.hbm.saveddata.satellites.XSatelliteRegistry;
 import com.hbm.sound.AudioSystem;
 import com.hbm.sound.AudioWrapper;
+import com.ntmspace.NtmSpace;
 import com.ntmspace.orbit.Orbit;
 import com.ntmspace.orbit.OrbitalStation;
 import com.ntmspace.orbit.OrbitalStation.StationState;
@@ -30,6 +31,7 @@ import dev.golem.core.data.CompatEntity;
 import dev.golem.core.data.DataIn;
 import dev.golem.core.data.DataOut;
 import dev.golem.core.data.SynchedData;
+import dev.golem.core.platform.Platform;
 import java.util.ArrayList;
 import java.util.List;
 import net.minecraft.core.BlockPos;
@@ -984,9 +986,10 @@ public class EntityRideableRocket extends CompatEntity implements StationDock, I
     }
 
     public void setState(RocketState state) {
-        // a positive signal for the harness: every server-side state change of a rocket in a level
-        if (!level().isClientSide() && state != getState() && !isRemoved() && level().getEntity(getId()) == this) {
-            com.ntmspace.NtmSpace.LOG.info("Rocket {} -> {} in {} at {} {} {}", getUUID(), state, level().dimension(),
+        // a positive signal for the harness, in dev runs: every server-side state change of a rocket in a level
+        if (Platform.isDevelopment() && !level().isClientSide() && state != getState() && !isRemoved()
+                && level().getEntity(getId()) == this) {
+            NtmSpace.LOG.info("Rocket {} -> {} in {} at {} {} {}", getUUID(), state, level().dimension(),
                     (int) getX(), (int) getY(), (int) getZ());
         }
         entityData.set(STATE, state.ordinal());

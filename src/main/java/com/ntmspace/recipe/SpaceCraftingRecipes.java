@@ -354,7 +354,7 @@ public final class SpaceCraftingRecipes {
         oreSmelt("ore_thorium", "hbm:ingot_th232", 3.0);
         oreSmelt("ore_uranium", "hbm:ingot_uranium", 6.0);
         oreSmelt("ore_titanium", "hbm:ingot_titanium", 3.0);
-        oreSmelt("ore_copper", "hbm:ingot_copper", 2.5);
+        oreSmelt("ore_copper", "minecraft:copper_ingot", 2.5);
         oreSmelt("ore_zinc", ns("ingot_zinc"), 2.5);
         oreSmelt("ore_tungsten", "hbm:ingot_tungsten", 6.0);
         oreSmelt("ore_aluminium", "hbm:chunk_ore_cryolite", 2.5);

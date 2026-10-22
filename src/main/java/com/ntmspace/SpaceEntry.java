@@ -1,7 +1,6 @@
 package com.ntmspace;
 
 import com.ntmspace.fluid.SpaceWorldFluids;
-import com.ntmspace.gametest.SpaceGameTests;
 import dev.golem.core.platform.ModEntry;
 
 /**
@@ -40,7 +39,6 @@ public final class SpaceEntry implements ModEntry {
         com.ntmspace.registry.StructureBlocks.init();
         com.ntmspace.world.structure.SpaceStructureTypes.init();
         com.ntmspace.command.StructureCommands.init();
-        com.ntmspace.gametest.StructureGameTests.init();
         com.ntmspace.world.SpaceDimensions.init();
         // hbm-space's "The Martian" world type: players start on Duna (Golem WorldTypes + first join)
         com.ntmspace.world.MartianWorld.init();
@@ -95,8 +93,6 @@ public final class SpaceEntry implements ModEntry {
         // the shader sky layers' nuke shocks (CelestialNukeShockHandler) and their test commands
         com.ntmspace.world.NukeShocks.init();
         com.ntmspace.command.SkyTraitCommands.init();
-        // every GameTest class, also run by the legacy Fabric generator, which can come first (SpaceGameTests.initAll)
-        SpaceGameTests.initAll();
     }
 
     @Override

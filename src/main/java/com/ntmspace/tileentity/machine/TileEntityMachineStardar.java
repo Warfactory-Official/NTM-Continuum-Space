@@ -2,6 +2,7 @@ package com.ntmspace.tileentity.machine;
 
 import com.hbm.interfaces.IControlReceiver;
 import com.hbm.tileentity.TileEntityMachineBase;
+import com.ntmspace.NtmSpace;
 import com.ntmspace.inventory.machine.ContainerStardar;
 import com.ntmspace.orbit.Orbit;
 import com.ntmspace.orbit.OrbitalStation;
@@ -11,9 +12,11 @@ import com.ntmspace.registry.SpaceMachinesD;
 import com.ntmspace.rocket.DriveBody;
 import com.ntmspace.rocket.DriveData;
 import com.ntmspace.rocket.ItemVOTVdrive;
+import dev.golem.core.Ids;
 import dev.golem.core.data.DataIn;
 import dev.golem.core.data.DataOut;
 import dev.golem.core.data.Tags;
+import dev.golem.core.platform.Platform;
 import dev.golem.core.world.Chunks;
 import net.minecraft.core.BlockPos;
 import net.minecraft.nbt.CompoundTag;
@@ -120,8 +123,10 @@ public class TileEntityMachineStardar extends TileEntityMachineBase implements M
             }
 
             if (te.scan != null && te.scan.tick()) {
-                com.ntmspace.NtmSpace.LOG.info("StarDar height map ready: 256 chunks of {} around chunk {}, {} after {} ticks",
-                        dev.golem.core.Ids.keyId(te.scan.level.dimension()), te.scan.baseX + 8, te.scan.baseZ + 8, te.scan.ticks);
+                if (Platform.isDevelopment()) {
+                    NtmSpace.LOG.info("StarDar height map ready: 256 chunks of {} around chunk {}, {} after {} ticks",
+                            Ids.keyId(te.scan.level.dimension()), te.scan.baseX + 8, te.scan.baseZ + 8, te.scan.ticks);
+                }
                 te.heightmap = te.scan.map;
                 te.updateHeightmap = true;
                 te.scan = null;

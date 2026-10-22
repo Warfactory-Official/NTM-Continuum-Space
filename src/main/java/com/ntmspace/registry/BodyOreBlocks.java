@@ -71,7 +71,7 @@ public final class BodyOreBlocks {
     /** Light 4/15; drops 1-3 glowstone dust. */
     public static final RegistryObject<BlockBodyOre> ORE_GLOWSTONE = ore("ore_glowstone", 5.0F, 10.0F, p -> p.lightLevel(s -> 4), Loot.oreMultiplied("minecraft:glowstone_dust", 1, 3), null, "c:ores/glowstone");
     public static final RegistryObject<BlockBodyOre> ORE_NITER = ore("ore_niter", 5.0F, 10.0F, Loot.oreMultiplied("hbm:niter", 2, 4), "hbm:ore_niter", "c:ores/niter");
-    public static final RegistryObject<BlockBodyOre> ORE_COPPER = ore("ore_copper", 5.0F, 10.0F, Loot.self(), "hbm:ore_copper", "c:ores/copper");
+    public static final RegistryObject<BlockBodyOre> ORE_COPPER = ore("ore_copper", 5.0F, 10.0F, Loot.self(), "minecraft:copper_ore", "c:ores/copper");
     public static final RegistryObject<BlockBodyOre> ORE_NICKEL = ore("ore_nickel", 5.0F, 10.0F, Loot.self(), null, "c:ores/nickel");
     public static final RegistryObject<BlockBodyOre> ORE_MINERAL = ore("ore_mineral", 5.0F, 10.0F, Loot.self(), null, "c:ores/mineral");
     public static final RegistryObject<BlockBodyOre> ORE_ZINC = ore("ore_zinc", 5.0F, 10.0F, Loot.self(), null, "c:ores/zinc");
