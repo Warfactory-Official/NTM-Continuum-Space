@@ -129,9 +129,9 @@ jobs:
           body: |
             Automated pre-release build. Not for general use.
 
-            Each `ntmspace-<loader>-<mc>` jar needs the matching `hbm-<loader>-<mc>` jar (NTM - Continuum, built from
-            `${{ steps.jars.outputs.hbm }}`) and `golemcore-<loader>-<mc>` jar (Golem Core, built from
-            `${{ steps.jars.outputs.golem }}`), both included.
+            Each `ntmspace-<loader>-<version>+<mc>` jar needs the `hbm-<loader>` jar (NTM - Continuum, built from
+            `${{ steps.jars.outputs.hbm }}`) and `golemcore-<loader>` jar (Golem Core, built from
+            `${{ steps.jars.outputs.golem }}`) for the same `<mc>`, both included.
           files: dist/*.jar
 
       # Keep only the newest automated build: delete every older pre-release this workflow made (its tags
