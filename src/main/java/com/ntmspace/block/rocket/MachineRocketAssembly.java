@@ -56,7 +56,7 @@ public class MachineRocketAssembly extends BlockMultiblockMachine implements ILo
     }
 
     @Override
-    protected void visitTeardownCells(BlockPos core, Direction facing, CellVisitor visitor) {
+    protected void visitTeardownCells(ServerLevel level, BlockPos core, Direction facing, CellVisitor visitor) {
         visitCells(core, facing, visitor);
         TileEntityMachineRocketAssembly.visitDynamicCells(core, pos -> visitor.cell(pos, MASK_NONE));
     }

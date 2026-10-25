@@ -88,7 +88,7 @@ public class LaunchPadRocket extends BlockMultiblockMachine implements ILookOver
     }
 
     @Override
-    protected void visitTeardownCells(BlockPos core, Direction facing, CellVisitor visitor) {
+    protected void visitTeardownCells(ServerLevel level, BlockPos core, Direction facing, CellVisitor visitor) {
         visitCells(core, facing, visitor);
         BlockPos.MutableBlockPos pos = new BlockPos.MutableBlockPos();
         for (int dy = 3; dy < 260; dy++) {

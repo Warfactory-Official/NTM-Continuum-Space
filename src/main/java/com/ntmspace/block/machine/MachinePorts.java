@@ -13,6 +13,7 @@ import java.util.Map;
 import java.util.function.Consumer;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
+import net.minecraft.world.level.EmptyBlockGetter;
 import net.minecraft.world.level.block.state.BlockState;
 
 /**
@@ -65,7 +66,7 @@ public final class MachinePorts {
         for (DirPos point : points) {
             for (Direction toCell : Direction.values()) {
                 BlockPos cell = point.getPos().relative(toCell);
-                if (!cell.equals(core) && !block.claimsCell(core, cell, facing)) continue;
+                if (!cell.equals(core) && !block.claimsCell(EmptyBlockGetter.INSTANCE, core, cell, facing)) continue;
                 byCell.computeIfAbsent(cell, k -> new ArrayList<>()).add(ForgeDirection.getOrientation(toCell.getOpposite()));
             }
         }
