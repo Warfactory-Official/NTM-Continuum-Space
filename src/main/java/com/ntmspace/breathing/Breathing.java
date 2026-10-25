@@ -3,6 +3,7 @@ package com.ntmspace.breathing;
 import com.hbm.api.environment.Environment;
 import com.hbm.handler.ArmorModHandler;
 import com.hbm.items.armor.ArmorDNT;
+import com.hbm.items.armor.ArmorFSB;
 import com.hbm.lib.ModDamageSources;
 import com.ntmspace.NtmSpace;
 import com.ntmspace.atmosphere.AtmosphereHandler;
@@ -223,9 +224,9 @@ public final class Breathing {
 
             if (rand.nextInt(2) == 0 && stack.isDamageableItem()) stack.setDamageValue(stack.getDamageValue() + 1);
 
-            boolean enabled = !(stack.getItem() instanceof com.hbm.items.gear.ArmorFSB fsb) || fsb.isArmorEnabled(stack);
+            boolean enabled = !(stack.getItem() instanceof ArmorFSB fsb) || fsb.isArmorEnabled(stack);
             if ((stack.isDamageableItem() && stack.getDamageValue() >= stack.getMaxDamage())
-                    || !(stack.getItem() instanceof com.hbm.items.gear.ArmorFSB) || !enabled) {
+                    || !(stack.getItem() instanceof ArmorFSB) || !enabled) {
                 player.setItemSlot(slot, ItemStack.EMPTY);
                 entity.level().playSound(null, entity.getX(), entity.getY(), entity.getZ(), SoundEvents.FIRE_EXTINGUISH, SoundSource.PLAYERS, 0.2F, 1F);
             }

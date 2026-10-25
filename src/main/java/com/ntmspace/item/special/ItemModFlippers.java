@@ -3,7 +3,7 @@ package com.ntmspace.item.special;
 import com.hbm.handler.ArmorModHandler;
 import com.hbm.items.armor.ArmorEnvsuit;
 import com.hbm.items.armor.ItemArmorMod;
-import com.hbm.items.gear.ArmorFSB;
+import com.hbm.items.armor.ArmorFSB;
 import dev.golem.core.world.CompatTooltipContext;
 import java.util.List;
 import net.minecraft.ChatFormatting;
