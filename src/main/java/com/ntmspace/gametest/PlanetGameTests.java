@@ -33,7 +33,7 @@ public final class PlanetGameTests {
     static final long MOHO_HASH = -5947557171282599261L;
     static final long MINMUS_HASH = -6705813515984441108L;
 
-    public static final GameTests.Suite TESTS = GameTests.suite(NtmSpace.MOD_ID);
+    public static final GameTests.Suite TESTS = SpaceGameTests.TESTS;
 
     public static final GameTests.Function EVE = TESTS.function("eve_generator_primer", 400,
             () -> helper -> body(helper, "eve", EveChunkGenerator::new, EVE_HASH, Set.of("minecraft:bedrock",

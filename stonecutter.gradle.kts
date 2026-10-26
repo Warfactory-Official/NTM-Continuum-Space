@@ -4,6 +4,15 @@ plugins {
 
 stonecutter active "26.1-neoforge" /* [SC] DO NOT EDIT */
 
+// Biome templates are authoring inputs; Dejson writes the final biome resources for every node.
+allprojects {
+    tasks.withType<JavaExec>().matching { it.name.startsWith("dejson") }.configureEach {
+        val templates = rootProject.file("src/main/biomes")
+        inputs.dir(templates)
+        systemProperty("ntmspace.biomeTemplates", templates.absolutePath)
+    }
+}
+
 // Builds every node in one invocation. Stonecutter 0.9 replaced the old `registerChiseled` API with
 // task aggregation: `stonecutter.tasks.named` returns a lazy collection of that task across all nodes.
 tasks.register("chiseledBuild") {
@@ -49,13 +58,16 @@ stonecutter parameters {
             replace("Identifier.withDefaultNamespace(", "dev.golem.core.Ids.minecraft(")
             replace("ResourceLocation.withDefaultNamespace(", "dev.golem.core.Ids.minecraft(")
         }
-        string(current.parsed < "1.21.11") {
-            replace("Identifier", "ResourceLocation")
+        // Match the vanilla type token, preserving names such as FluidIdentifierData in both directions.
+        regex(current.parsed < "1.21.11") {
+            replace("\\bIdentifier\\b", "ResourceLocation", "\\bResourceLocation\\b", "Identifier")
+        }
+        if (current.parsed < "1.20.5") {
+            // Older nodes lack registry-aware buffers. Modern nodes also have plain codecs, so
+            // this narrowing is one-way: reversing it would change their buffer contract.
+            string(true) { replace("RegistryFriendlyByteBuf", "FriendlyByteBuf") }
         }
         string(current.parsed < "1.20.5") {
-            // 1.20.1 has no registry-aware buffer. HBM's sync payload only writes primitives and
-            // explicit ids, so the plain buffer is behaviorally equivalent for these call sites.
-            replace("RegistryFriendlyByteBuf", "FriendlyByteBuf")
             // Vanilla renamed GRASS -> SHORT_GRASS in 1.20.5. The trailing `)` is load-bearing: a bare
             // `Blocks.GRASS` rule would also rewrite the four `Blocks.GRASS_BLOCK` uses into
             // `Blocks.SHORT_GRASS_BLOCK` on the way back up. Checked against the tree, not assumed.

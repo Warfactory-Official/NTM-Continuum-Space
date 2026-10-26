@@ -28,11 +28,7 @@ public class ItemCelestialBedrockOre extends ItemBedrockOreGraded {
     /** 1.7: {@code grade.<grade>.name} formatted with {@code type.<suffix>.name}, then {@code " (" + body + ")"}. */
     @Override
     public Component getName(ItemStack stack) {
-        Component typeName = Component.translatableWithFallback("item.bedrock_ore.type." + type.suffix + ".name",
-                type.displayName);
-        return Component.translatableWithFallback("item.bedrock_ore.grade." + grade.name().toLowerCase(Locale.ROOT) + ".name",
-                        "%s Bedrock Ore", typeName)
-                .append(" (").append(Component.translatable("body." + body)).append(")");
+        return super.getName(stack).copy().append(" (").append(Component.translatable("body." + body)).append(")");
     }
 
     @Override
@@ -40,16 +36,18 @@ public class ItemCelestialBedrockOre extends ItemBedrockOreGraded {
                                          TooltipFlag flag) {
         super.appendCompatHoverText(stack, context, tooltip, flag);
         if (grade == Grade.BASE) {
-            tooltip.add(Component.literal("Processing outputs").withStyle(ChatFormatting.DARK_GRAY));
-            line(tooltip, "Main: ", type.primary1);
-            line(tooltip, "Sulfuric: ", type.byproductAcid1);
-            line(tooltip, "Solvent: ", type.byproductSolvent1);
-            line(tooltip, "HPS: ", type.byproductRad1);
+            tooltip.add(Component.translatableWithFallback("item.ntmspace.bedrock_ore.outputs", "Processing outputs").withStyle(ChatFormatting.DARK_GRAY));
+            line(tooltip, "main", "Main: %s", type.primary1);
+            line(tooltip, "sulfuric", "Sulfuric: %s", type.byproductAcid1);
+            line(tooltip, "solvent", "Solvent: %s", type.byproductSolvent1);
+            line(tooltip, "hps", "HPS: %s", type.byproductRad1);
         }
     }
 
-    private static void line(List<Component> tooltip, String label, BedrockOreType.BedrockOreOutput output) {
-        tooltip.add(Component.literal(label).withStyle(ChatFormatting.DARK_GRAY)
-                .append(Component.literal(output.material().getDisplayName()).withStyle(ChatFormatting.GRAY)));
+    private static void line(List<Component> tooltip, String slot, String fallback, BedrockOreType.BedrockOreOutput output) {
+        var material = output.material();
+        tooltip.add(Component.translatableWithFallback("item.ntmspace.bedrock_ore.output." + slot, fallback,
+                Component.translatableWithFallback("hbmmat." + material.name, material.getDisplayName())
+                        .withStyle(ChatFormatting.GRAY)).withStyle(ChatFormatting.DARK_GRAY));
     }
 }

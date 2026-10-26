@@ -4,6 +4,7 @@ import com.hbm.creativetabs.HbmTab;
 import com.hbm.registration.Presets;
 import com.ntmspace.NtmSpace;
 import dev.golem.core.registry.DeferredRegister;
+import dev.golem.core.registry.ItemTag;
 import dev.golem.core.registry.Registrar;
 import dev.golem.core.registry.RegistryObject;
 import java.util.LinkedHashMap;
@@ -22,7 +23,7 @@ public final class SpaceMachineItems {
     public static final DeferredRegister.Items ITEMS = DeferredRegister.createItems(NtmSpace.MOD_ID);
     private static final Registrar REG = Registrar.of(ITEMS);
 
-    /** hbm-space's additions to {@code EnumCircuitType}, in enum order. */
+    /** hbm-space's additions to {@code EnumCircuitType} (tab places follow 1.7's sub-item order). */
     public static final String[] CIRCUIT_TYPES = {
             "GAAS", "AVIONICS", "AERO", "CAPACITOR_LANTHANIUM", "PROCESST1", "PROCESST2", "PROCESST3", "GASCHIP", "HFCHIP", "MOLYCHIP"
     };
@@ -33,8 +34,9 @@ public final class SpaceMachineItems {
         for (String type : CIRCUIT_TYPES) CIRCUITS.put(type, variant("circuit", type));
     }
 
-    /** {@code chunk_ore} type {@code PENTLANDITE}. */
-    public static final RegistryObject<Item> CHUNK_ORE_PENTLANDITE = variant("chunk_ore", "PENTLANDITE");
+    /** {@code chunk_ore} type {@code PENTLANDITE}: generic nickel dust and pentlandite crystal, as 1.7. */
+    public static final RegistryObject<Item> CHUNK_ORE_PENTLANDITE =
+            variant("chunk_ore", "PENTLANDITE", "c:dusts/nickel", "c:crystals/pentlandite");
 
     public static final RegistryObject<Item> INGOT_ZINC = plain("ingot_zinc", "ntmspace:items/ingot_zinc");
     /** 1.7 {@code ItemCustomLore}. */
@@ -47,6 +49,14 @@ public final class SpaceMachineItems {
     private static RegistryObject<Item> variant(String base, String type) {
         String name = type.toLowerCase(Locale.US);
         return REG.item(base + "_" + name).transform(Presets.sprite("ntmspace:items/" + base + "." + name)).tab(HbmTab.MATERIALS);
+    }
+
+    private static RegistryObject<Item> variant(String base, String type, String... tags) {
+        String name = type.toLowerCase(Locale.US);
+        var item = REG.item(base + "_" + name)
+                .transform(Presets.sprite("ntmspace:items/" + base + "." + name));
+        for (String tag : tags) item.tag(ItemTag.of(tag));
+        return item.tab(HbmTab.MATERIALS);
     }
 
     private static RegistryObject<Item> plain(String id, String texture) {

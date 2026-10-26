@@ -1,5 +1,6 @@
 package com.ntmspace.recipes.tables;
 
+import com.ntmspace.tileentity.machine.TileEntityMachineAlkylation;
 import com.hbm.inventory.fluid.FluidStack;
 import com.hbm.inventory.fluid.FluidType;
 import com.hbm.inventory.fluid.Fluids;
@@ -19,9 +20,9 @@ import java.util.Locale;
 public final class AlkylationTable extends GenericTableSource<GenericRecipe> {
 
     /** 1.7 {@code TileEntityMachineAlkylation}: mB of the input per step. */
-    private static final int INPUT = 100;
+    private static final int INPUT = AlkylationRecipes.FEED;
     /** 1.7 {@code TileEntityMachineAlkylation}: HE per step. */
-    private static final long POWER = 4_000;
+    private static final long POWER = TileEntityMachineAlkylation.CONSUMPTION;
     /** 1.7 ran a step every second tick. */
     private static final int DURATION = 2;
 

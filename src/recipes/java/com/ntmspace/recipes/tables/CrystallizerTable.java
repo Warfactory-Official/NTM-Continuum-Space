@@ -1,5 +1,6 @@
 package com.ntmspace.recipes.tables;
 
+import com.hbm.inventory.fluid.FluidType;
 import com.hbm.inventory.RecipesCommon.AStack;
 import com.hbm.inventory.RecipesCommon.ComparableStack;
 import com.hbm.inventory.RecipesCommon.TagStack;
@@ -7,6 +8,7 @@ import com.hbm.inventory.fluid.FluidStack;
 import com.hbm.inventory.fluid.Fluids;
 import com.hbm.inventory.recipes.CrystallizerRecipes;
 import com.hbm.inventory.recipes.CrystallizerRecipes.ItemOutput;
+import com.hbm.inventory.recipes.CrystallizerRecipes.ChanceOutput;
 import com.hbm.inventory.recipes.CrystallizerRecipes.Row;
 import com.hbm.inventory.recipes.loader.GenericRecipeCodec.ItemOut;
 import com.ntmspace.fluid.SpaceFluids;
@@ -51,14 +53,21 @@ public final class CrystallizerTable extends RecipeSource<Row> {
         // ZI, NB and ore_mineral follow CO.ore() (the per-body ore families' ids; equal orders sort by id)
         registerRecipe("ore_zinc", tag("c:ores/zinc"), new CrystallizerRecipe(item("ntmspace:crystal_zinc"), baseTime).prod(0.05F), nitric, after("hbm:crystallizer/tag_ores_cobalt_sulfuric_acid"));
         registerRecipe("ore_niobium", tag("c:ores/niobium"), new CrystallizerRecipe(item("ntmspace:crystal_niobium"), baseTime).prod(0.05F), sulfur, after("hbm:crystallizer/tag_ores_cobalt_sulfuric_acid"));
+        for (var raw : new Object[][] {{"zinc", Fluids.NITRIC_ACID}, {"niobium", Fluids.SULFURIC_ACID}}) {
+            var name = (String) raw[0];
+            var acid = (FluidType) raw[1];
+            register("crystal_" + name + "_raw", new Row(tag("c:raw_materials/" + name),
+                    new FluidStack(acid, 333), new ChanceOutput(new ItemOut(item("ntmspace:crystal_" + name), 1), 0.667F),
+                    400, 0.05F, Optional.empty(), after("hbm:crystallizer/tag_ores_cobalt_sulfuric_acid")));
+        }
         registerRecipe("ore_mineral", tag("ntmspace:ores/ore_mineral"), new CrystallizerRecipe(item("ntmspace:crystal_mineral"), baseTime).prod(0.05F), after("hbm:crystallizer/tag_ores_cobalt_sulfuric_acid")); //temp
 
-        // P_RED.ore() is oreAll(ore_fire): every body's ore_fire, after HBM's phosphorus row
-        registerRecipe("ore_fire_peroxide", tag("ntmspace:ores/ore_fire"), new CrystallizerRecipe(item("hbm:crystal_phosphorus"), baseTime).prod(0.05F), after("hbm:crystallizer/tag_ores_lead_peroxide"));
+        // P_RED.ore(): the fire ores, after HBM's phosphorus row
+        registerRecipe("ore_fire_peroxide", tag("c:ores/red_phosphorus"), new CrystallizerRecipe(item("hbm:crystal_phosphorus"), baseTime).prod(0.05F), after("hbm:crystallizer/tag_ores_lead_peroxide"));
         registerRecipe("crystal_mineral_peroxide", comp("ntmspace:crystal_mineral"), new CrystallizerRecipe(item("hbm:crystal_diamond"), baseTime).prod(0.05F), after("hbm:crystallizer/gravel_diamond_peroxide"));
-        // Blocks.cobblestone -> KEY_COBBLESTONE (changed row)
+        // Blocks.cobblestone -> KEY_COBBLESTONE (changed row, keeping 1.7's descriptive row id)
         remove("hbm:crystallizer/minecraft_cobblestone_peroxide");
-        registerRecipe("tag_cobblestones_peroxide", tag("c:cobblestones"), new CrystallizerRecipe(item("hbm:reinforced_stone"), utilityTime), after("hbm:crystallizer/minecraft_cobblestone_peroxide"));
+        registerRecipe("cobblestone", tag("c:cobblestones"), new CrystallizerRecipe(item("hbm:reinforced_stone"), utilityTime), after("hbm:crystallizer/minecraft_cobblestone_peroxide"));
 
         // mineral_dust -> mineral_fragment metas 0..5, one acid each (after 1.7's legacy bedrock-ore loop)
         registerRecipe("mineral_dust_peroxide", comp("ntmspace:mineral_dust"), new CrystallizerRecipe(item("ntmspace:mineral_fragment_peroxide"), mineralTime), after("hbm:crystallizer/scrap_plastic_card_processor_peroxide"));
@@ -74,13 +83,13 @@ public final class CrystallizerTable extends RecipeSource<Row> {
         registerRecipe("nickel_salts_nitric_acid", comp("ntmspace:nickel_salts"), new CrystallizerRecipe(item("ntmspace:crystal_nickel"), baseTime), nitric, after("hbm:crystallizer/powder_impure_osmiridium_schrabidic"));
         registerRecipe("leaf_rubber_hcl", comp("ntmspace:leaf_rubber"), new CrystallizerRecipe(item("hbm:ingot_rubber"), baseTime).setReq(64), chloric, after("hbm:crystallizer/powder_impure_osmiridium_schrabidic"));
 
-        // black dye: COAL.dust() -> ANY_COAL_COKE.dust() (coke dusts and coal dust), for each of the three dye oils (changed rows)
+        // black dye: COAL.dust() -> ANY_COAL_COKE.dust() (coke dusts and coal dust), for each of the three dye oils (changed rows, keeping 1.7's descriptive row ids; the input is 1.7's namespaced group tag)
         remove("hbm:crystallizer/tag_dusts_coal_woodoil");
-        registerRecipe("tag_dusts_any_coal_coke_woodoil", tag("c:dusts/any_coal_coke"), new CrystallizerRecipe(item("hbm:chemical_dye_black"), 4, mixingTime).prod(0.15F), new FluidStack(Fluids.WOODOIL, 100), after("hbm:crystallizer/tag_dusts_coal_woodoil"));
+        registerRecipe("chemical_dye_black_woodoil", tag("ntmspace:dusts/any_coal_coke"), new CrystallizerRecipe(item("hbm:chemical_dye_black"), 4, mixingTime).prod(0.15F), new FluidStack(Fluids.WOODOIL, 100), after("hbm:crystallizer/tag_dusts_coal_woodoil"));
         remove("hbm:crystallizer/tag_dusts_coal_fishoil");
-        registerRecipe("tag_dusts_any_coal_coke_fishoil", tag("c:dusts/any_coal_coke"), new CrystallizerRecipe(item("hbm:chemical_dye_black"), 4, mixingTime).prod(0.15F), new FluidStack(Fluids.FISHOIL, 100), after("hbm:crystallizer/tag_dusts_coal_fishoil"));
+        registerRecipe("chemical_dye_black_fishoil", tag("ntmspace:dusts/any_coal_coke"), new CrystallizerRecipe(item("hbm:chemical_dye_black"), 4, mixingTime).prod(0.15F), new FluidStack(Fluids.FISHOIL, 100), after("hbm:crystallizer/tag_dusts_coal_fishoil"));
         remove("hbm:crystallizer/tag_dusts_coal_lightoil");
-        registerRecipe("tag_dusts_any_coal_coke_lightoil", tag("c:dusts/any_coal_coke"), new CrystallizerRecipe(item("hbm:chemical_dye_black"), 4, mixingTime).prod(0.15F), new FluidStack(Fluids.LIGHTOIL, 100), after("hbm:crystallizer/tag_dusts_coal_lightoil"));
+        registerRecipe("chemical_dye_black_lightoil", tag("ntmspace:dusts/any_coal_coke"), new CrystallizerRecipe(item("hbm:chemical_dye_black"), 4, mixingTime).prod(0.15F), new FluidStack(Fluids.LIGHTOIL, 100), after("hbm:crystallizer/tag_dusts_coal_lightoil"));
     }
 
     /** hbm-space {@code registerRecipe(input, recipe)}: 500 mB of hydrogen peroxide. */

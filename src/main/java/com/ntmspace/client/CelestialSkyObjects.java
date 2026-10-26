@@ -1,5 +1,6 @@
 package com.ntmspace.client;
 
+import com.ntmspace.world.SkyMath;
 import com.hbm.items.ISatChip;
 import com.hbm.saveddata.satellites.SatelliteType;
 import com.hbm.saveddata.satellites.XSatelliteRegistry;
@@ -241,7 +242,7 @@ public final class CelestialSkyObjects {
 
     /** Whether the star of {@code level}'s sky is destroyed ({@code getStar().hasTrait(CBT_Destroyed.class)}). */
     static boolean starDestroyed(SolarSystem.Body body) {
-        return CelestialTraits.hasTrait(body.getStar().name, CBT_Destroyed.class, true);
+        return SkyMath.starDestroyed(body, true);
     }
 
     /** {@code renderCelestials}' destroyed branch, in place of the body's disc and overlays. */

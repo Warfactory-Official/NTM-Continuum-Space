@@ -3,6 +3,7 @@ package com.ntmspace.tileentity.machine;
 import com.hbm.api.energymk2.IEnergyReceiverMK2;
 import com.hbm.api.fluidmk2.IFluidStandardTransceiverMK2;
 import com.hbm.blocks.multiblock.BlockMultiblockCore;
+import com.hbm.blocks.multiblock.MultiblockCoreIndex;
 import com.hbm.blocks.multiblock.BlockMultiblockMachine;
 import com.hbm.inventory.fluid.Fluids;
 import com.hbm.inventory.fluid.tank.FluidTankNTM;
@@ -47,7 +48,7 @@ import net.minecraft.world.phys.AABB;
  * hbm-space's {@code TileEntityHydroponic} (the Industrial Greenhouse): takes CO2 (16,000 mB) and gives O2 (16,000 mB),
  * 15 mB per crop growth stage ({@code ChunkAtmosphereHandler.CROP_GROWTH_CONVERSION}, the atmosphere port's
  * {@link AtmosphereHandler#CROP_GROWTH_CONVERSION}). Power: 2,000 HE buffer, 25 HE drained every tick; at 200 HE or more
- * the lamps are lit ({@link MachineHydroponic#LIT}) and, with at least 100 mB CO2, the three plant positions above the
+ * the lamps use their powered beam cells and, with at least 100 mB CO2, the three plant positions above the
  * base (core and its two lateral neighbours, one up) are planted from slot 0, ticked about ten times faster than in the
  * open ({@code rand(120)} random ticks), fertilised from the fertiliser store ({@code rand(60)}), and harvested into
  * slots 3-5 when fully grown. Without the power or the CO2 a plant is held at the stage it had.
@@ -62,6 +63,16 @@ import net.minecraft.world.phys.AABB;
 public class TileEntityHydroponic extends TileEntityMachineBase implements MenuProvider, IFluidStandardTransceiverMK2,
         IEnergyReceiverMK2, WorldlyContainer {
 
+    public static final int SLOT_PLANT = 0;
+    public static final int SLOT_FERTILIZER = 1;
+    public static final int SLOT_BATTERY = 2;
+    public static final int SLOT_OUTPUT_START = 3;
+    public static final int SLOT_COUNT = 6;
+    public static final long MAX_POWER = 2_000;
+    public static final long DRAIN = 25;
+    public static final long LIGHT_POWER = 200;
+    public static final int MIN_CO2 = 100;
+    public static final int MAX_FERTILIZER = 200;
     private static final int[] SLOTS = {0, 1, 2, 3, 4, 5};
     /** 1.7 {@code setBlock(..., 3)}. */
     static final int PLACE_FLAGS = Block.UPDATE_ALL;
@@ -70,16 +81,16 @@ public class TileEntityHydroponic extends TileEntityMachineBase implements MenuP
 
     public final FluidTankNTM[] tanks;
     public long power;
-    public static final long maxPower = 2_000;
+    public static final long maxPower = MAX_POWER;
 
     public int fertilizer;
-    public static final int maxFertilizer = 200;
+    public static final int maxFertilizer = MAX_FERTILIZER;
 
     private boolean lightsOn = false;
     private final int[] prevMeta = new int[3];
 
     public TileEntityHydroponic(BlockPos pos, BlockState state) {
-        super(SpaceMachinesB.HYDROBAY_BE.get(), pos, state, 6);
+        super(SpaceMachinesB.HYDROBAY_BE.get(), pos, state, SLOT_COUNT);
         tanks = new FluidTankNTM[2];
         tanks[0] = new FluidTankNTM(Fluids.CARBONDIOXIDE, 16_000);
         tanks[1] = new FluidTankNTM(Fluids.OXYGEN, 16_000);
@@ -94,8 +105,8 @@ public class TileEntityHydroponic extends TileEntityMachineBase implements MenuP
         if (!(level instanceof ServerLevel server)) return;
         if (te.cachedPowerPorts == null) {
             Ports ports = ports(pos, MachineCore.facing(state));
-            te.cachedPowerPorts = MachinePorts.ports(state, pos, ports.power());
-            te.cachedFluidPorts = MachinePorts.ports(state, pos, ports.fluid());
+            te.cachedPowerPorts = MachinePorts.ports(level, state, pos, ports.power());
+            te.cachedFluidPorts = MachinePorts.ports(level, state, pos, ports.fluid());
         }
         te.setupPowerPorts(te.cachedPowerPorts);
         te.setupFluidPorts(te.cachedFluidPorts);
@@ -111,7 +122,7 @@ public class TileEntityHydroponic extends TileEntityMachineBase implements MenuP
         ForgeDirection rot = MachineCore.facing(getBlockState()).getRotation(ForgeDirection.UP);
         RandomSource rand = level.getRandom();
 
-        if (power > 0) power = Math.max(power - 25, 0);
+        if (power > 0) power = Math.max(power - DRAIN, 0);
 
         ItemStack fert = inventory.getStackInSlot(1);
         if (!fert.isEmpty()) {
@@ -127,7 +138,7 @@ public class TileEntityHydroponic extends TileEntityMachineBase implements MenuP
 
         BlockPos left = worldPosition.offset(-rot.offsetX, 2, -rot.offsetZ);
         BlockPos right = worldPosition.offset(rot.offsetX, 2, rot.offsetZ);
-        if (power >= 200) {
+        if (power >= LIGHT_POWER) {
             if (!lightsOn) {
                 setLamps(level, left, right, true);
                 lightsOn = true;
@@ -142,7 +153,7 @@ public class TileEntityHydroponic extends TileEntityMachineBase implements MenuP
             BlockState plant = level.getBlockState(at);
 
             // Minimum CO2 pressure required to start growing
-            if (power >= 200 && tanks[0].getFill() >= 100) {
+            if (power >= LIGHT_POWER && tanks[0].getFill() >= MIN_CO2) {
 
                 // Attempt planting a new plant; only allows single block crops
                 if (!(plant.getBlock() instanceof BonemealableBlock)) {
@@ -202,12 +213,22 @@ public class TileEntityHydroponic extends TileEntityMachineBase implements MenuP
     }
 
     /** 1.7 swapped the cells between {@code hydrobay} and {@code dummy_beam} under {@code safeRem}. */
-    private void setLamps(Level level, BlockPos left, BlockPos right, boolean lit) {
+    private void setLamps(ServerLevel level, BlockPos left, BlockPos right, boolean lit) {
         BlockMultiblockCore.withoutTeardown(() -> {
-            for (BlockPos at : new BlockPos[] {left, right}) {
-                BlockState cell = level.getBlockState(at);
-                if (cell.getBlock() instanceof MachineHydroponic && cell.getValue(BlockMultiblockMachine.CELL)) {
-                    level.setBlock(at, cell.setValue(MachineHydroponic.LIT, lit), PLACE_FLAGS);
+            for (var at : new BlockPos[] {left, right}) {
+                if (MultiblockCoreIndex.lookup(level, at) != worldPosition.asLong()) continue;
+                var cell = level.getBlockState(at);
+                BlockState replacement;
+                if (lit && cell.is(getBlockState().getBlock()) && cell.getValue(BlockMultiblockMachine.CELL)) {
+                    replacement = SpaceMachinesB.HYDROBAY_LAMP.get().defaultBlockState()
+                            .setValue(BlockMultiblockCore.FACING, cell.getValue(BlockMultiblockCore.FACING));
+                } else if (!lit && cell.is(SpaceMachinesB.HYDROBAY_LAMP.get())) {
+                    replacement = getBlockState().getBlock().defaultBlockState().setValue(BlockMultiblockMachine.CELL, true)
+                            .setValue(BlockMultiblockCore.FACING, cell.getValue(BlockMultiblockCore.FACING));
+                } else continue;
+                if (level.setBlock(at, replacement, PLACE_FLAGS)) {
+                    // Removing a shared cell retires its index even under withoutTeardown; the replacement keeps ownership.
+                    MultiblockCoreIndex.put(level, at, worldPosition);
                 }
             }
         });

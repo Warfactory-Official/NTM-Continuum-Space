@@ -1,5 +1,9 @@
 package com.ntmspace.block.station;
 
+import com.ntmspace.registry.StationBlocks;
+import com.hbm.capability.ICapabilityBlock;
+import com.hbm.capability.MachineCaps;
+
 import com.hbm.api.energymk2.IEnergyConnectorBlock;
 import com.hbm.api.fluidmk2.IFluidConnectorBlockMK2;
 import com.hbm.blocks.multiblock.BlockMultiblockMachine;
@@ -26,9 +30,16 @@ import net.minecraft.world.level.block.state.BlockState;
  * turned a quarter from the player's facing), three power and fluid proxies across the far end of the long axis, power
  * taken at the two blocks beside them.
  */
-public class MachineHTRF4 extends BlockMultiblockMachine implements IEnergyConnectorBlock, IFluidConnectorBlockMK2, ILookOverlay {
+public class MachineHTRF4 extends BlockMultiblockMachine implements IEnergyConnectorBlock, IFluidConnectorBlockMK2, ILookOverlay, ICapabilityBlock {
 
     static final int[] DIMS = {2, 2, 2, 2, 11, 9};
+
+    @Override
+    public MachineCaps caps() {
+        return MachineCaps.of(StationBlocks.HTRF4_BE).powerIn().fluidIn().fe()
+                .faces(TileEntityMachineHTRF4.class, (be, side) -> Orbit.inOrbit(be.getLevel()))
+                .fluidFaces(TileEntityMachineHTRF4.class, (be, side) -> Orbit.inOrbit(be.getLevel()));
+    }
 
     public MachineHTRF4(Properties properties) {
         super(properties);

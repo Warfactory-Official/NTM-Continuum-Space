@@ -1,5 +1,7 @@
 package com.ntmspace.recipe;
 
+import net.minecraft.util.RandomSource;
+import net.minecraft.world.item.Item;
 import com.hbm.inventory.RecipesCommon.AStack;
 import com.hbm.inventory.recipes.loader.DataGenericRecipes;
 import com.hbm.inventory.recipes.loader.GenericRecipe;
@@ -45,8 +47,32 @@ public final class VacuumCircuitRecipes extends DataGenericRecipes<VacuumCircuit
             return Arrays.copyOfRange(inputItem, Math.min(wafers, inputItem.length), inputItem.length);
         }
 
+        @Override
+        public VacuumCircuitRecipe inputItems(AStack... wafer) {
+            return groups(wafer, inputItem == null ? new AStack[0] : pcb());
+        }
+
+        public VacuumCircuitRecipe setPcb(AStack... pcb) {
+            return groups(inputItem == null ? new AStack[0] : wafer(), pcb);
+        }
+
+        private VacuumCircuitRecipe groups(AStack[] wafer, AStack[] pcb) {
+            wafers = wafer.length;
+            inputItem = Arrays.copyOf(wafer, wafer.length + pcb.length);
+            System.arraycopy(pcb, 0, inputItem, wafer.length, pcb.length);
+            return this;
+        }
+
         public ItemStack output() {
             return outputItem[0];
+        }
+
+        public Item previewItem() {
+            return outputItem[0].getItem();
+        }
+
+        public ItemStack output(RandomSource random) {
+            return rollOutput(0, random);
         }
     }
 

@@ -1,5 +1,6 @@
 package com.ntmspace.block.flora;
 
+import dev.golem.core.world.BlockChanges;
 import dev.golem.core.world.BlockTickScheduler;
 import dev.golem.core.world.CompatBlock;
 import dev.golem.core.world.CompatEnchantments;
@@ -14,6 +15,7 @@ import net.minecraft.util.RandomSource;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.item.context.BlockPlaceContext;
 import net.minecraft.world.level.BlockGetter;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.LevelReader;
@@ -21,6 +23,7 @@ import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.block.state.StateDefinition;
 import net.minecraft.world.level.block.state.properties.BooleanProperty;
+import net.minecraft.world.level.block.state.properties.BlockStateProperties;
 import net.minecraft.world.level.storage.loot.LootParams;
 
 /**
@@ -30,10 +33,9 @@ import net.minecraft.world.level.storage.loot.LootParams;
  * <p><b>Decay</b>, as 1.7: a leaf flagged for a decay check ({@link #CHECK_DECAY}, 1.7's metadata bit 8) runs 1.7's
  * search on its random tick ({@link #connected}: a log ({@code #minecraft:logs}) within four steps through leaves
  * ({@code #minecraft:leaves}) inside the 9-cube around it); connected, the flag clears, else the leaf decays and drops
- * its items. Generated and placed leaves start unflagged. 1.7 flagged leaves within one block of a broken leaf and
- * within four of a broken log; here a broken leaf flags its 26 neighbours ({@link #onBlockRemoved}), and a leaf flags
- * itself when a face neighbour becomes air (a log or leaf going away, also vanilla's), so a cut tree's far leaves are
- * reached through their decaying neighbours rather than all at once.
+ * its items. Generated leaves start unflagged; player-placed leaves are persistent and do not decay. 1.7 flagged leaves within one block of a broken leaf and
+ * within four of a broken log. Committed log removals flag that same range ({@link #watchLogRemovals}), a broken
+ * leaf flags its 26 neighbours ({@link #onBlockRemoved}), and a leaf flags itself when a face neighbour becomes air.
  *
  * <p><b>Drops</b>, 1.7's Forge {@code BlockLeaves.getDrops} plus hbm-space's {@code dropBlockAsItemWithChance} (also on
  * decay):
@@ -49,6 +51,8 @@ public class BlockSpaceLeaves extends CompatBlock {
 
     /** 1.7's metadata bit 8: this leaf runs the decay search on its next random tick. */
     public static final BooleanProperty CHECK_DECAY = BooleanProperty.create("check_decay");
+    /** Player placement keeps the leaf, as vanilla leaves and the 1.7 no-decay metadata bit do. */
+    public static final BooleanProperty PERSISTENT = BlockStateProperties.PERSISTENT;
     /** 1.7 {@code BlockLeaves.updateTick}'s {@code b0}: how many leaf steps a log may be away. */
     public static final int RANGE = 4;
 
@@ -59,12 +63,17 @@ public class BlockSpaceLeaves extends CompatBlock {
         super(properties);
         this.leaf = leaf;
         this.sapling = sapling;
-        registerDefaultState(stateDefinition.any().setValue(CHECK_DECAY, false));
+        registerDefaultState(stateDefinition.any().setValue(CHECK_DECAY, false).setValue(PERSISTENT, false));
     }
 
     @Override
     protected void createBlockStateDefinition(StateDefinition.Builder<Block, BlockState> builder) {
-        builder.add(CHECK_DECAY);
+        builder.add(CHECK_DECAY, PERSISTENT);
+    }
+
+    @Override
+    public BlockState getStateForPlacement(BlockPlaceContext context) {
+        return defaultBlockState().setValue(PERSISTENT, true);
     }
 
     /**
@@ -110,16 +119,39 @@ public class BlockSpaceLeaves extends CompatBlock {
     @Override
     protected BlockState onUpdateShape(BlockState state, LevelReader level, BlockTickScheduler ticks, BlockPos pos,
                                        Direction direction, BlockPos neighbourPos, BlockState neighbourState) {
-        if (neighbourState.isAir() && !state.getValue(CHECK_DECAY)) return state.setValue(CHECK_DECAY, true);
+        if (!state.getValue(PERSISTENT) && neighbourState.isAir() && !state.getValue(CHECK_DECAY)) return state.setValue(CHECK_DECAY, true);
         return state;
     }
 
     /** 1.7 {@code BlockLeaves.breakBlock}: flag every leaf in the 3-cube around a removed leaf. */
     @Override
     protected void onBlockRemoved(BlockState state, Level level, BlockPos pos, boolean movedByPiston) {
-        for (BlockPos p : BlockPos.betweenClosed(pos.offset(-1, -1, -1), pos.offset(1, 1, 1))) {
+        flagNearby(level, pos, 1);
+    }
+
+    /** 1.7 BlockLog.breakBlock flags leaves in its four-block range, including non-player removals. */
+    public static void watchLogRemovals() {
+        BlockChanges.onChange(new BlockChanges.Handler() {
+            @Override
+            public boolean observesChunk(ServerLevel level, int chunkX, int chunkZ) {
+                // New terrain needs no removal notifications; keep bulk generation's edit capture disabled.
+                return level.hasChunk(chunkX, chunkZ);
+            }
+
+            @Override
+            public void onChange(ServerLevel level, BlockPos pos, BlockState before, BlockState after) {
+                if (before.getBlock() == after.getBlock() || !before.is(BlockTags.LOGS)) return;
+                if (!level.hasChunksAt(pos.offset(-RANGE - 1, -RANGE - 1, -RANGE - 1),
+                        pos.offset(RANGE + 1, RANGE + 1, RANGE + 1))) return;
+                flagNearby(level, pos, RANGE);
+            }
+        });
+    }
+
+    private static void flagNearby(Level level, BlockPos pos, int range) {
+        for (BlockPos p : BlockPos.betweenClosed(pos.offset(-range, -range, -range), pos.offset(range, range, range))) {
             BlockState other = level.getBlockState(p);
-            if (other.getBlock() instanceof BlockSpaceLeaves && !other.getValue(CHECK_DECAY)) {
+            if (other.getBlock() instanceof BlockSpaceLeaves && !other.getValue(PERSISTENT) && !other.getValue(CHECK_DECAY)) {
                 level.setBlock(p, other.setValue(CHECK_DECAY, true), 4);
             }
         }
@@ -127,13 +159,13 @@ public class BlockSpaceLeaves extends CompatBlock {
 
     @Override
     public boolean isRandomlyTicking(BlockState state) {
-        return state.getValue(CHECK_DECAY);
+        return state.getValue(CHECK_DECAY) && !state.getValue(PERSISTENT);
     }
 
     /** 1.7 {@code updateTick}: the search, then the flag cleared or {@code removeLeaves} (drop, then air). */
     @Override
     public void randomTick(BlockState state, ServerLevel level, BlockPos pos, RandomSource random) {
-        if (!state.getValue(CHECK_DECAY)) return;
+        if (!state.getValue(CHECK_DECAY) || state.getValue(PERSISTENT)) return;
         if (!level.hasChunksAt(pos.offset(-RANGE - 1, -RANGE - 1, -RANGE - 1), pos.offset(RANGE + 1, RANGE + 1, RANGE + 1))) return;
         if (connected(level, pos)) {
             level.setBlock(pos, state.setValue(CHECK_DECAY, false), 4);

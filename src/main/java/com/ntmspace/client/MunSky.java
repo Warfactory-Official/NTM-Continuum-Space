@@ -1,5 +1,7 @@
 package com.ntmspace.client;
 
+import net.minecraft.resources.ResourceKey;
+import net.minecraft.world.level.Level;
 import com.mojang.blaze3d.vertex.PoseStack;
 import com.mojang.math.Axis;
 import com.ntmspace.NtmSpace;
@@ -116,7 +118,7 @@ public final class MunSky implements Skyboxes.Skybox {
         renderSun(sky, body.getStar(), CelestialSkyColors.sunColor(level), (float) sunSize, (float) coronaSize, visibility, pressure);
 
         float blendAmount = hasAtmosphere ? Mth.clamp(1 - SpaceSkies.daylight(level, partialTicks), 0.25F, 1F) : 1F;
-        List<SolarSystem.AstroMetric> metrics = SolarSystem.calculateMetricsFromBody(ticks, body, solarAngle);
+        List<SolarSystem.AstroMetric> metrics = SolarSystem.calculateClientMetricsFromBody(ticks, body, solarAngle);
         renderCelestials(sky, metrics, planetTint, visibility, blendAmount, SolarSystem.MAX_APPARENT_SIZE_SURFACE);
         // satellites, the held satellite's preview and the stations (1.7: while visibility > 0.2)
         if (visibility > 0.2F) CelestialSkyObjects.orbiters(sky, level, body, solarAngle);
@@ -179,6 +181,11 @@ public final class MunSky implements Skyboxes.Skybox {
         return a + (b - a) * t;
     }
 
+    /** Whether this native sky uses Laythe's three additive sunset fans. */
+    public static boolean laytheSunset(ResourceKey<Level> dimension) {
+        return dimension.equals(SpaceDimensions.LAYTHE);
+    }
+
     /**
      * {@code SkyProviderCelestial.renderSunset}: vanilla's sunrise fan (alpha blend) in the colours of
      * {@link CelestialSkyColors#skySunset}, or on Laythe {@code SkyProviderLaytheSunset}'s three wider fans with
@@ -186,7 +193,7 @@ public final class MunSky implements Skyboxes.Skybox {
      * drawn.
      */
     private static void renderSunset(Sky sky, ClientLevel level, float solarAngle) {
-        boolean laythe = level.dimension().equals(SpaceDimensions.LAYTHE);
+        boolean laythe = laytheSunset(level.dimension());
         float[] c = laythe ? CelestialSkyColors.providerSunset(level, solarAngle) : CelestialSkyColors.skySunset(level, solarAngle);
         if (c == null) return;
         float direction = Mth.sin(solarAngle * (float) Math.PI * 2.0F) < 0.0F ? 180.0F : 0.0F;

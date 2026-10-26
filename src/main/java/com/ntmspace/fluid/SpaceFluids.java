@@ -1,5 +1,6 @@
 package com.ntmspace.fluid;
 
+import com.hbm.tileentity.machine.TileEntityMachineTeleporter;
 import com.hbm.inventory.fluid.FluidProperties;
 import com.hbm.inventory.fluid.FluidType;
 import com.hbm.inventory.fluid.Fluids;
@@ -87,6 +88,71 @@ public final class SpaceFluids {
     public static final FluidType LITHYDRO = Fluids.register(NtmSpace.MOD_ID, "LITHYDRO", 0xD1CEBE);
     public static final FluidType LITHCARBONATE = Fluids.register(NtmSpace.MOD_ID, "LITHCARBONATE", 0xD1CEBE);
 
+    /** The authored fluid placements, separate from registration and network IDs. */
+    private static void orderDisplay() {
+        Fluids.orderAfter(NITROGEN, Fluids.MERCURY);
+        Fluids.orderAfter(AMMONIA, HCL);
+        Fluids.orderAfter(HYDRAZINE, Fluids.NITAN);
+        Fluids.orderAfter(BLOODGAS, Fluids.BLOOD);
+        Fluids.orderAfter(EARTHAIR, CHLOROETHANE);
+        Fluids.orderAfter(HCL, Fluids.NITRIC_ACID);
+        Fluids.orderAfter(MINSOL, Fluids.ENDERJUICE);
+        Fluids.orderAfter(NEON, ARGON);
+        Fluids.orderAfter(ARGON, Fluids.XENON);
+        Fluids.orderAfter(KRYPTON, Fluids.PLASMA_BF);
+        Fluids.orderAfter(COFFEE, HONEY);
+        Fluids.orderAfter(TEA, NEON);
+        Fluids.orderAfter(HONEY, TEA);
+        Fluids.orderAfter(MILK, COFFEE);
+        Fluids.orderAfter(SMILK, MILK);
+        Fluids.orderAfter(CCL, SMILK);
+        Fluids.orderAfter(EVEAIR, DUNAAIR);
+        Fluids.orderAfter(KMnO4, HTCO4);
+        Fluids.orderAfter(CHLOROMETHANE, LITHCARBONATE);
+        Fluids.orderAfter(METHANOL, CHLOROMETHANE);
+        Fluids.orderAfter(BROMINE, Fluids.SULFURIC_ACID);
+        Fluids.orderAfter(CHLOROETHANE, POLYTHYLENE);
+        Fluids.orderAfter(POLYTHYLENE, METHANOL);
+        Fluids.orderAfter(FLUORINE, Fluids.CHLORINE);
+        Fluids.orderAfter(TEKTOAIR, NGAS);
+        Fluids.orderAfter(ELBOWGREASE, CCL);
+        Fluids.orderAfter(NMASSTETRANOL, Fluids.ETHANOL);
+        Fluids.orderAfter(NMASS, MINSOL);
+        Fluids.orderAfter(SCUTTERBLOOD, Fluids.BLOOD_HOT);
+        Fluids.orderAfter(HTCO4, Fluids.RADIOSOLVENT);
+        Fluids.orderAfter(JOOLGAS, EVEAIR);
+        Fluids.orderAfter(SARNUSGAS, JOOLGAS);
+        Fluids.orderAfter(UGAS, SARNUSGAS);
+        Fluids.orderAfter(NGAS, UGAS);
+        Fluids.orderAfter(EMILK, ELBOWGREASE);
+        Fluids.orderAfter(CMILK, EMILK);
+        Fluids.orderAfter(CREAM, CMILK);
+        Fluids.orderAfter(MAGMA, Fluids.BALEFIRE);
+        Fluids.orderAfter(DICYANOACETYLENE, CONGLOMERA);
+        Fluids.orderAfter(BRINE, MAGMA);
+        Fluids.orderAfter(CONGLOMERA, BRINE);
+        Fluids.orderAfter(DUNAAIR, EARTHAIR);
+        Fluids.orderAfter(SUPERHEATED_HYDROGEN, Fluids.MUG_HOT);
+        Fluids.orderAfter(GAS_WATZ, SUPERHEATED_HYDROGEN);
+        Fluids.orderAfter(URANIUM_BROMIDE, BROMINE);
+        Fluids.orderAfter(AQUEOUS_COPPER, THORIUM_BROMIDE);
+        Fluids.orderAfter(COPPERSULFATE, AQUEOUS_COPPER);
+        Fluids.orderAfter(THORIUM_BROMIDE, URANIUM_BROMIDE);
+        Fluids.orderAfter(GASEOUS_URANIUM_BROMIDE, GAS_WATZ);
+        Fluids.orderAfter(GASEOUS_PLUTONIUM_BROMIDE, GASEOUS_URANIUM_BROMIDE);
+        Fluids.orderAfter(GASEOUS_SCHRABIDIUM_BROMIDE, GASEOUS_PLUTONIUM_BROMIDE);
+        Fluids.orderAfter(GASEOUS_THORIUM_BROMIDE, GASEOUS_SCHRABIDIUM_BROMIDE);
+        Fluids.orderAfter(HGAS, DICYANOACETYLENE);
+        Fluids.orderAfter(AQUEOUS_NICKEL, Fluids.ALUMINA);
+        Fluids.orderAfter(VINYL, HGAS);
+        Fluids.orderAfter(TCRUDE, VINYL);
+        Fluids.orderAfter(CBENZ, TCRUDE);
+        Fluids.orderAfter(HALOLIGHT, CBENZ);
+        Fluids.orderAfter(LITHYDRO, COPPERSULFATE);
+        Fluids.orderAfter(LITHCARBONATE, LITHYDRO);
+        Fluids.orderAfter(Fluids.XENON, KRYPTON);
+    }
+
     private SpaceFluids() {}
 
     private static boolean initialised;
@@ -95,6 +161,7 @@ public final class SpaceFluids {
     public static synchronized void init() {
         if (initialised) return;
         initialised = true;
+        orderDisplay();
         SpaceFluidTraits.register();
         List<FluidType> all = List.of(
             NITROGEN, AMMONIA, HYDRAZINE, BLOODGAS, EARTHAIR, HCL, MINSOL, NEON, ARGON, KRYPTON, COFFEE, TEA, HONEY,
@@ -111,5 +178,7 @@ public final class SpaceFluids {
         // hbm-space's changes to HBM's own fluids, data/ntmspace/fluid_property_patch/hbm/*.json (see the class comment)
         FluidProperties.applyBundledPatches(SpaceFluids.class, NtmSpace.MOD_ID);
         Fluids.declareVanilla(NtmSpace.MOD_ID, all);
+        // Space 1.7: one 16,000 mB N-MASS tank; crossing consumes 100 mB before the attempted send.
+        TileEntityMachineTeleporter.configureCrossingFuel(() -> NMASS, 16_000, 100);
     }
 }

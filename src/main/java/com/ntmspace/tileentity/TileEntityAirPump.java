@@ -42,9 +42,6 @@ public class TileEntityAirPump extends TileEntityLoadedBase implements IFluidSta
     // Bubble registration wait, so it has time to fill out the bubble before running (for recovering fill in a chunk that just loaded)
     private int recovering = 0;
 
-    // Tile initialisation wait, for systems that run too fast and finish bubbling before chunks have time to load
-    private int registerWait = 10;
-
     private @Nullable AtmosphereBlob currentBlob;
     private int airFill = 0; // How many blocks are filled with air in the blob
     private int wasteFill = 0; // How many air blocks worth of waste gas has been produced
@@ -97,14 +94,12 @@ public class TileEntityAirPump extends TileEntityLoadedBase implements IFluidSta
         setupAllPorts(getPorts());
         updatePortFIFO();
         if (onTicks > 0) onTicks--;
-        if (registerWait > 0) registerWait--;
 
         if (tank.getFill() + bonusFill >= 20) {
             onTicks = 20;
 
-            if (registerWait > 0) {
-                // do nothing
-            } else if (!registered) {
+            // Loaded block entities can discover their room immediately; registration completes the flood synchronously.
+            if (!registered) {
                 AtmosphereHandler.registerAtmosphere(this);
                 registered = true;
                 if (airFill > 1) recovering = 100;

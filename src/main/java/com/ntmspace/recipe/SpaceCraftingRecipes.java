@@ -2,6 +2,7 @@ package com.ntmspace.recipe;
 
 
 import static dev.golem.core.dejson.Crafting.anyOf;
+import static dev.golem.core.dejson.Crafting.blast;
 import static dev.golem.core.dejson.Crafting.componentShaped;
 import static dev.golem.core.dejson.Crafting.componentShapeless;
 import static dev.golem.core.dejson.Crafting.fluid;
@@ -343,6 +344,9 @@ public final class SpaceCraftingRecipes {
                 key("K", fluid("OXYGEN", 1000)));
         shaped(NS, "air_vent", ns("air_vent"), rows("IGI", "ICI", "IDI"),
                 "I", "#c:plates/iron", "G", "minecraft:iron_bars", "C", "hbm:tank_steel", "D", "minecraft:dispenser");
+        // 1.7 Space CraftingManager:765: the angel spawner (meteorite/divine-shard/balefire-shard cross)
+        shaped(NS, "spawn_angel", ns("spawn_angel"), rows("MSM", "SBS", "MSM"),
+                "M", "hbm:ingot_meteorite", "S", ns("divine_shard"), "B", "hbm:egg_balefire_shard");
     }
 
     // --------------------------------------------------------------------------------------------- SmeltingRecipes
@@ -366,6 +370,9 @@ public final class SpaceCraftingRecipes {
         oreSmelt("ore_lanthanium", "hbm:ingot_lanthanium", 4.0);
         oreSmelt("ore_niobium", "hbm:ingot_niobium", 4.0);
         oreSmelt("ore_australium", "hbm:nugget_australium", 2.5);
+        // raw australium smelts to its nugget (SpaceRawOreRecipes.cooking)
+        smelt(NS, "nugget_australium_from_raw_australium", ns("raw_australium"), "hbm:nugget_australium", 2.5);
+        blast(NS, "nugget_australium_from_raw_australium_blasting", ns("raw_australium"), "hbm:nugget_australium", 2.5);
         // meteor aluminium ore: 16 cryolite chunks became 16 aluminium ingots (replacement)
         smelt(NS, "smelting/ingot_aluminium_from_ore_meteor_aluminium", "hbm:ore_meteor_aluminium",
                 "hbm:ingot_aluminium", 10.0, 16);

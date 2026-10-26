@@ -16,7 +16,6 @@ import dev.golem.core.registry.LivingAttributes;
 import dev.golem.core.registry.Loot;
 import dev.golem.core.registry.Registrar;
 import dev.golem.core.registry.RegistryObject;
-import dev.golem.core.registry.Tabs;
 import dev.golem.core.world.SpawnEggs;
 import net.minecraft.sounds.SoundEvent;
 import net.minecraft.world.entity.EntityType;
@@ -24,7 +23,6 @@ import net.minecraft.world.entity.MobCategory;
 import net.minecraft.world.inventory.MenuType;
 import net.minecraft.world.item.BlockItem;
 import net.minecraft.world.item.Item;
-import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.block.SoundType;
 import net.minecraft.world.level.block.entity.BlockEntityType;
 
@@ -70,7 +68,7 @@ public final class WarContent {
 
     /** 1.7 {@code EntityUFOBase} is {@code ISuffocationImmune} in hbm-space, so the craft is too. */
     public static final Registrar.EntityHandle<EntitySiegeCraft> SIEGE_CRAFT = REG.entity("entity_micro_ufo", key -> Entities.build(
-                    Entities.noLoot(EntityType.Builder.<EntitySiegeCraft>of(EntitySiegeCraft::new, MobCategory.MONSTER))
+                    EntityType.Builder.<EntitySiegeCraft>of(EntitySiegeCraft::new, MobCategory.MONSTER)
                             .sized(7.0F, 1.0F).fireImmune().clientTrackingRange(5).updateInterval(3), key))
             .tag(SpaceMobs.SUFFOCATION_IMMUNE);
 
@@ -83,8 +81,7 @@ public final class WarContent {
 
     public static void init() {
         LivingAttributes.register(SIEGE_CRAFT, EntitySiegeCraft::createAttributes);
-        Tabs.modifyEntries(net.minecraft.resources.ResourceKey.create(net.minecraft.core.registries.Registries.CREATIVE_MODE_TAB,
-                dev.golem.core.Ids.of("minecraft", "spawn_eggs")), entries -> entries.accept(new ItemStack(SIEGE_CRAFT_EGG.get())));
+        // The egg joins vanilla spawn_eggs through SpaceCreativeOrder's anchored insertions, like the other eggs.
         com.ntmspace.war.Invasions.init();
         com.ntmspace.war.WarSatellites.init();
         com.ntmspace.war.ThatmoStrikes.init();

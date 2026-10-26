@@ -129,6 +129,12 @@ public final class NukeShocks {
         GolemNetwork.sendToPlayer(player, CODEC, new Payload(copy));
     }
 
+    /** The body's live server list; trigger and sync own its expiry cadence. */
+    public static List<Shock> serverShocks(String body) {
+        var list = SERVER.get(body);
+        return list == null ? Collections.emptyList() : list;
+    }
+
     /** {@code getClientShocks}: the body's shocks on this client, without those 1.7's next sync would have dropped. */
     public static List<Shock> clientShocks(String body, long now) {
         List<Shock> list = CLIENT.get(body);

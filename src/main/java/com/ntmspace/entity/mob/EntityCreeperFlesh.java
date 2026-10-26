@@ -12,12 +12,8 @@ import com.hbm.particle.helper.ParticleCreators;
 import com.ntmspace.registry.PopulateBlocks;
 import net.minecraft.core.BlockPos;
 import net.minecraft.server.level.ServerLevel;
-import net.minecraft.world.damagesource.DamageSource;
 import net.minecraft.world.entity.EntitySpawnReason;
 import net.minecraft.world.entity.EntityType;
-import net.minecraft.world.entity.LivingEntity;
-import net.minecraft.world.item.ItemStack;
-import net.minecraft.world.item.Items;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.LevelAccessor;
 
@@ -48,20 +44,6 @@ public class EntityCreeperFlesh extends EntityCreeperBase {
         vnt.setPlayerProcessor(new PlayerProcessorStandard());
         vnt.setSFX(new ExplosionEffectStandard());
         vnt.explode();
-    }
-
-    /**
-     * 1.7 kept {@code EntityCreeper}'s drops: {@code rand.nextInt(3)} gunpowder plus {@code rand.nextInt(looting + 1)}
-     * when looting is above 0 (the type has no loot table; the music disc is {@link EntityCreeperBase}'s).
-     */
-    @Override
-    protected void dropCustomDeathLoot(ServerLevel level, DamageSource source, boolean killedByPlayer) {
-        super.dropCustomDeathLoot(level, source, killedByPlayer);
-        int looting = source.getEntity() instanceof LivingEntity attacker
-                ? dev.golem.core.world.Compat.lootingLevel(level, attacker) : 0;
-        int j = this.random.nextInt(3);
-        if (looting > 0) j += this.random.nextInt(looting + 1);
-        for (int k = 0; k < j; ++k) spawnAtLocation(level, new ItemStack(Items.GUNPOWDER));
     }
 
     /**

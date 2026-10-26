@@ -34,12 +34,15 @@ import com.ntmspace.tileentity.station.TileEntityOrbitalStation;
 import com.ntmspace.world.SolarSystem;
 import dev.golem.core.gametest.GameTestHelpers;
 import dev.golem.core.gametest.GameTests;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.gametest.framework.GameTestHelper;
 import net.minecraft.network.chat.Component;
+import net.minecraft.network.chat.contents.TranslatableContents;
 import net.minecraft.world.item.ItemStack;
 
 /**
@@ -115,7 +118,7 @@ public final class RocketGameTests {
 
     // ---------------------------------------------------------------------------------------- rockets
 
-    private static RocketPart part(String id) {
+    static RocketPart part(String id) {
         RocketPart part = RocketParts.get(id);
         if (part == null) throw new IllegalStateException("no rocket part " + id);
         return part;
@@ -150,8 +153,14 @@ public final class RocketGameTests {
         return SolarSystem.body(name);
     }
 
-    private static boolean hasIssue(List<Component> issues, String text) {
-        for (Component issue : issues) if (issue.getString().equals(text)) return true;
+    private static boolean issueMatches(Component issue, String key, Object... arguments) {
+        return issue.getContents() instanceof TranslatableContents translated
+                && translated.getKey().equals("desc.gui.rocket." + key)
+                && Arrays.equals(translated.getArgs(), arguments);
+    }
+
+    private static boolean hasIssue(List<Component> issues, String key, Object... arguments) {
+        for (var issue : issues) if (issueMatches(issue, key, arguments)) return true;
         return false;
     }
 
@@ -162,16 +171,16 @@ public final class RocketGameTests {
         RocketStruct mismatch = new RocketStruct(part(RocketParts.CAPSULE));
         mismatch.addStage(part("hbm:mp_fuselage_15_kerosene"), null, part("ntmspace:mp_thruster_20_hydrogen"), 1, 1);
         helper.assertTrue(!mismatch.validate(), "kerosene fuselage + hydrogen thruster must be invalid");
-        helper.assertTrue(hasIssue(mismatch.findIssues(0, null, null, false, false), "Stage 1 fuel mismatch"), "fuel mismatch issue");
+        helper.assertTrue(hasIssue(mismatch.findIssues(0, null, null, false, false), "fuelMismatch", 1), "fuel mismatch issue");
 
         // too many and uneven thrusters
         RocketStruct tooMany = new RocketStruct(part(RocketParts.CAPSULE));
         tooMany.addStage(part("ntmspace:rp_f_20_12"), null, part("hbm:mp_thruster_20_kerosene"), 1, 2);
-        helper.assertTrue(!tooMany.validate() && hasIssue(tooMany.findIssues(0, null, null, false, false), "Stage 1 too many thrusters"),
+        helper.assertTrue(!tooMany.validate() && hasIssue(tooMany.findIssues(0, null, null, false, false), "tooManyThrusters", 1),
                 "1 fuselage, 2 thrusters: too many");
         RocketStruct uneven = new RocketStruct(part(RocketParts.CAPSULE));
         uneven.addStage(part("ntmspace:rp_f_20_12"), null, part("hbm:mp_thruster_20_kerosene"), 3, 2);
-        helper.assertTrue(!uneven.validate() && hasIssue(uneven.findIssues(0, null, null, false, false), "Stage 1 uneven thrusters"),
+        helper.assertTrue(!uneven.validate() && hasIssue(uneven.findIssues(0, null, null, false, false), "unevenThrusters", 1),
                 "3 fuselages, 2 thrusters: uneven");
 
         // no payload / no stages / a missile warhead payload
@@ -179,21 +188,21 @@ public final class RocketGameTests {
         helper.assertTrue(!noStages.validate(), "a capsule alone is no rocket");
         RocketStruct warhead = new RocketStruct(part("hbm:mp_warhead_15_he"));
         warhead.addStage(part("ntmspace:rp_f_20_12"), null, part("hbm:mp_thruster_20_kerosene"), 1, 1);
-        helper.assertTrue(!warhead.validate() && hasIssue(warhead.findIssues(0, null, null, false, false), "Invalid Capsule/Satellite"),
+        helper.assertTrue(!warhead.validate() && hasIssue(warhead.findIssues(0, null, null, false, false), "invalidCapsule"),
                 "an HE warhead is no payload");
 
         // the upper stage without legs warns, the stats lines lead
         List<Component> issues = r2().findIssues(0, body("kerbin"), body("mun"), false, false);
-        helper.assertTrue(issues.get(0).getString().equals("Dry mass: 39700kg") && issues.get(1).getString().equals("Wet mass: 87700kg")
-                        && issues.get(2).getString().equals("Thrust: 4608000N") && issues.get(3).getString().equals("ISP: 308s"),
+        helper.assertTrue(issueMatches(issues.get(0), "dryMass", 39700) && issueMatches(issues.get(1), "wetMass", 87700)
+                        && issueMatches(issues.get(2), "thrust", 4608000) && issueMatches(issues.get(3), "isp", 308),
                 "R2 stage 0 stats lines, got " + issues);
-        helper.assertTrue(hasIssue(issues, "Trip possible! 192000/71800mB"), "R2 Kerbin->Mun trip possible, got " + issues);
-        helper.assertTrue(hasIssue(r1().findIssues(0, null, null, false, false), "Dry mass: 14400kg"), "R1 dry mass line");
+        helper.assertTrue(hasIssue(issues, "tripPossible", 192000, 71800), "R2 Kerbin->Mun trip possible, got " + issues);
+        helper.assertTrue(hasIssue(r1().findIssues(0, null, null, false, false), "dryMass", 14400), "R1 dry mass line");
         RocketStruct legless = new RocketStruct(part(RocketParts.CAPSULE));
         legless.addStage(part("ntmspace:rp_f_20_6"), null, part("ntmspace:mp_thruster_20_methalox"), 1, 1);
         legless.addStage(part("ntmspace:rp_f_20_12"), null, part("hbm:mp_thruster_20_kerosene"), 1, 1);
-        helper.assertTrue(hasIssue(legless.findIssues(0, null, null, false, false), "Stage 2 lacks landing legs"), "upper stage without legs");
-        helper.assertTrue(hasIssue(r3().findIssues(0, body("kerbin"), body("mun"), false, false), "Insufficient fuel: 16000/22300mB"),
+        helper.assertTrue(hasIssue(legless.findIssues(0, null, null, false, false), "noLegs", 2), "upper stage without legs");
+        helper.assertTrue(hasIssue(r3().findIssues(0, body("kerbin"), body("mun"), false, false), "insufficientFuel", 16000, 22300),
                 "R3 insufficient fuel line");
 
         // the payload slot: capsules and satellites, not the pod
@@ -265,7 +274,9 @@ public final class RocketGameTests {
                 && new ItemStack(RocketItems.MP_THRUSTER_20_METHALOX.get()).getMaxStackSize() == 64
                 && new ItemStack(RocketItems.RP_L_20.get()).getMaxStackSize() == 1
                 && new ItemStack(RocketItems.RP_C_20.get()).getMaxStackSize() == 1, "NTM: Space's parts as hbm-space");
-        helper.assertTrue(RocketParts.all().size() == 147, "147 rocket parts, found " + RocketParts.all().size());
+        var science = Set.of("hbm:satellite_science", "hbm:satellite_science_sensor", "hbm:satellite_science_assembler");
+        var legacy = RocketParts.all().stream().filter(part -> !science.contains(part.id())).count();
+        helper.assertTrue(legacy == 147, "147 legacy rocket parts, found " + legacy);
         int missing = 0;
         for (RocketPart part : RocketParts.all()) if (part.item() == net.minecraft.world.item.Items.AIR) missing++;
         helper.assertTrue(missing == 0, missing + " rocket parts have no registered item");
@@ -320,7 +331,7 @@ public final class RocketGameTests {
         });
     }
 
-    private static ItemStack driveTo(DriveBody body, int x, int z) {
+    static ItemStack driveTo(DriveBody body, int x, int z) {
         ItemStack drive = new ItemStack(RocketItems.drive(body));
         RocketItems.DRIVE.set(drive, DriveData.EMPTY.withCoordinates(x, z).withProcessed(true));
         return drive;
@@ -370,7 +381,7 @@ public final class RocketGameTests {
         int freq = 424242;
         ItemStack stack = ItemCustomRocket.build(r5());
         ISatChip.setFreqS(stack, freq);
-        EntityRideableRocket rocket = EntityRideableRocket.create(helper.getLevel(), base.getX() + 0.5F, base.getY(), base.getZ() + 0.5F, stack)
+        EntityRideableRocket rocket = EntityRideableRocket.create(helper.getLevel(), base.getX() + 0.5, base.getY(), base.getZ() + 0.5, stack)
                 .withProgram(driveTo(DriveBody.KERBIN, base.getX(), base.getZ()));
         helper.assertTrue(!rocket.canRide(), "a satellite rocket carries no crew");
         // The rocket pitches over to 45 degrees towards +X (yaw -90) and passes y 900 about 760 blocks east of the pad
@@ -399,8 +410,8 @@ public final class RocketGameTests {
 
     private static void landing(GameTestHelper helper) {
         BlockPos ground = helper.absolutePos(new BlockPos(2, 1, 2));
-        EntityRideableRocket rocket = EntityRideableRocket.create(helper.getLevel(), ground.getX() + 0.5F, ground.getY() + 20F,
-                ground.getZ() + 0.5F, ItemCustomRocket.build(r1()));
+        EntityRideableRocket rocket = EntityRideableRocket.create(helper.getLevel(), ground.getX() + 0.5, ground.getY() + 20,
+                ground.getZ() + 0.5, ItemCustomRocket.build(r1()));
         rocket.setState(RocketState.LANDING);
         Runnable release = PlotChunks.force(helper, 16);
         helper.getLevel().addFreshEntity(rocket);

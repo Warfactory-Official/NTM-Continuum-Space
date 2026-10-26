@@ -20,6 +20,13 @@ public final class StationItemDeclarations {
         if (declared) return;
         declared = true;
 
+        // Space RenderLPW2.getRenderer: inventory T(1, -1, 0) S1.6; common S0.5 and the raw renderAll mesh.
+        Dejson.item("hbm", "machine_lpw2")
+                .definition(MachineObjModel.of("hbm:models/machines/lpw2.obj", "hbm:textures/models/machines/lpw2.png")
+                        .scale(0.5).ty(0.0).yaw(0.0).guiScale(1.6).rawLegacyTransform().rawMeshInNone()
+                        .guiTranslate(1.0, -1.0, 0.0))
+                .oversizedInGui().register();
+
         // RenderOrbitalStation: inv translate(0, 2, 0) scale(2); common cull off, docking_port.renderAll
         for (String id : new String[] {"orbital_station", "orbital_station_port"}) {
             Dejson.item(NS, id)

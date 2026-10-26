@@ -3,7 +3,7 @@ package com.ntmspace.recipes.data;
 import dev.golem.core.world.DataSource;
 import java.util.List;
 
-/** Data agent D4's sources: NTM: Space's removal lists, its patches of HBM's data maps and its item pools. */
+/** NTM: Space's removal lists, its patches of HBM's data maps and its item pools. */
 public final class D4Sources {
 
     private D4Sources() {
@@ -23,6 +23,7 @@ public final class D4Sources {
                 new SpaceMachineValues.Satellites(),
                 new SpaceHazards(),
                 new SpaceWatzPellets(),
-                new SpaceItemPools());
+                new SpaceItemPools(),
+                new SpaceEntityLoot());
     }
 }

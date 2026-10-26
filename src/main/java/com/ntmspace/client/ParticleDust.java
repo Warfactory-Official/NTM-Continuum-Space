@@ -1,6 +1,7 @@
 package com.ntmspace.client;
 
 import com.hbm.client.particle.ParticleRotating;
+import dev.golem.core.client.Colors;
 import dev.golem.core.render.CompatParticle;
 import dev.golem.core.render.ParticleLayer;
 import dev.golem.core.render.Particles;
@@ -27,5 +28,13 @@ public final class ParticleDust extends CompatParticle {
         setAlpha(0.5F);
         this.hasPhysics = false;
         this.gravity = 0F;
+    }
+
+    public int argb(float partialTicks) {
+        return Colors.colorFromFloat(alpha, rCol, gCol, bCol);
+    }
+
+    public float size(float partialTicks) {
+        return getQuadSize(partialTicks);
     }
 }

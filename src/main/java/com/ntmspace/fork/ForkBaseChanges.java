@@ -1,5 +1,16 @@
 package com.ntmspace.fork;
 
+import com.hbm.blocks.multiblock.MultiblockPlacementEscape;
+import com.hbm.entity.mob.EntityQuackos;
+import com.hbm.entity.projectile.EntityChemical;
+import com.hbm.items.armor.ArmorDNT;
+import com.hbm.items.machine.ItemMold;
+import com.hbm.items.machine.ModMoldItems;
+import com.ntmspace.breathing.Breathing;
+import com.ntmspace.data.SpaceData;
+import com.ntmspace.inventory.material.SpaceAlloyMaterials;
+import com.ntmspace.registry.SpaceItems;
+import net.minecraft.world.item.ItemStack;
 import com.hbm.blocks.generic.BlockBobble.BobbleType;
 import com.hbm.blocks.machine.MachineElectrolyser;
 import com.hbm.blocks.multiblock.BlockMultiblockCore;
@@ -17,8 +28,10 @@ import com.hbm.util.ContaminationUtil;
 import com.ntmspace.NtmSpace;
 import dev.golem.core.Ids;
 import dev.golem.core.dejson.Variants;
+import dev.golem.core.dejson.Models;
 import dev.golem.core.hook.Verdict;
 import dev.golem.core.registry.BlockEntities;
+import dev.golem.core.registry.BlockTag;
 import dev.golem.core.registry.DeferredRegister;
 import dev.golem.core.registry.Loot;
 import dev.golem.core.registry.Registrar;
@@ -80,10 +93,10 @@ public final class ForkBaseChanges {
      */
     public static final RegistryObject<ComplexCapacitor> CAPACITOR_COMPLEX = REG.block("capacitor_complex",
                     p -> new ComplexCapacitor(p, 100_000_000_000_000_000L),
-                    p -> p.strength(5.0F, 10.0F).sound(SoundType.METAL).noOcclusion())
+                    p -> p.strength(5.0F, 10.0F).sound(SoundType.METAL).requiresCorrectToolForDrops().noOcclusion())
             .transform(Presets.statesOnly(Variants.facingUp()))
-            .icon(d -> d.shares(NS + ":block/capacitor_complex"))
-            .loot(Loot.self());
+            .icon(d -> d.models(Models.blockItem(NS + ":block/capacitor_complex")))
+            .loot(Loot.self()).tag(BlockTag.PICKAXE);
     public static final RegistryObject<BlockItem> CAPACITOR_COMPLEX_ITEM = REG.<BlockItem>item("capacitor_complex",
                     (Item.Properties p) -> new EnergyNetBlockItem(CAPACITOR_COMPLEX.get(), Compat.blockDescription(p),
                             stack -> CAPACITOR_COMPLEX.get().tooltip(stack, COMPLEX_LORE.stream()
@@ -100,14 +113,19 @@ public final class ForkBaseChanges {
     public static synchronized void init() {
         if (started) return;
         started = true;
+        EntityChemical.seedSlurrySingleBlock = true;
+        ArmorDNT.SILENT_ATTACK.register(source ->
+                source.is(Breathing.OXYPRIME));
         BlockMultiblockCore.wallPlacement = true;
         BlockMultiblockCore.walkOutAfterPlacing = true;
+        MultiblockPlacementEscape.init();
         TileEntityCranePartitioner.inputCount = 96;
         TileEntityCranePartitioner.outputCount = 8;
         TileEntityPneumoTube.anyGas = true;
         MachineElectrolyser.sidePorts = true;
         EntityTntNtm.spin = true;
         EntityGhost.watchPlayers = true;
+        EntityQuackos.serverSafety = SpaceData.SERVER_SAFETY::get;
         TileEntityGeiger.probabilisticClicks = true;
         // hbm-space ItemDosimeter: below 1 RAD/s a click only as likely as the dose (V-186)
         com.hbm.items.tool.ItemDosimeter.probabilisticClicks = true;
@@ -128,6 +146,13 @@ public final class ForkBaseChanges {
         ContaminationUtil.RAD_IMMUNE.register(entity -> entity.getType() == EntityType.OCELOT || entity.getType() == EntityType.CAT
                 ? Verdict.DENY : Verdict.PASS);
         bobbleCredits();
+    }
+
+    /** Extends the registered native blade mold, retaining its titanium and tungsten casts. */
+    public static void registered() {
+        var blade = (ItemMold.MoldMulti) ModMoldItems.mold_blade.get().mold;
+        blade.add(SpaceAlloyMaterials.STAINLESS,
+                () -> new ItemStack(SpaceItems.BLADE_SYNGAS.get()));
     }
 
     /** hbm-space {@code BlockBobble.BobbleType}: the credits and plastic scraps it changed on HBM's own figures. */

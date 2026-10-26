@@ -32,7 +32,7 @@ import net.minecraft.world.level.block.Blocks;
  * hbm-space {@code ChemicalPlantRecipes.registerDefaults}: the rows hbm-space changes in HBM's table ({@code chem.biogas},
  * {@code chem.rubber}: they replace HBM's rows, removed by {@code recipe_removals/chemical_plant.json}, and take HBM's
  * {@code order}), {@code chem.vinylrubber} (right after {@code chem.rubber}, same order; ids sort it after) and the
- * {@code /// NTM SPACE ///} block, appended after 1.7's last row (HBM order 73), one order each. The changed and
+ * {@code /// NTM SPACE ///} block, appended after the loaded HBM rows, one order each. The changed and
  * following rows look HBM's order up from its loaded table. 1.7's
  * {@code GeneralConfig.enable528PressurizedRecipes ? p : 0} and {@code GeneralConfig.enable528 ? p : 0} pressures are one
  * row per branch: the default (pressure 0) keeps its id with {@code requires: ["!<flag>"]}, the other is
@@ -84,8 +84,8 @@ public final class ChemicalPlantTable extends GenericTableSource<GenericRecipe> 
                 .outputItems(new ItemStack(ModItems.ingot_rubber.get(), 2))));
 
         /// NTM SPACE ///
-        // after HBM's last row (order 73): no HBM row to follow, so these keep their own numbers, one order each
-        int o = 74;
+        // Base tables can gain rows; keep the appended Space run contiguous after their actual last order.
+        var o = orderAfterBase(recipe -> recipe.order);
         this.register(at(o++, new GenericRecipe("chem.coppersulf").setup(50, 100).setIcon(ItemFluidIcon.make(SpaceFluids.COPPERSULFATE))
                 .inputFluids(new FluidStack(SpaceFluids.AQUEOUS_COPPER, 500))
                 .outputItems(new ItemStack(SpaceItems.POWDER_NICKEL.get(), 2), new ItemStack(ModItems.powder_copper.get(), 2))
@@ -129,12 +129,13 @@ public final class ChemicalPlantTable extends GenericTableSource<GenericRecipe> 
                 .inputItems(new ComparableStack(ModItems.pellet_charged.get(), 1), new ComparableStack(ModItems.ingot_euphemium.get(), 1))
                 .outputFluids(new FluidStack(SpaceFluids.NMASS, 1000), new FluidStack(Fluids.WASTEGAS, 2000))));
 
-        this.register(at(o++, new GenericRecipe("chem.masscake").setup(200, 100)
-                .inputFluids(new FluidStack(SpaceFluids.CMILK, 4000), new FluidStack(SpaceFluids.CREAM, 1000))
+        // 1.7's 4-cake bulk craft quartered to one cake (cake stacks to 1)
+        this.register(at(o++, new GenericRecipe("chem.masscake").setup(50, 100)
+                .inputFluids(new FluidStack(SpaceFluids.CMILK, 1000), new FluidStack(SpaceFluids.CREAM, 250))
                 .inputItems(
-                        new ComparableStack(Items.SUGAR, 8),
-                        new ComparableStack(Items.EGG, 4))
-                .outputItems(new ItemStack(Items.CAKE, 4))));
+                        new ComparableStack(Items.SUGAR, 2),
+                        new ComparableStack(Items.EGG, 1))
+                .outputItems(new ItemStack(Items.CAKE, 1))));
 
         this.register(at(o++, new GenericRecipe("chem.butter").setup(100, 100)
                 .inputFluids(new FluidStack(SpaceFluids.EMILK, 1000))

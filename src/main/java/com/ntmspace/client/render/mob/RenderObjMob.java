@@ -59,7 +59,7 @@ public abstract class RenderObjMob<T extends Mob> extends CompatMobRenderer<T, R
     }
 
     @Override
-    protected void submitExtra(State state, PoseStack poseStack, SubmitSink sink, CameraInfo camera) {
+    public void submitExtra(State state, PoseStack poseStack, SubmitSink sink, CameraInfo camera) {
         if (state.isInvisible) return;
         poseStack.pushPose();
         livingFrame(state, poseStack, flipDegrees());
@@ -141,7 +141,7 @@ public abstract class RenderObjMob<T extends Mob> extends CompatMobRenderer<T, R
         /** The tankbot's absolute head yaw and its smoothed yaw towards the target. */
         public float headYawAbsolute;
         public float headTargetYaw;
-        /** The behemoth's raw (uninterpolated) pitch, which its 1.7 renderer smoothed towards the target. */
+        /** The behemoth's tick-interpolated aiming pitch. */
         public float rawPitch;
     }
 

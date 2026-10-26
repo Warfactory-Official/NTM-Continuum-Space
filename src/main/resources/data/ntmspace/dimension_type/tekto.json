@@ -10,10 +10,22 @@
     },
     "minecraft:gameplay/respawn_anchor_works": false,
     "minecraft:visual/fog_color": "#3f8c70",
-    "minecraft:visual/sky_color": "#245f46"
+    "minecraft:visual/sky_color": "#245f46",
+    "minecraft:audio/background_music": {
+      "creative": {
+        "max_delay": 24000,
+        "min_delay": 12000,
+        "sound": "ntmspace:music.game.space"
+      },
+      "default": {
+        "max_delay": 24000,
+        "min_delay": 12000,
+        "sound": "ntmspace:music.game.space"
+      }
+    }
   },
   "coordinate_scale": 1.0,
-  "default_clock": "minecraft:overworld",
+  "default_clock": "ntmspace:tekto",
   "has_ceiling": false,
   "has_ender_dragon_fight": false,
   "has_skylight": true,
@@ -23,5 +35,8 @@
   "min_y": 0,
   "monster_spawn_block_light_limit": 0,
   "monster_spawn_light_level": 0,
-  "timelines": "#minecraft:in_overworld"
+  "timelines": [
+    "ntmspace:tekto_day",
+    "ntmspace:tekto_villager_schedule"
+  ]
 }

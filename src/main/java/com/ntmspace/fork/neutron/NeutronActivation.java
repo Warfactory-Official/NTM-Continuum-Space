@@ -1,5 +1,7 @@
 package com.ntmspace.fork.neutron;
 
+import com.hbm.handler.HazmatRegistry;
+import net.minecraft.server.level.ServerLevel;
 import com.hbm.blocks.machine.DemonLamp;
 import com.hbm.capability.HbmLivingProps;
 import com.hbm.config.GeneralConfig;
@@ -9,16 +11,17 @@ import com.hbm.hazard.HazardSystem;
 import com.hbm.hazard.helper.HazardHelper;
 import com.hbm.hazard.modifier.IHazardModifier;
 import com.hbm.hazard.transformer.IHazardTransformer;
-import com.hbm.hazard.type.HazardTypeRadiation;
+import com.hbm.hazard.transformer.HazardTransformerRadiationNBT;
 import com.hbm.hazard.type.IHazardType;
 import com.hbm.tileentity.machine.BlockEntityDecon;
 import com.hbm.tileentity.machine.TileEntityReactorResearch;
 import com.hbm.tileentity.machine.TileEntityStorageDrum;
 import com.hbm.util.ContaminationUtil;
+import com.hbm.items.ModDataComponents;
+import com.hbm.handler.ArmorUtil;
 import com.ntmspace.NtmSpace;
 import com.ntmspace.config.SpaceConfig;
 import dev.golem.core.Ids;
-import dev.golem.core.data.EntityData;
 import dev.golem.core.data.GolemComponent;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
@@ -41,7 +44,7 @@ import net.minecraft.world.phys.AABB;
 import net.minecraft.world.phys.Vec3;
 
 /**
- * hbm-space's neutron activation, 1:1, behind hbm-space's own switch {@link SpaceConfig#disableNeutron}
+ * Space's persistent neutron activation, behind {@link SpaceConfig#disableNeutron}
  * ({@code HAZ_01_disableNeutrons}, default true: off). Ported from {@code hazard/type/HazardTypeNeutron},
  * {@code hazard/transformer/HazardTransformerRadiationNBT}, {@code hazard/type/HazardTypeRadiation} (the activation
  * term), {@code extprop/HbmLivingProps} ({@code activation}), {@code util/ContaminationUtil} (the NEUTRON branch and
@@ -54,17 +57,18 @@ import net.minecraft.world.phys.Vec3;
  * the reactor-grade plutonium, Pu-240, curium, Cf-252 and Es-253 shapes), a running research reactor whose sides are
  * not all shielded, and the demon lamp. Each irradiates the <em>living</em> entity (its {@code activation}, which in
  * turn adds radiation and decays with a 20 minute half life) and, for a player, <em>every stack in the main inventory
- * and armour slots</em> (a stack's activation, which makes it radioactive). Items lying on the ground, blocks and
+ * and armour slots, including the offhand</em> (a stack's activation, which makes it radioactive). Items lying on the ground, blocks and
  * containers are never activated; RTGs and the other reactors emit no neutrons in hbm-space.
  *
- * <p>State: a stack's activation is the item component {@code ntmspace:neutron_activation} (1.7's {@code ntmNeutron}
- * float tag), an entity's is the Golem attachment {@code ntmspace:neutron} ({@code activation}); both by name.
+ * <p>Activation uses HBM's {@code hbm:neutron_activation} item component and the neutron field of its
+ * {@code hbm:living_props} entity attachment. Gamma component radiation and activation combine before the
+ * positivity check and reacher curve; activation contributes once per item.
  *
  * <p>What stays on with the switch off is what hbm-space kept on: an activated stack still radiates (nothing activates
  * one while the switch is off), the decontaminator and the storage drum still decay stack activation, and the geiger
  * counter always prints the "Player radioactivity" line (0.0 RAD/s while off).
  *
- * <p>HBM hooks used (ADDON-API-INVENTORY.md H-77..H-82): {@code HazardTypeRadiation.STACK_RADIATION},
+ * <p>HBM hooks used: {@code HazardTransformerRadiationNBT.COMPONENT_RADIATION},
  * {@code TileEntityReactorResearch.RADIATING}, {@code DemonLamp.TileEntityDemonLamp.IRRADIATED},
  * {@code BlockEntityDecon.DECONTAMINATED}, {@code TileEntityStorageDrum.SLOT_TICK}, {@code ContaminationUtil.GEIGER_LINES};
  * and the existing {@code Environment.LIVING_TICK}, hazard type registry and {@code HazardSystem.trafos}.
@@ -75,16 +79,7 @@ public final class NeutronActivation {
     private NeutronActivation() {}
 
     /** 1.7 {@code HazardTypeNeutron.NEUTRON_KEY} ({@code "ntmNeutron"}): a stack's activation, RAD/s per item. */
-    public static final GolemComponent<Float> STACK = GolemComponent.floatValue(NtmSpace.MOD_ID, "neutron_activation");
-
-    /** 1.7 {@code HbmLivingProps.activation}. */
-    public static final class State {
-        public float activation;
-    }
-
-    public static final EntityData<State> ENTITY = EntityData.of(NtmSpace.MOD_ID, "neutron", LivingEntity.class, State::new,
-            (state, out) -> out.putFloat("activation", state.activation),
-            (state, in) -> state.activation = in.getFloatOr("activation", 0F));
+    public static final GolemComponent<Float> STACK = ModDataComponents.NEUTRON_ACTIVATION;
 
     /** 1.7 {@code HazardRegistry.NEUTRON}. */
     public static final IHazardType NEUTRON = HazardRegistry.registerType(Ids.of(NtmSpace.MOD_ID, "neutron"), new HazardTypeNeutron());
@@ -100,12 +95,34 @@ public final class NeutronActivation {
         SpaceConfig.load();
 
         HazardSystem.trafos.add(new Transformer());
-        HazardTypeRadiation.STACK_RADIATION.register(NeutronActivation::stackActivation);
+        HazardTransformerRadiationNBT.COMPONENT_RADIATION.register(NeutronActivation::stackActivation);
+        ContaminationUtil.registerNeutronSystem(new ContaminationUtil.NeutronSystem() {
+            public boolean enabled() { return NeutronActivation.enabled(); }
+            public float stackRads(ItemStack stack) { return activation(stack) * stack.getCount(); }
+            public boolean updateStack(ItemStack stack, float rad, float decay) {
+                if (stack.isEmpty()) return false;
+                Float before = STACK.get(stack).orElse(null);
+                float next = Math.max(0F, (before == null ? 0F : before) * decay + rad / stack.getCount());
+                if (next < 1e-5F) {
+                    STACK.remove(stack);
+                    return before != null;
+                }
+                STACK.set(stack, next);
+                return before == null || next != before;
+            }
+            public boolean contaminate(LivingEntity entity, ContaminationUtil.ContaminationType type, double amount) {
+                return NeutronActivation.contaminate(entity, type, amount);
+            }
+        });
         com.hbm.api.environment.Environment.LIVING_TICK.register(NeutronActivation::livingTick);
         TileEntityReactorResearch.RADIATING.register(NeutronActivation::researchReactor);
         DemonLamp.TileEntityDemonLamp.IRRADIATED.register(NeutronActivation::demonLamp);
         BlockEntityDecon.DECONTAMINATED.register((level, pos, entities) -> decon(entities));
-        TileEntityStorageDrum.SLOT_TICK.register((drum, slot, stack) -> decay(stack, DRUM_DECAY));
+        TileEntityStorageDrum.SLOT_TICK.register((drum, slot, stack) -> {
+            float before = activation(stack);
+            decay(stack, DRUM_DECAY);
+            if (before != activation(stack)) drum.setChanged();
+        });
         ContaminationUtil.GEIGER_LINES.register(NeutronActivation::geigerLine);
         NeutronCommands.init();
     }
@@ -122,6 +139,8 @@ public final class NeutronActivation {
         return STACK.getOr(stack, 0F);
     }
 
+    public static float activation(ItemStack stack) { return stackActivation(stack); }
+
     /** 1.7 {@code HazardTypeNeutron.apply}: a tenth of the dose, per item, on top of what the stack had. */
     public static void apply(ItemStack stack, float rad) {
         if (stack.isEmpty()) return;
@@ -130,41 +149,44 @@ public final class NeutronActivation {
     }
 
     /**
-     * 1.7 {@code HazardTypeNeutron.decay}. Odd but 1.7's: the value is scaled first and the component dropped only when
-     * the <em>previous</em> value was below 1e-5, so it lingers one call below the threshold.
+     * Multiplies the stored pool, clearing a newly sub-floor result during this cleanup pass.
      */
     public static void decay(ItemStack stack, float factor) {
         if (stack.isEmpty() || !STACK.has(stack)) return;
-        float activation = STACK.getOr(stack, 0F);
+        float activation = STACK.getOr(stack, 0F) * factor;
         if (activation < 1e-5F) STACK.remove(stack);
-        else STACK.set(stack, activation * factor);
+        else STACK.set(stack, activation);
     }
 
-    /** 1.7's player loops: {@code mainInventory} (36) and {@code armorInventory} (4). The offhand did not exist. */
+    /** Main inventory and equipment, with the modern offhand included. */
     static void forInventory(Player player, java.util.function.Consumer<ItemStack> action) {
         for (int i = 0; i < 36; i++) action.accept(player.getInventory().getItem(i));
         for (EquipmentSlot slot : new EquipmentSlot[] {EquipmentSlot.FEET, EquipmentSlot.LEGS, EquipmentSlot.CHEST, EquipmentSlot.HEAD}) {
             action.accept(player.getItemBySlot(slot));
         }
+        action.accept(player.getOffhandItem());
     }
+
+    public static void applyInventory(Player player, float rad) { forInventory(player, stack -> apply(stack, rad)); }
+    public static void decayInventory(Player player, float factor) { forInventory(player, stack -> decay(stack, factor)); }
 
     // ------------------------------------------------------------------------------------------------ living
 
     /** 1.7 {@code HbmLivingProps.getNeutronActivation}: 0 while the switch is off. */
     public static float getActivation(LivingEntity entity) {
         if (!enabled()) return 0F;
-        return ENTITY.get(entity).activation;
+        return (float) HbmLivingProps.getNeutron(entity);
     }
 
     /** 1.7 {@code HbmLivingProps.setNeutronActivation}: ignored while the switch is off. */
     public static void setActivation(LivingEntity entity, float rad) {
-        if (enabled()) ENTITY.get(entity).activation = rad;
+        if (enabled()) HbmLivingProps.setNeutron(entity, rad);
     }
 
     /** 1.7 {@code HbmLivingProps.incrementNeutronActivation}. */
     public static void incrementActivation(LivingEntity entity, float rad) {
         if (!enabled()) return;
-        float neutrons = ENTITY.get(entity).activation + rad;
+        float neutrons = getActivation(entity) + rad;
         if (neutrons < 0) neutrons = 0;
         setActivation(entity, neutrons);
     }
@@ -176,22 +198,37 @@ public final class NeutronActivation {
      * check radiation immunity here.
      */
     public static boolean contaminate(LivingEntity entity, float amount) {
-        if (enabled()) {
-            HbmLivingProps.setRadEnv(entity, HbmLivingProps.getRadEnv(entity) + amount * 10);
-        }
+        return contaminate(entity, ContaminationUtil.ContaminationType.CREATIVE, amount);
+    }
+
+    public static boolean contaminate(LivingEntity entity, ContaminationUtil.ContaminationType type, double amount) {
+        if (entity.level().isClientSide() || !enabled()) return false;
+        HbmLivingProps.setRadEnv(entity, HbmLivingProps.getRadEnv(entity) + amount * 10);
         if (entity instanceof Player player) {
             if (player.isSpectator()) return false; // the port's contaminate skips spectators for every hazard
-            if (player.isCreative()) return false;
+            boolean protectedFrom = switch (type) {
+                case FARADAY -> ArmorUtil.checkForFaraday(player);
+                case HAZMAT -> ArmorUtil.checkForHazmat(player);
+                case HAZMAT2 -> ArmorUtil.checkForHaz2(player);
+                case DIGAMMA -> ArmorUtil.checkForDigamma(player) || ArmorUtil.checkForDigamma2(player);
+                case DIGAMMA2 -> ArmorUtil.checkForDigamma2(player);
+                default -> false;
+            };
+            if (protectedFrom || player.isCreative() && type != ContaminationUtil.ContaminationType.NONE
+                    && type != ContaminationUtil.ContaminationType.DIGAMMA2) return false;
             if (player.tickCount < 200) return false;
         }
-        incrementActivation(entity, amount * (float) ContaminationUtil.calculateRadiationMod(entity));
+        // Gamma immunity suppresses emission, but never prevents neutron accumulation.
+        HbmLivingProps.setNeutron(entity, Math.max(0F, (float) HbmLivingProps.getNeutron(entity)
+                + (float) (amount * (type == ContaminationUtil.ContaminationType.RAD_BYPASS ? 1D
+                : Math.pow(10D, -HazmatRegistry.getResistance(entity))))));
         return true;
     }
 
     /** 1.7 {@code EntityEffectHandler.handleRadiationFX}, the activation part: every tick, server side. */
     public static void livingTick(LivingEntity entity) {
         if (!enabled() || entity.level().isClientSide()) return;
-        if (!ENTITY.has(entity)) return; // nothing was ever activated: 1.7's read would give 0 and set 0
+        if (!HbmLivingProps.DATA.has(entity)) return;
         if (ContaminationUtil.isRadImmune(entity)) return;
         float neut = getActivation(entity);
         if (neut > 0) {
@@ -233,13 +270,25 @@ public final class NeutronActivation {
         if (res < 1) res = 1;
         float eRads = rad;
         eRads /= res;
-        eRads /= (float) (len * len);
+        if (len != 0D) eRads /= (float) (len * len);
         contaminate(e, eRads);
         if (e instanceof Player player) {
             final float dose = eRads;
             forInventory(player, stack -> apply(stack, dose));
         }
     }
+
+    public static void irradiate(LivingEntity entity, float dose) {
+        if (!enabled()) return;
+        contaminate(entity, dose);
+        if (entity instanceof Player player) applyInventory(player, dose);
+    }
+
+    public static void radiate(ServerLevel level, BlockPos source, float rad) {
+        researchReactor(level, source, null, rad);
+    }
+
+    public static void tick(LivingEntity entity) { livingTick(entity); }
 
     /** 1.7 {@code TileEntityDemonLamp.radiate}: the lamp's dose ({@code eRads}) as neutrons too. */
     private static void demonLamp(net.minecraft.server.level.ServerLevel level, BlockPos lamp, LivingEntity e, float eRads) {
@@ -261,6 +310,8 @@ public final class NeutronActivation {
         }
     }
 
+    public static void decon(LivingEntity entity) { decon(List.of(entity)); }
+
     /** 1.7 {@code ContaminationUtil.printGeigerData}: "Player radioactivity:", after the player's contamination. */
     static void geigerLine(Player player, java.util.function.Consumer<Component> out) {
         double neut = ((int) (getActivation(player) * 10)) / 10D;
@@ -279,12 +330,11 @@ public final class NeutronActivation {
         @Override
         public void onUpdate(LivingEntity target, double hazardLevel, ItemStack stack) {
             if (!enabled()) return;
-            boolean reacher = false;
-            if (target instanceof Player && !GeneralConfig.enable528) reacher = HazardHelper.isHoldingReacher(target);
+            boolean reacher = !GeneralConfig.enable528 && HazardHelper.hasReacher(target);
 
             float level = (float) hazardLevel * stack.getCount();
             if (level > 0) {
-                float rad = (level / 20F) * (float) ContaminationUtil.calculateRadiationMod(target);
+                float rad = (level / 20F) * (float) Math.pow(10D, -HazmatRegistry.getResistance(target));
                 if (GeneralConfig.enable528 && reacher) {
                     rad = rad / 49F; // More realistic function for 528: x / distance^2
                 } else if (reacher) {
@@ -344,25 +394,32 @@ public final class NeutronActivation {
         ITEMS.put("hbm:pile_rod_plutonium", rabe * BILLET * 0.2f);
         ITEMS.put("hbm:pile_rod_source", rabe * BILLET * 0.3f);
 
-        frame("pu_mix", 6.25F / 60f, true);       // PURG
-        frame("pu240", 7.5F / 120f, true);        // PU240
-        frame("cm243", 5.6F / 80f, false);
-        frame("cm244", 2.0F / 50f, false);
-        frame("cm245", 0.8F / 100f, false);
-        frame("cm246", 2.5F / 50f, false);
-        frame("cm_mix", 6.0F / 60f, false);       // CMRG
-        frame("cm_fuel", 2.2F / 120f, false);     // CMF
-        frame("cf252", 15.3F / 5f, false);
-        frame("es253", 18.3F / 40, false);
+        frame("pu_mix", "plutonium_rg", 6.25F / 60f, true);       // PURG
+        frame("pu240", "plutonium_240", 7.5F / 120f, true);        // PU240
+        frame("cm243", "curium_243", 5.6F / 80f, false);
+        frame("cm244", "curium_244", 2.0F / 50f, false);
+        frame("cm245", "curium_245", 0.8F / 100f, false);
+        frame("cm246", "curium_246", 2.5F / 50f, false);
+        frame("cm_mix", "curium_rg", 6.0F / 60f, false);           // CMRG
+        frame("cm_fuel", "curium_fuel", 2.2F / 120f, false);      // CMF
+        frame("cf252", "californium_252", 15.3F / 5f, false);
+        frame("es253", "einsteinium_253", 18.3F / 40, false);
     }
 
-    private static void frame(String material, float neutron, boolean block) {
+    private static void frame(String material, String sourceMaterial, float neutron, boolean block) {
         Map<String, Float> shapes = new LinkedHashMap<>();
-        shapes.put("c:nuggets/" + material, neutron * NUGGET);
-        shapes.put("c:billets/" + material, neutron * BILLET);
-        shapes.put("c:ingots/" + material, neutron * INGOT);
-        if (block) shapes.put("c:storage_blocks/" + material, neutron * BLOCK);
+        neutronShape(shapes, material, sourceMaterial, "nuggets", "c", neutron * NUGGET);
+        neutronShape(shapes, material, sourceMaterial, "billets", "hbm", neutron * BILLET);
+        neutronShape(shapes, material, sourceMaterial, "ingots", "c", neutron * INGOT);
+        if (block) neutronShape(shapes, material, sourceMaterial, "storage_blocks", "c", neutron * BLOCK);
         FRAMES.add(shapes);
+    }
+
+    /** Both spellings share a frame; its first-match rule prevents aliases from adding a second dose. */
+    private static void neutronShape(Map<String, Float> shapes, String material, String sourceMaterial,
+                                     String shape, String sourceNamespace, float rate) {
+        shapes.put("c:" + shape + "/" + material, rate);
+        shapes.put(sourceNamespace + ":" + shape + "/" + sourceMaterial, rate);
     }
 
     private static final Map<String, TagKey<Item>> TAGS = new java.util.concurrent.ConcurrentHashMap<>();
@@ -387,20 +444,22 @@ public final class NeutronActivation {
         return level;
     }
 
-    /**
-     * The NEUTRON rows, then 1.7 {@code HazardTransformerRadiationNBT}'s activation entry: an activated stack carries a
-     * RADIATION entry of its activation, after everything registered. Together with {@code HazardTypeRadiation}'s
-     * activation term ({@link HazardTypeRadiation#STACK_RADIATION}) an activated stack of n items radiates
-     * {@code (A n + A) / 20} on its own and adds {@code A / 20} to each RADIATION entry it already has, and its tooltip
-     * shows the activation twice over ({@code 2A}) - hbm-space counts it in both places, and so does the port.
-     */
+    /** Producer rows and activation-only gamma; explicit gamma components combine through the NBT transformer. */
     static final class Transformer implements IHazardTransformer {
+        @Override
+        public boolean readsLiveStorage() { return true; }
+
+        @Override
+        public boolean readsLiveStorage(ItemStack stack) { return STACK.has(stack); }
+
         @Override
         public void transformPost(ItemStack stack, List<HazardEntry> entries) {
             float neutron = registeredNeutron(stack);
             if (neutron > 0) entries.add(new HazardEntry(NEUTRON, neutron));
             float activation = stackActivation(stack);
-            if (activation > 0) entries.add(new HazardEntry(HazardRegistry.RADIATION, activation));
+            if (activation > 0 && !ModDataComponents.HAZARD_RADIATION.has(stack)) {
+                entries.add(new HazardEntry(HazardRegistry.RADIATION, activation));
+            }
         }
     }
 }

@@ -54,13 +54,18 @@ public final class MunChunkGenerator extends CompatChunkGenerator {
         return CODEC;
     }
 
+    /** The production terrain and its biome descriptor, created on first use. */
+    public synchronized MunTerrain17 terrain() {
+        if (terrain == null) terrain = new MunTerrain17(seed(), BRINE_SPAWN);
+        return terrain;
+    }
+
     /** The 1.7 primer for a chunk, generated once and cached (GameTests compare chunks against it). */
     public synchronized CelestialTerrain17.Primer primer(int chunkX, int chunkZ) {
         long key = (long) chunkX << 32 ^ (chunkZ & 0xFFFFFFFFL);
         CelestialTerrain17.Primer primer = primers.get(key);
         if (primer == null) {
-            if (terrain == null) terrain = new MunTerrain17(seed(), BRINE_SPAWN);
-            primer = terrain.provide(chunkX, chunkZ);
+            primer = terrain().provide(chunkX, chunkZ);
             primers.put(key, primer);
         }
         return primer;

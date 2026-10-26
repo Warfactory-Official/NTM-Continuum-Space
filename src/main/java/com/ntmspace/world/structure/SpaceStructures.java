@@ -20,8 +20,8 @@ import net.minecraft.util.RandomSource;
  * and null weights) is {@link BodyStructures}; the meteor dungeon every body has is HBM's own {@code meteor_dungeon}.
  *
  * <p>The files are hbm-space's ({@code StructureManager}'s planet bases), shipped as {@code assets/ntmspace/structures}
- * with the blocks only hbm-space has named {@code ntmspace:<name>} in their palettes (HBM's palette reads any namespace,
- * ADDON-API-INVENTORY N-16); everything else is the 1.7 file as written. The vertibirds on Laythe are HBM's own files.
+ * with the blocks only hbm-space has named {@code ntmspace:<name>} in their palettes (HBM's palette reads any namespace);
+ * everything else is the 1.7 file as written. The vertibirds on Laythe are HBM's own files.
  *
  * <p>Not here: Thatmo's {@code thatmotest}, {@code thatmo2}, {@code trenches} and {@code city}. hbm-space never
  * registered {@code WorldGeneratorThatmo} ({@code PlanetGen} lists every other body's generator), so its constructor,
@@ -121,6 +121,7 @@ public final class SpaceStructures {
     public static synchronized void registerSpawns() {
         if (registered) return;
         registered = true;
+        StructureTileData.register();
         moon();
         minmus();
         moho();

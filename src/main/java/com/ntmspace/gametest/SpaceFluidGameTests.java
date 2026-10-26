@@ -13,6 +13,7 @@ import com.hbm.inventory.fluid.trait.FT_Polluting;
 import com.hbm.inventory.fluid.trait.FT_VentRadiation;
 import com.hbm.inventory.fluid.trait.FluidTraitSimple;
 import com.ntmspace.fluid.trait.FT_Rocket;
+import com.ntmspace.fluid.trait.SpaceFluidTraits;
 import com.ntmspace.registry.SpaceFluidBlocks;
 import dev.golem.core.gametest.GameTests;
 import java.util.ArrayList;
@@ -181,7 +182,7 @@ public final class SpaceFluidGameTests {
     /** hbm-space's 60 new fluids in its declaration order: key, colour, temperature, traits (canonical tokens). */
     static final List<Expected> EXPECTED = List.of(
             e("nitrogen", 0xB3C6D2, -90, "liquid", "gaseous_art"),
-            e("ammonia", 0x00A0F7, 20, "poison:true:4", "gaseous"),
+            e("ammonia", 0x00A0F7, 20, "poison:true:4", "gaseous", "terraformer:DUNA"),
             e("hydrazine", 0x31517D, 20, "flammable:500000", "combustible:HIGH:1250000", "corrosive:30", "liquid", "rocket:210:600000"),
             e("bloodgas", 0x591000, 20, "flammable:2040000", "combustible:AERO:5120000", "liquid"),
             e("earthair", 0xD1CEEE, 20, "gaseous"),
@@ -271,7 +272,7 @@ public final class SpaceFluidGameTests {
                 continue;
             }
             if ((fluid.getColor() & 0xFFFFFF) != expected.color()) wrong.add(id + " colour " + Integer.toHexString(fluid.getColor()));
-            if (fluid.temperature != expected.temperature()) wrong.add(id + " temperature " + fluid.temperature);
+            if (fluid.getTemperature() != expected.temperature()) wrong.add(id + " temperature " + fluid.getTemperature());
             List<String> actual = tokens(fluid);
             if (!actual.equals(expected.traits())) wrong.add(id + " traits " + actual + ", expected " + expected.traits());
             net.minecraft.world.level.material.Fluid vanilla = Fluids.toVanilla(fluid);
@@ -347,6 +348,7 @@ public final class SpaceFluidGameTests {
         if (t instanceof FT_Combustible c) return "combustible:" + c.getGrade().name() + ":" + c.getCombustionEnergy();
         if (t instanceof FT_Poison p) return "poison:" + p.isWithering() + ":" + p.getLevel();
         if (t instanceof FT_Rocket r) return "rocket:" + r.getISP() + ":" + r.getThrust();
+        if (t instanceof SpaceFluidTraits.FT_Terraformer terraform) return "terraformer:" + terraform.getBody();
         if (t instanceof FT_PWRModerator m) return "pwrmoderator:" + m.getMultiplier();
         if (t instanceof FT_VentRadiation v) return "ventradiation:" + v.getRadPerMB();
         if (t instanceof FT_Heatable h) {

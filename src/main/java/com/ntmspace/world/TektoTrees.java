@@ -1,33 +1,39 @@
 package com.ntmspace.world;
 
-import com.ntmspace.registry.LaytheTektoBlocks;
-import java.util.Random;
+import dev.golem.core.world.RegistryLookups;
+import dev.golem.core.Ids;
+import dev.golem.core.registry.DeferredRegister;
+import dev.golem.core.registry.RegistryObject;
 import net.minecraft.core.BlockPos;
+import net.minecraft.core.registries.Registries;
+import net.minecraft.resources.ResourceKey;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.util.RandomSource;
+import net.minecraft.world.level.levelgen.feature.ConfiguredFeature;
+import net.minecraft.world.level.levelgen.feature.Feature;
 
-/**
- * hbm-space's {@code TTree} as a sapling grows it ({@code BlockNTSapling.func_149878_d}), the same generator Tekto's
- * decoration uses ({@code LaytheTektoDecoration.tree}), on the live level.
- */
+/** Saplings place the same configured tree that /place feature and world-generation data select. */
 public final class TektoTrees {
+    public static final DeferredRegister<Feature<?>> FEATURES = DeferredRegister.create(() -> Registries.FEATURE, "ntmspace");
+    public static final RegistryObject<RubberPlantFeature> RUBBER_PLANT = FEATURES.register("rubber_plant", RubberPlantFeature::new);
+    public static final RegistryObject<TektoTreeFeature> TTREE = FEATURES.register("ttree", TektoTreeFeature::new);
+    public static final ResourceKey<ConfiguredFeature<?, ?>> VINYL_TREE = key("sapling_vinyl");
+    public static final ResourceKey<ConfiguredFeature<?, ?>> PVC_TREE = key("sapling_pvc");
 
     private TektoTrees() {}
 
-    /**
-     * Grows the sapling's tree at {@code pos} (the sapling already removed): vinyl {@code TTree(false, 2, 4, 5, 3, 2,
-     * false, vinyl_log, pet_leaves)}, PVC {@code TTree(true, 2, 5, 7, 4, 3, false, pvc_log, rubber_leaves)}. False when
-     * the tree cannot stand there (not on rubber grass or silt, or out of height).
-     */
-    public static boolean sapling(ServerLevel level, BlockPos pos, boolean pvc, RandomSource random) {
-        // 1.7 handed the generator world.rand, a java.util.Random
-        Random rand = new Random(random.nextLong());
-        World17 world = new World17(level, pos.getX() >> 4, pos.getZ() >> 4);
-        if (pvc) {
-            return LaytheTektoDecoration.tree(world, rand, pos.getX(), pos.getY(), pos.getZ(), 2, 5, 7, 4, 3, false,
-                    LaytheTektoBlocks.PVC_LOG.get(), LaytheTektoBlocks.RUBBER_LEAVES.get());
-        }
-        return LaytheTektoDecoration.tree(world, rand, pos.getX(), pos.getY(), pos.getZ(), 2, 4, 5, 3, 2, false,
-                LaytheTektoBlocks.VINYL_LOG.get(), LaytheTektoBlocks.PET_LEAVES.get());
+    private static ResourceKey<ConfiguredFeature<?, ?>> key(String name) {
+        return ResourceKey.create(Registries.CONFIGURED_FEATURE, Ids.of("ntmspace", name));
     }
+
+    /** The regular TreeGrower selection draw precedes the configured feature's own draws. */
+    public static boolean sapling(ServerLevel level, BlockPos pos, boolean pvc, RandomSource random) {
+        random.nextFloat();
+        var key = pvc ? PVC_TREE : VINYL_TREE;
+        var tree = RegistryLookups.holder(
+                level.registryAccess(), Registries.CONFIGURED_FEATURE, key).value();
+        return tree.place(level, level.getChunkSource().getGenerator(), random, pos);
+    }
+
+    public static void init() {}
 }

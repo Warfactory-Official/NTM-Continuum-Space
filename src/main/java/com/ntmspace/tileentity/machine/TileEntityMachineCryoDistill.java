@@ -1,5 +1,6 @@
 package com.ntmspace.tileentity.machine;
 
+import net.minecraft.nbt.CompoundTag;
 import com.hbm.api.energymk2.IEnergyReceiverMK2;
 import com.hbm.api.fluidmk2.IFluidStandardTransceiverMK2;
 import com.hbm.inventory.fluid.FluidStack;
@@ -37,10 +38,16 @@ import net.minecraft.world.phys.AABB;
  * four 24,000 mB fractions by its {@code ntmspace:cryo_distill} recipe, 100 mB and 20,000 HE (1 MHE buffer) per tick.
  * Eleven slots: 0 battery, 7 fluid identifier, and four unload pairs 1/2, 3/4, 5/6, 8/9 (slot 10 is unused, as in 1.7).
  *
- * <p>Not ported: 1.7 {@code IPersistentNBT} (the tanks kept in the dropped item), deferred like HBM's own machines.
+ * <p>The dropped machine carries all five tanks when any tank contains fluid; an empty machine drops plain.
  */
-public class TileEntityMachineCryoDistill extends TileEntityMachineBase implements MenuProvider, IEnergyReceiverMK2, IFluidStandardTransceiverMK2 {
+public class TileEntityMachineCryoDistill extends TileEntityMachineBase implements MenuProvider, IEnergyReceiverMK2, IFluidStandardTransceiverMK2, NotBelowConnector {
 
+    public static final int SLOT_BATTERY = 0;
+    public static final int SLOT_FLUID_ID = 7;
+    public static final int[][] SLOT_UNLOAD = {{1, 2}, {3, 4}, {5, 6}, {8, 9}};
+    /** The ten machine slots exposed by the menu. */
+    public static final int SLOT_COUNT = 10;
+    public static final long CONSUMPTION = 20_000;
     public long power;
     public static final long maxPower = 1_000_000;
 
@@ -62,23 +69,21 @@ public class TileEntityMachineCryoDistill extends TileEntityMachineBase implemen
     }
 
     public static void serverTick(Level level, BlockPos pos, BlockState state, TileEntityMachineCryoDistill te) {
-        te.power = Library.chargeTEFromItems(te.inventory, 0, te.power, maxPower);
-        if (MachineSlots.setTypeFromId(te.tanks[0], te.inventory, 7, level, pos)) te.setChanged();
+        te.power = Library.chargeTEFromItems(te.inventory, SLOT_BATTERY, te.power, maxPower);
+        if (MachineSlots.setTypeFromId(te.tanks[0], te.inventory, SLOT_FLUID_ID, level, pos)) te.setChanged();
 
         if (te.cachedPowerPorts == null) {
             Ports ports = ports(pos, MachineCore.facing(state));
-            te.cachedPowerPorts = MachinePorts.ports(state, pos, ports.power());
-            te.setupFluidInPorts(te.getReceivingTanks(), PortDef.combine(MachinePorts.ports(state, pos, ports.input())));
-            te.setupFluidOutPorts(te.getSendingTanks(), PortDef.combine(MachinePorts.ports(state, pos, ports.outputs())));
+            te.cachedPowerPorts = MachinePorts.ports(level, state, pos, ports.power());
+            te.setupFluidInPorts(te.getReceivingTanks(), PortDef.combine(MachinePorts.ports(level, state, pos, ports.input())));
+            te.setupFluidOutPorts(te.getSendingTanks(), PortDef.combine(MachinePorts.ports(level, state, pos, ports.outputs())));
         }
         te.setupPowerPorts(te.cachedPowerPorts);
         te.updatePortPIFIFO();
         te.distill();
 
-        MachineFluidContainerIO.unload(te.tanks[1], te.inventory, 1, 2);
-        MachineFluidContainerIO.unload(te.tanks[2], te.inventory, 3, 4);
-        MachineFluidContainerIO.unload(te.tanks[3], te.inventory, 5, 6);
-        MachineFluidContainerIO.unload(te.tanks[4], te.inventory, 8, 9);
+        for (var i = 0; i < SLOT_UNLOAD.length; i++)
+            MachineFluidContainerIO.unload(te.tanks[i + 1], te.inventory, SLOT_UNLOAD[i][0], SLOT_UNLOAD[i][1]);
 
         te.networkPackNT();
     }
@@ -176,6 +181,21 @@ public class TileEntityMachineCryoDistill extends TileEntityMachineBase implemen
     @Override public long getPower() { return power; }
     @Override public void setPower(long power) { this.power = power; }
     @Override public long getMaxPower() { return maxPower; }
+
+    @Override
+    protected CompoundTag collectCarriedData() {
+        var filled = false;
+        for (var tank : tanks) if (tank.getFill() > 0) filled = true;
+        if (!filled) return null;
+        var data = new CompoundTag();
+        for (var i = 0; i < tanks.length; i++) tanks[i].writeCarried(data, "tank" + i);
+        return data;
+    }
+
+    @Override
+    protected void applyCarriedData(CompoundTag data) {
+        for (var i = 0; i < tanks.length; i++) tanks[i].readCarried(data, "tank" + i);
+    }
 
     @Override public FluidTankNTM[] getAllTanks() { return tanks; }
     @Override public FluidTankNTM[] getSendingTanks() { return new FluidTankNTM[] {tanks[1], tanks[2], tanks[3], tanks[4]}; }

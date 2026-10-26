@@ -1,5 +1,6 @@
 package com.ntmspace.tileentity.machine;
 
+import com.ntmspace.data.SpaceData;
 import com.hbm.lib.DirPos;
 import com.hbm.lib.ForgeDirection;
 import com.hbm.tileentity.MachineCore;
@@ -18,8 +19,7 @@ import net.minecraft.world.phys.AABB;
  * spent steam as the water tank has room for. It takes steam and gives water at the four corner cells, through the faces
  * behind them (1.7 {@code subscribeToAllAround} / {@code sendFluidToAll} at core - dir +/- rot, one up and one down).
  *
- * <p>Not ported: 1.7's {@code IConfigurableMachine} "radiator" entry (both tank sizes, 500 by default); HBM's
- * condensers have no {@code hbmMachines.json} entry either.
+ * <p>New radiators read both tank capacities from the server datapack's radiator group.
  */
 public class TileEntityRadiator extends TileEntityCondenser {
 
@@ -27,7 +27,9 @@ public class TileEntityRadiator extends TileEntityCondenser {
     public static final int outputTankSize = 500;
 
     public TileEntityRadiator(BlockPos pos, BlockState state) {
-        super(SpaceMachinesC.RADIATOR_BE.get(), pos, state, inputTankSize, outputTankSize);
+        super(SpaceMachinesC.RADIATOR_BE.get(), pos, state,
+                SpaceData.RADIATOR_INPUT_TANK_SIZE.get(),
+                SpaceData.RADIATOR_OUTPUT_TANK_SIZE.get());
         vacuumOptimised = true;
     }
 
@@ -39,7 +41,7 @@ public class TileEntityRadiator extends TileEntityCondenser {
 
     @Override
     public PortDef[] getPorts() {
-        if (cachedPorts == null) cachedPorts = MachinePorts.ports(getBlockState(), worldPosition, getConPos());
+        if (cachedPorts == null) cachedPorts = MachinePorts.ports(level, getBlockState(), worldPosition, getConPos());
         return cachedPorts;
     }
 

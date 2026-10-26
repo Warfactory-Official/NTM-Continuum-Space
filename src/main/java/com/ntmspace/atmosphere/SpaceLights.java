@@ -1,5 +1,6 @@
 package com.ntmspace.atmosphere;
 
+import net.minecraft.world.level.levelgen.FlatLevelSource;
 import com.hbm.blocks.machine.FloodlightBeam;
 import com.hbm.blocks.machine.SpotlightBeam;
 import com.ntmspace.trait.CBT_Lights;
@@ -18,14 +19,14 @@ public final class SpaceLights {
     private SpaceLights() {}
 
     static void placed(ServerLevel level, BlockPos pos, BlockState state) {
-        if (pos.getY() < AtmosphereHandler.HORIZON) return;
+        if (pos.getY() < horizon(level)) return;
         int light = state.getLightEmission();
         if (light <= 10) return;
         add(level, light);
     }
 
     static void broken(ServerLevel level, BlockPos pos, BlockState state) {
-        if (pos.getY() <= AtmosphereHandler.HORIZON) return;
+        if (pos.getY() <= horizon(level)) return;
         int light = state.getLightEmission();
         if (light <= 10) return;
         // Placing blocks onto beams counts as a break, but doesn't reduce light count (1.7)
@@ -42,5 +43,15 @@ public final class SpaceLights {
         lights = lights == null ? new CBT_Lights() : lights.copy();
         lights.addLight(light);
         CelestialTraits.modifyTraits(level, lights);
+    }
+
+    /**
+     * 1.7 {@code WorldProvider.getHorizon}: the flat generator's minimum Y (the GameTest arena's case),
+     * else {@link AtmosphereHandler#HORIZON}.
+     */
+    static int horizon(ServerLevel level) {
+        return level.getChunkSource().getGenerator() instanceof FlatLevelSource
+                ? level.getMinY()
+                : AtmosphereHandler.HORIZON;
     }
 }

@@ -1,5 +1,8 @@
 package com.ntmspace.fork.machine;
 
+import com.hbm.blocks.multiblock.MultiblockHandlerXR;
+import net.minecraft.world.level.block.Block;
+import net.minecraft.world.level.block.state.StateDefinition;
 import com.hbm.api.block.IToolable;
 import com.hbm.blocks.ModPowerGenBlocks;
 import com.hbm.blocks.machine.MachineChungus;
@@ -36,7 +39,24 @@ public class SpaceMachineChungus extends MachineChungus implements IBlockExplode
 
     public SpaceMachineChungus(Properties properties) {
         super(properties);
+        registerDefaultState(defaultBlockState().setValue(DamagedMachines.DAMAGED, false));
     }
+
+    @Override protected void createBlockStateDefinition(StateDefinition.Builder<Block, BlockState> builder) {
+        super.createBlockStateDefinition(builder);
+        builder.add(DamagedMachines.DAMAGED);
+    }
+
+    @Override public int[] getDimensions() { return new int[]{4, 0, 10, 3, 2, 2}; }
+
+    @Override protected boolean checkRequirement(Level level, BlockPos core, Direction facing, BlockPos clicked) {
+        return super.checkRequirement(level, core, facing, clicked)
+                && MultiblockHandlerXR.checkSpace(level, core, CROWN, clicked, facing);
+    }
+
+    @Override protected boolean canChangeTierWhileRunning() { return true; }
+
+    @Override public boolean dropFromExplosion(Explosion explosion) { return false; }
 
     /** Replaces {@code hbm:machine_chungus}'s block and its block entity type (HBM's id, renderer and handle stay). */
     public static void substitute() {

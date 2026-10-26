@@ -71,11 +71,11 @@ public final class FloraGameTests {
     // ---------------------------------------------------------------------------------------------------------------
 
     private static void registered(GameTestHelper helper) {
-        String[] blocks = {"rubber_farmland", "crop_strawberry", "crop_mint", "crop_coffee", "crop_tea", "crop_paraffin", "sapling",
-                "vinyl_planks", "pvc_planks", "lattice_log", "bf_log", "primed_log", "eu_log", "astroturf", "geysir_electric"};
+        String[] blocks = {"rubber_farmland", "crop_strawberry", "crop_mint", "crop_coffee", "crop_tea", "crop_paraffin", "sapling_vinyl",
+                "sapling_pvc", "vinyl_planks", "pvc_planks", "lattice_log", "bf_log", "primed_log", "eu_log", "astroturf", "geysir_electric"};
         String[] items = {"saltleaf", "leaf_rubber", "leaf_pet", "paraffin_seeds", "strawberry", "mint_leaves", "bean_raw",
                 "bean_roast", "teaseeds", "tea_leaf", "stick_pvc", "stick_vinyl", "powder_rubber", "powder_pvc",
-                "woodemium_briquette", "sapling", "sapling_pvc", "laythe_coral", "laythe_coral_horn", "laythe_coral_block_fire",
+                "woodemium_briquette", "sapling_vinyl", "sapling_pvc", "laythe_coral", "laythe_coral_horn", "laythe_coral_block_fire",
                 "rubber_plant_shrub", "rubber_tall", "rubber_tall_flower"};
         for (String id : blocks) {
             helper.assertTrue(BuiltInRegistries.BLOCK.getOptional(Ids.of("ntmspace", id)).isPresent(), "block ntmspace:" + id);
@@ -85,7 +85,7 @@ public final class FloraGameTests {
         }
         // the block's own item is the first type's
         helper.assertTrue(LaytheTektoBlocks.LAYTHE_CORAL.get().asItem() == item("laythe_coral"), "laythe_coral asItem");
-        helper.assertTrue(FloraBlocks.SAPLING.get().asItem() == item("sapling"), "sapling asItem");
+        helper.assertTrue(FloraBlocks.SAPLING_VINYL.get().asItem() == item("sapling_vinyl"), "sapling_vinyl asItem");
         helper.succeed();
     }
 
@@ -138,7 +138,7 @@ public final class FloraGameTests {
                 FloraBlocks.PARAFFIN_SEEDS.get()), "the rubber flower drops chlorinated seeds");
         helper.assertTrue(drops(helper, LaytheTektoBlocks.RUBBER_PLANT.get().defaultBlockState()
                 .setValue(BlockRubberPlant.TYPE, PlantType.RubberPlant.FERN), ItemStack.EMPTY).isEmpty(), "rubber plants drop nothing");
-        BlockState sapling = FloraBlocks.SAPLING.get().defaultBlockState().setValue(BlockSpaceSapling.TYPE, PlantType.Sapling.PVC);
+        BlockState sapling = FloraBlocks.SAPLING_PVC.get().defaultBlockState();
         helper.assertTrue(only(drops(helper, sapling, ItemStack.EMPTY), item("sapling_pvc")), "the PVC sapling drops itself");
         helper.assertTrue(only(drops(helper, FloraBlocks.RUBBER_FARMLAND.get().defaultBlockState(), ItemStack.EMPTY),
                 LaytheTektoBlocks.RUBBER_SILT.get().asItem()), "rubber farmland drops rubber silt");
@@ -236,7 +236,7 @@ public final class FloraGameTests {
             }
         }
         BlockPos pos = centre.above();
-        BlockState sapling = FloraBlocks.SAPLING.get().defaultBlockState().setValue(BlockSpaceSapling.TYPE, type);
+        BlockState sapling = (type == PlantType.Sapling.PVC ? FloraBlocks.SAPLING_PVC : FloraBlocks.SAPLING_VINYL).get().defaultBlockState();
         level.setBlock(pos, sapling, 2);
         BlockSpaceSapling.grow(level, pos, sapling, RandomSource.create(42L));
         boolean pvc = type == PlantType.Sapling.PVC;
@@ -259,7 +259,7 @@ public final class FloraGameTests {
         for (int dy = 0; dy <= 14; dy++) level.setBlock(other.above(dy), Blocks.AIR.defaultBlockState(), 2);
         level.setBlock(other, sapling, 2);
         BlockSpaceSapling.grow(level, other, sapling, RandomSource.create(42L));
-        helper.assertTrue(level.getBlockState(other).is(FloraBlocks.SAPLING.get()), "a sapling on rubber farmland stays a sapling");
+        helper.assertTrue(level.getBlockState(other).is(FloraBlocks.SAPLING_PVC.get()), "a sapling on rubber farmland stays a sapling");
         helper.succeed();
     }
 
@@ -322,7 +322,7 @@ public final class FloraGameTests {
         List<ItemStack> pet = new ArrayList<>();
         for (int i = 0; i < 200; i++) pet.addAll(LaytheTektoBlocks.PET_LEAVES.get().drops(0, random));
         for (ItemStack stack : pet) {
-            helper.assertTrue(stack.is(FloraBlocks.LEAF_PET.get()) || stack.is(item("sapling")),
+            helper.assertTrue(stack.is(FloraBlocks.LEAF_PET.get()) || stack.is(item("sapling_vinyl")),
                     "plastic leaves drop plastic leaves and vinyl saplings, got " + stack);
         }
         helper.succeed();

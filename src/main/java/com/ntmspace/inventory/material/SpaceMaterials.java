@@ -24,10 +24,31 @@ public final class SpaceMaterials {
     /** From {@code declare()}: HBM's materials exist by then. Idempotent. */
     public static synchronized void register() {
         if (RICH_MAGMA != null) return;
+        SpaceAlloyMaterials.register();
         NTMMaterial existing = Mats.matByName.get("rich_magma");
-        RICH_MAGMA = existing != null ? existing : Mats.register(EX + 2, "rich_magma")
+        RICH_MAGMA = existing != null ? existing : Mats.register(EX + 2, "rich_magma").namespace("ntmspace")
                 .colors(0x7F7F7F, 0x353555, 0xFF6212)
-                .smelting(SmeltingBehavior.SMELTABLE)
+                .smelting(SmeltingBehavior.SMELTABLE).n()
                 .displayName("Mineral-Rich Magma");
+        // The Space Mats declarations insert these materials beside their 1.7 predecessors.
+        SpaceOreMaterials.GLOWSTONE.after(Mats.MAT_OBSIDIAN);
+        SpaceAlloyMaterials.CONGLOMERATE.after(Mats.MAT_CRYOLITE);
+        SpaceOreMaterials.AUSTRALIUM.after(Mats.MAT_GHIORSIUM);
+        SpaceOreMaterials.TASMANITE.after(SpaceOreMaterials.AUSTRALIUM);
+        SpaceOreMaterials.AYERITE.after(SpaceOreMaterials.TASMANITE);
+        SpaceOreMaterials.LAPIS.after(Mats.MAT_COBALT);
+        SpaceOreMaterials.WHITE_PHOSPHORUS.after(Mats.MAT_PHOSPHORUS);
+        SpaceOreMaterials.QUARTZ.after(Mats.MAT_ASBESTOS);
+        SpaceOreMaterials.NICKEL.after(Mats.MAT_OSMIRIDIUM);
+        SpaceOreMaterials.GALLIUM.after(SpaceOreMaterials.NICKEL);
+        SpaceOreMaterials.ZINC.after(SpaceOreMaterials.GALLIUM);
+        SpaceOreMaterials.BROMINE.after(SpaceOreMaterials.ZINC);
+        SpaceOreMaterials.IODINE.after(SpaceOreMaterials.BROMINE);
+        SpaceOreMaterials.HAFNIUM.after(SpaceOreMaterials.IODINE);
+        SpaceAlloyMaterials.IRIDIUM.after(SpaceOreMaterials.HAFNIUM);
+        SpaceAlloyMaterials.GAAS.after(Mats.MAT_SATURNITE);
+        SpaceAlloyMaterials.STAINLESS.after(SpaceAlloyMaterials.GAAS);
+        RICH_MAGMA.after(SpaceAlloyMaterials.STAINLESS);
+        SpaceOreMaterials.SEMTEX.after(RICH_MAGMA);
     }
 }

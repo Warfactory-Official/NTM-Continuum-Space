@@ -31,27 +31,36 @@ public final class SpaceJeiCommon {
 
     public static final ViewerType<GenericRecipe> CRYO_DISTILL = ViewerType.create(NtmSpace.MOD_ID, "cryo_distill", GenericRecipe.class);
     public static final ViewerType<GenericRecipe> ALKYLATION = ViewerType.create(NtmSpace.MOD_ID, "alkylation", GenericRecipe.class);
-    public static final ViewerType<GenericRecipe> VACUUM_CIRCUIT = ViewerType.create(NtmSpace.MOD_ID, "vacuum_circuit", GenericRecipe.class);
+    public static final ViewerType<VacuumCircuitRecipes.VacuumCircuitRecipe> VACUUM_CIRCUIT = ViewerType.create(NtmSpace.MOD_ID, "vacuum_circuit", VacuumCircuitRecipes.VacuumCircuitRecipe.class);
     public static final ViewerType<GenericRecipe> ATMOSPHERE = ViewerType.create(NtmSpace.MOD_ID, "atmosphere", GenericRecipe.class);
 
-    private static SpaceTableCategory cryo;
-    private static SpaceTableCategory alkylation;
-    private static SpaceTableCategory vacuumCircuit;
-    private static SpaceTableCategory atmosphere;
+    public static final ViewerType<AtmosphereExtractionCategory.Recipe> ATMOSPHERE_EXTRACTION =
+            ViewerType.create(NtmSpace.MOD_ID, "atmosphere_extraction", AtmosphereExtractionCategory.Recipe.class);
+
+    public static final ViewerType<DairyCategory.Recipe> DAIRY = ViewerType.create(NtmSpace.MOD_ID, "dairy", DairyCategory.Recipe.class);
+
+    private static SpaceTableCategory<GenericRecipe> cryo;
+    private static SpaceTableCategory<GenericRecipe> alkylation;
+    private static SpaceTableCategory<VacuumCircuitRecipes.VacuumCircuitRecipe> vacuumCircuit;
+    private static SpaceTableCategory<GenericRecipe> atmosphere;
+    private static DairyCategory dairy;
+    private static AtmosphereExtractionCategory atmosphereExtraction;
 
     /** The addon's recipe-viewer declarations. */
     public static final ViewerPlugin VIEWER = new ViewerPlugin() {
         @Override
         public void categories(Categories reg) {
-            cryo = new SpaceTableCategory(CRYO_DISTILL, "Cryogenic Distillation", CryoRecipes.INSTANCE, false,
-                    new ItemStack(SpaceMachines.MACHINE_CRYO_DISTILL.get()));
-            alkylation = new SpaceTableCategory(ALKYLATION, "Alkylation", AlkylationRecipes.INSTANCE, false,
-                    new ItemStack(SpaceMachines.MACHINE_ALKYLATION.get()));
-            vacuumCircuit = new SpaceTableCategory(VACUUM_CIRCUIT, "Vacuum Solderer", VacuumCircuitRecipes.INSTANCE, true,
-                    new ItemStack(SpaceMachinesB.MACHINE_VACUUM_CIRCUIT.get()));
-            atmosphere = new SpaceTableCategory(ATMOSPHERE, "Atmospheric Chemistry", AtmosphereRecipes.INSTANCE, false,
-                    new ItemStack(AtmosphereMachines.ATMO_EMITTER.get()));
-            reg.add(cryo, alkylation, vacuumCircuit, atmosphere);
+            cryo = new SpaceTableCategory<>(CRYO_DISTILL, "Cryogenic Distillation", CryoRecipes.INSTANCE, false,
+                    new ItemStack(SpaceMachines.MACHINE_CRYO_DISTILL.get()), 10);
+            alkylation = new SpaceTableCategory<>(ALKYLATION, "Alkylation", AlkylationRecipes.INSTANCE, false,
+                    new ItemStack(SpaceMachines.MACHINE_ALKYLATION.get()), 10);
+            vacuumCircuit = new SpaceTableCategory<>(VACUUM_CIRCUIT, "Vacuum Solderer", VacuumCircuitRecipes.INSTANCE, true,
+                    new ItemStack(SpaceMachinesB.MACHINE_VACUUM_CIRCUIT.get()), 1);
+            atmosphere = new SpaceTableCategory<>(ATMOSPHERE, "Atmospheric Chemistry", AtmosphereRecipes.INSTANCE, false,
+                    new ItemStack(AtmosphereMachines.ATMO_EMITTER.get()), 1);
+            dairy = new DairyCategory();
+            atmosphereExtraction = new AtmosphereExtractionCategory();
+            reg.add(cryo, alkylation, vacuumCircuit, atmosphere, dairy, atmosphereExtraction);
         }
 
         @Override
@@ -60,6 +69,8 @@ public final class SpaceJeiCommon {
             reg.add(ALKYLATION, alkylation.buildRecipes());
             reg.add(VACUUM_CIRCUIT, vacuumCircuit.buildRecipes());
             reg.add(ATMOSPHERE, atmosphere.buildRecipes());
+            reg.add(DAIRY, dairy.rows());
+            reg.add(ATMOSPHERE_EXTRACTION, atmosphereExtraction.rows());
         }
 
         @Override
@@ -68,6 +79,8 @@ public final class SpaceJeiCommon {
             reg.add(ALKYLATION, new ItemStack(SpaceMachines.MACHINE_ALKYLATION.get()));
             reg.add(VACUUM_CIRCUIT, new ItemStack(SpaceMachinesB.MACHINE_VACUUM_CIRCUIT.get()));
             reg.add(ATMOSPHERE, new ItemStack(AtmosphereMachines.ATMO_EMITTER.get()));
+            reg.add(DAIRY, new ItemStack(SpaceMachines.MACHINE_MILK_REFORMER.get()));
+            reg.add(ATMOSPHERE_EXTRACTION, new ItemStack(AtmosphereMachines.ATMO_VENT.get()));
         }
     };
 

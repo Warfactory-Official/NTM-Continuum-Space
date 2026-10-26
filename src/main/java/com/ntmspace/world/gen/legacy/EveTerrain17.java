@@ -74,8 +74,12 @@ public class EveTerrain17 extends LayeredBodyTerrain17 {
     }
 
     @Override
-    protected Primer getChunkPrimer(int x, int z) {
+    protected void prepareSurface(int x, int z) {
         mathRandom.setSeed(sessionSeed ^ ((long) x * 341873128712L + (long) z * 132897987541L));
+    }
+
+    @Override
+    protected Primer getChunkPrimer(int x, int z) {
         Primer buffer = super.getChunkPrimer(x, z);
         oil.setMetas(buffer.metas);
 
@@ -128,6 +132,7 @@ public class EveTerrain17 extends LayeredBodyTerrain17 {
 
         Eve(float rootHeight, float heightVariation, Surface surface) {
             this.surface = surface;
+            this.waterColorMultiplier = PURPLE_WATER_MULTIPLIER;
             this.temperature = 1.0F;
             this.rainfall = 0.5F;
             this.rootHeight = rootHeight;

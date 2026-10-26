@@ -241,7 +241,7 @@ public class TileEntityDysonLauncher extends TileEntityMachineBase implements IE
     private PortDef[] cachedPorts;
 
     public PortDef[] getPorts() {
-        if (cachedPorts == null) cachedPorts = MachinePorts.ports(getBlockState(), worldPosition, conPos(worldPosition, MachineCore.facing(getBlockState())));
+        if (cachedPorts == null) cachedPorts = MachinePorts.ports(level, getBlockState(), worldPosition, conPos(worldPosition, MachineCore.facing(getBlockState())));
         return cachedPorts;
     }
 

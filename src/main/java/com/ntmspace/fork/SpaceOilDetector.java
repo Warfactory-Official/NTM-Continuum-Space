@@ -36,27 +36,24 @@ public class SpaceOilDetector extends ItemOilDetector {
             int y = Mth.floor(player.getY());
             int z = Mth.floor(player.getZ());
 
-            boolean direct = false;
-            DepositDataMaps.Deposit reserve = searchDirect(level, x, y, z);
-            if (reserve != null) {
-                direct = true;
-            } else {
-                reserve = search(level, x, y, z);
-            }
-            String type = reserve == null ? "" : FluidOres.reserve(reserve).suffix;
-
-            if (direct) {
-                player.sendSystemMessage(Component.translatable("item.ntmspace.oil_detector.bullseye" + type).withStyle(ChatFormatting.DARK_GREEN));
-            } else if (reserve != null) {
-                player.sendSystemMessage(Component.translatable("item.ntmspace.oil_detector.detected" + type).withStyle(ChatFormatting.GOLD));
-            } else {
-                player.sendSystemMessage(Component.translatable("item.ntmspace.oil_detector.noOil").withStyle(ChatFormatting.RED));
-            }
+            player.sendSystemMessage(reading(level, x, y, z));
         }
 
         level.playSound(null, player.getX(), player.getY(), player.getZ(), ModSounds.TECH_BLEEP.get(), SoundSource.PLAYERS, 1.0F, 1.0F);
         player.swing(hand);
         return InteractionResult.SUCCESS;
+    }
+
+    /** The same live reading used by the held detector's chat path. */
+    public static Component reading(Level level, int x, int y, int z) {
+        var reserve = searchDirect(level, x, y, z);
+        var direct = reserve != null;
+        if (reserve == null) reserve = search(level, x, y, z);
+        if (reserve == null) return Component.translatable("item.hbm.oil_detector.noOil").withStyle(ChatFormatting.RED);
+        var suffix = FluidOres.reserve(reserve).suffix;
+        var namespace = suffix.isEmpty() ? "hbm" : "ntmspace";
+        return Component.translatable("item." + namespace + ".oil_detector." + (direct ? "bullseye" : "detected") + suffix)
+                .withStyle(direct ? ChatFormatting.DARK_GREEN : ChatFormatting.GOLD);
     }
 
     /** hbm-space {@code search}: the 5-ring, the 10-ring, then the 5-diagonals; the first column with a deposit wins. */

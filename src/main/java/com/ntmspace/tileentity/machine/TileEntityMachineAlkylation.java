@@ -29,8 +29,9 @@ import net.minecraft.world.phys.AABB;
  *
  * <p>Not ported: 1.7 {@code IPersistentNBT} (deferred, as for HBM's own machines).
  */
-public class TileEntityMachineAlkylation extends TileEntityMachineBase implements IEnergyReceiverMK2, IFluidStandardTransceiverMK2 {
+public class TileEntityMachineAlkylation extends TileEntityMachineBase implements IEnergyReceiverMK2, IFluidStandardTransceiverMK2, NotBelowConnector {
 
+    public static final long CONSUMPTION = 4_000;
     public long power;
     public static final long maxPower = 1_000_000;
 
@@ -92,7 +93,7 @@ public class TileEntityMachineAlkylation extends TileEntityMachineBase implement
     private PortDef[] cachedPorts;
 
     public PortDef[] getPorts() {
-        if (cachedPorts == null) cachedPorts = MachinePorts.ports(getBlockState(), worldPosition, conPos(worldPosition, MachineCore.facing(getBlockState())));
+        if (cachedPorts == null) cachedPorts = MachinePorts.ports(level, getBlockState(), worldPosition, conPos(worldPosition, MachineCore.facing(getBlockState())));
         return cachedPorts;
     }
 

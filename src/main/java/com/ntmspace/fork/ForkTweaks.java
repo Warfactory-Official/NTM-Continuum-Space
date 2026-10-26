@@ -1,5 +1,35 @@
 package com.ntmspace.fork;
 
+import com.hbm.blocks.machine.BlockRefueler;
+import com.hbm.entity.mob.EntityMaskMan;
+import com.hbm.handler.ArmorModEvents;
+import com.hbm.interfaces.ILookOverlay;
+import com.hbm.items.ModArmorModItems;
+import com.hbm.items.ModConsumableTailItems;
+import com.hbm.registration.Reg;
+import com.hbm.tileentity.machine.TileEntityRefueler;
+import com.ntmspace.registry.SpaceItems;
+import com.ntmspace.registry.SpaceSpecialItems;
+import java.util.Collection;
+import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.world.entity.LivingEntity;
+import net.minecraft.world.entity.item.ItemEntity;
+import net.minecraft.world.entity.player.Player;
+//? if >=1.21.1 {
+import net.minecraft.core.component.DataComponents;
+//?}
+//? if >=26.1 {
+import net.minecraft.world.item.ItemStackTemplate;
+import net.minecraft.world.item.component.UseRemainder;
+//?}
+//? if forge {
+/*import net.minecraftforge.common.MinecraftForge;
+import net.minecraftforge.event.entity.living.LivingDropsEvent;
+*///?}
+//? if neoforge {
+import net.neoforged.neoforge.common.NeoForge;
+import net.neoforged.neoforge.event.entity.living.LivingDropsEvent;
+//?}
 import com.hbm.blocks.ModBlocks;
 import com.hbm.entity.logic.EntityPlaneBase;
 import com.hbm.explosion.ExplosionTom;
@@ -9,17 +39,26 @@ import com.hbm.explosion.vanillant.standard.BlockMutatorDebris;
 import com.hbm.explosion.vanillant.standard.BlockProcessorStandard;
 import com.hbm.explosion.vanillant.standard.EntityProcessorCross;
 import com.hbm.explosion.vanillant.standard.PlayerProcessorStandard;
+import com.hbm.items.food.ItemLemon;
+import com.hbm.items.food.ItemPancake;
 import com.hbm.items.special.ItemEnergy;
 import com.hbm.particle.helper.ExplosionCreator;
 import com.hbm.tileentity.machine.storage.TileEntityFileCabinet;
+import com.ntmspace.NtmSpace;
 import dev.golem.core.Ids;
+import dev.golem.core.registry.Substitutions;
+import dev.golem.core.world.Compat;
+import dev.golem.core.world.CompatConsumables;
+import java.util.List;
+import net.minecraft.server.level.ServerLevel;
+import net.minecraft.world.entity.npc.villager.Villager;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.Level;
 
 /**
- * Small changes hbm-space made to base HBM classes, each through an HBM hook or tunable so they hold only while NTM:
+ * Small changes hbm-space made to base HBM classes through hooks, substitutions or tunables, so they hold only while NTM:
  * Space is installed (fork-content triage, part 2 item 7):
  * <ul>
  *   <li>{@code ExplosionTom}: the lava sheet under the old terrain only within 500 blocks of the impact, like the
@@ -37,16 +76,61 @@ public final class ForkTweaks {
 
     private ForkTweaks() {}
 
+    /** Space 1.7 ModItems food values, applied before construction while retaining each item's class and other properties. */
+    public static void substituteFoods() {
+        substituteLemon("bio_wafer", 4, 0.6F);
+        substituteLemon("fooditem", 2, 0.6F);
+        substituteLemon("pudding", 6, 0.6F);
+        // ItemPancake's 1.7 constructor calls setAlwaysEdible in addition to its authored nutrition and saturation.
+        Substitutions.item(NtmSpace.MOD_ID, "hbm:pancake", properties -> new ItemPancake(
+                CompatConsumables.foodAlwaysEdible(properties, 20, 1.0F, List.of())));
+    }
+
+    private static void substituteLemon(String id, int nutrition, float saturation) {
+        Substitutions.item(NtmSpace.MOD_ID, "hbm:" + id, properties -> new ItemLemon(
+                CompatConsumables.food(properties, nutrition, saturation, List.of()), id));
+    }
+
     private static boolean started;
 
     public static synchronized void init() {
         if (started) return;
         started = true;
+        // Keep Host's late death-cancellation and mob-loot gates; the causing player includes indirect player kills.
+        ArmorModEvents.KILLED_BY_PLAYER.register((entity, killer) -> {
+            if (entity instanceof Villager && killer instanceof ServerPlayer) {
+                Compat.spawnAtLocation(entity, (ServerLevel) entity.level(),
+                        new ItemStack(SpaceItems.FLESH.get(), 5), 0F);
+            }
+        });
+        ILookOverlay.PROVIDERS.register(ForkTweaks::refueler);
+        SpaceItemEvents.init();
         ExplosionTom.lavaRadius = 500;
         EntityPlaneBase.CRASH.register((plane, x, y, z) -> ExplosionCreator.composeEffectLarge(plane.level(), x, y, z));
         TileEntityFileCabinet.TICK.register(ForkTweaks::soyuz);
+        // 1.7 Space EntityMaskMan.dropFewItems:119 drops the V1 where NTM drops the bottled cloud
+        // (M65, coin and skull stay). A loader event swaps the drop; nothing here touches base classes.
+        //? if neoforge {
+        NeoForge.EVENT_BUS.addListener(
+                (LivingDropsEvent event) -> maskManDrops(event.getEntity(),
+                        event.getDrops()));
+        //?} elif forge {
+        /*MinecraftForge.EVENT_BUS.addListener(
+                (LivingDropsEvent event) -> maskManDrops(event.getEntity(),
+                        event.getDrops()));
+        *///?}
         ItemEnergy.EMPTY.register(id -> id.equals("coffee")
                 ? BuiltInRegistries.ITEM.getOptional(Ids.of("ntmspace", "cmug_empty")).orElse(null) : null);
+        //? if >=26.1 {
+        // 1.7 ItemEnergy.onEaten: coffee leaves its mug; declared where the test reads it (USE_REMAINDER).
+        // Handles resolve when the loader builds components, not here: nothing is registered yet.
+        Reg.of(ModConsumableTailItems.ITEMS).modifyDefaultComponents(
+                ModConsumableTailItems.coffee,
+                components -> components.set(DataComponents.USE_REMAINDER,
+                        new UseRemainder(
+                                new ItemStackTemplate(
+                                        SpaceItems.CMUG_EMPTY.get()))));
+        //?}
     }
 
     /** hbm-space {@code TileEntityFileCabinet.updateEntity}'s soyuz check. */
@@ -69,5 +153,25 @@ public final class ForkTweaks {
             ExplosionCreator.composeEffectStandard(level, x, y, z);
             if (cabinet.isRemoved()) return;
         }
+    }
+
+    /** The mask man's bottled cloud becomes the V1 (drops are captured, so the swap holds). */
+    static void maskManDrops(LivingEntity entity,
+                             Collection<ItemEntity> drops) {
+        if (!(entity instanceof EntityMaskMan)) return;
+        drops.removeIf(drop -> drop.getItem().is(ModArmorModItems.bottled_cloud.get()));
+        var at = entity.position();
+        drops.add(new ItemEntity(entity.level(), at.x, at.y, at.z,
+                new ItemStack(SpaceSpecialItems.V1.get())));
+    }
+
+    /** hbm-space {@code BlockRefueler.printHook}; the readout contains no client-only state. */
+    static ILookOverlay.Data refueler(Level level, BlockPos pos,
+                                                       Player player) {
+        if (!(level.getBlockState(pos).getBlock() instanceof BlockRefueler block)
+                || !(level.getBlockEntity(pos) instanceof TileEntityRefueler refueler)) return null;
+        var type = refueler.tank.getTankType();
+        return new ILookOverlay.Data(block.getName().getString(), 0xffff00, 0x404000,
+                List.of("&[" + type.getColor() + "&]" + type.getDisplayNameString()));
     }
 }

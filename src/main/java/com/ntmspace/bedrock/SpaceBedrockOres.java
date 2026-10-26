@@ -1,5 +1,6 @@
 package com.ntmspace.bedrock;
 
+import com.hbm.items.special.BedrockOreSet;
 import com.hbm.inventory.fluid.FluidStack;
 import com.hbm.inventory.recipes.BedrockOreChainRecipes;
 import com.hbm.items.special.BedrockOreType;
@@ -35,6 +36,9 @@ public final class SpaceBedrockOres {
         if (installed) return;
         installed = true;
         ItemBedrockOreBase.SOURCE.register(SpaceBedrockOres::field);
+        BedrockOreSet.OF.set(level -> CelestialBedrockOre.getSet(bodyOf(level.dimension())));
+        BedrockOreSet.SAMPLES.set(() -> CelestialBedrockOre.BODIES.stream()
+                .map(CelestialBedrockOre::sample).toList());
         // hbm-space's pyrolysis roasting loop (still code in HBM) runs over every celestial type instead of HBM's six
         for (BedrockOreType type : BedrockOreType.VALUES) BedrockOreChainRecipes.removeChainType(type);
         for (BedrockOreType type : CelestialBedrockOre.getAllTypes()) BedrockOreChainRecipes.addChainType(type);

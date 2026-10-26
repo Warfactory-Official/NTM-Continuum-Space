@@ -13,6 +13,7 @@ import net.minecraft.world.item.context.BlockPlaceContext;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.block.state.properties.EnumProperty;
+import net.minecraft.world.level.block.state.properties.Property;
 
 /**
  * The 1.7 metadata families of NTM: Space's flora ({@code BlockEnumMulti}, {@code BlockNTSapling}) as one block with a
@@ -43,14 +44,28 @@ public final class TypedItems {
         return new ItemStack(item(state.getBlock(), state.getValue(property).getSerializedName()));
     }
 
+    /** The default state with the typed family's serialized value, using the same parser as placement. */
+    public static BlockState state(Block block, String value) {
+        var property = block.getStateDefinition().getProperty("type");
+        if (!(property instanceof EnumProperty<?> type)) {
+            throw new IllegalArgumentException("No typed-family property on " + BuiltInRegistries.BLOCK.getKey(block));
+        }
+        return state(block, type, value);
+    }
+
+    private static <T extends Comparable<T>> BlockState state(Block block, Property<T> property, String value) {
+        return block.defaultBlockState().setValue(property, property.getValue(value).orElseThrow(
+                () -> new IllegalArgumentException("No " + property.getName() + "=" + value + " on "
+                        + BuiltInRegistries.BLOCK.getKey(block))));
+    }
+
     /** The state an item places: its type's ({@link TypedBlockItem}), the default type for the block's own item. */
     public static <E extends Enum<E> & StringRepresentable> BlockState placement(Block block, EnumProperty<E> property,
                                                                                  BlockPlaceContext context) {
-        BlockState state = block.defaultBlockState();
         if (context.getItemInHand().getItem() instanceof TypedBlockItem typed) {
-            return property.getValue(typed.value()).map(v -> state.setValue(property, v)).orElse(state);
+            return state(block, property, typed.value());
         }
-        return state;
+        return block.defaultBlockState();
     }
 
     /** The drops with the block's own item (the first type's) made the broken state's type item, as 1.7's damageDropped. */

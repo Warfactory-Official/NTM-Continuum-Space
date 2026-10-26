@@ -1,19 +1,18 @@
 package com.ntmspace.entity.mob;
 
+import com.ntmspace.data.SpaceData;
+import dev.golem.core.Ids;
+import net.minecraft.core.registries.Registries;
+import net.minecraft.resources.ResourceKey;
 import com.hbm.interfaces.IRadiationImmune;
-import com.hbm.items.ModFoodItems;
 import com.ntmspace.entity.mob.ai.MoonWalkControl;
 import com.ntmspace.registry.SpaceMobs;
 import dev.golem.core.data.CompatCow;
 import net.minecraft.core.BlockPos;
 import net.minecraft.server.level.ServerLevel;
-import net.minecraft.world.damagesource.DamageSource;
 import net.minecraft.world.entity.AgeableMob;
 import net.minecraft.world.entity.EntitySpawnReason;
 import net.minecraft.world.entity.EntityType;
-import net.minecraft.world.entity.LivingEntity;
-import net.minecraft.world.item.ItemStack;
-import net.minecraft.world.item.Items;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.LevelAccessor;
 import net.minecraft.world.level.block.Blocks;
@@ -43,32 +42,15 @@ public class EntityMoonCow extends CompatCow implements IRadiationImmune {
     }
 
     /**
-     * 1.7 {@code dropFewItems}: 0..2 leather plus 0..looting, then 1..3 cheese plus 0..looting (no beef, raw or
-     * cooked). The type has no loot table, so the vanilla cow's table never runs; babies drop nothing, as in 1.7.
-     */
-    @Override
-    protected void dropCustomDeathLoot(ServerLevel level, DamageSource source, boolean killedByPlayer) {
-        super.dropCustomDeathLoot(level, source, killedByPlayer);
-
-        int looting = 0;
-        if (source.getEntity() instanceof LivingEntity attacker) {
-            looting = dev.golem.core.world.Compat.lootingLevel(level, attacker);
-        }
-
-        int j = this.random.nextInt(3) + this.random.nextInt(1 + looting);
-        for (int k = 0; k < j; ++k) spawnAtLocation(level, new ItemStack(Items.LEATHER));
-
-        j = this.random.nextInt(3) + 1 + this.random.nextInt(1 + looting);
-        for (int k = 0; k < j; ++k) spawnAtLocation(level, new ItemStack(ModFoodItems.cheese.get()));
-    }
-
-    /**
      * 1.7 {@code EntityAnimal.getCanSpawnHere} for the periodic spawner: grass below and a full light value above 8.
      * The Mun's turf is not grass, so in hbm-space Mun cows appeared only while chunks generated (1.7's
      * {@code performWorldGenSpawning}, which never asked this; the biome's spawning chance is 0.008) - kept as found.
      */
     @Override
     public boolean checkSpawnRules(LevelAccessor level, EntitySpawnReason reason) {
+        if (!SpaceData.ENABLE_MUN_COWS.get() && level.getBiome(blockPosition()).is(
+                ResourceKey.create(Registries.BIOME,
+                        Ids.of("ntmspace", "mun")))) return false;
         if (reason == EntitySpawnReason.NATURAL) {
             BlockPos pos = blockPosition();
             return level.getBlockState(pos.below()).is(Blocks.GRASS_BLOCK) && level.getRawBrightness(pos, 0) > 8;

@@ -11,7 +11,19 @@
     "minecraft:gameplay/respawn_anchor_works": false,
     "minecraft:visual/cloud_color": "#00ffffff",
     "minecraft:visual/fog_color": "#000000",
-    "minecraft:visual/sky_color": "#000000"
+    "minecraft:visual/sky_color": "#000000",
+    "minecraft:audio/background_music": {
+      "creative": {
+        "max_delay": 24000,
+        "min_delay": 12000,
+        "sound": "ntmspace:music.game.space"
+      },
+      "default": {
+        "max_delay": 24000,
+        "min_delay": 12000,
+        "sound": "ntmspace:music.game.space"
+      }
+    }
   },
   "coordinate_scale": 1.0,
   "default_clock": "minecraft:overworld",

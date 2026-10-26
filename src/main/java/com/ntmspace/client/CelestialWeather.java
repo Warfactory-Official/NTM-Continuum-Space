@@ -1,6 +1,5 @@
 package com.ntmspace.client;
 
-import com.hbm.inventory.fluid.Fluids;
 import com.ntmspace.trait.CBT_Water;
 import com.ntmspace.trait.CBT_Weather;
 import com.ntmspace.trait.CelestialTraits;
@@ -82,15 +81,11 @@ public final class CelestialWeather {
     }
 
     private static float[] rainColor(String body) {
-        CBT_Water water = CelestialTraits.getTrait(body, CBT_Water.class, true);
-        if (water == null || water.fluid == null) return new float[] {1.0F, 1.0F, 1.0F};
-        return rainColor(water.fluid.getColor());
+        return SkyMath.precipitationColor(body, false, true);
     }
 
     private static float[] snowColor(String body) {
-        CBT_Water water = CelestialTraits.getTrait(body, CBT_Water.class, true);
-        if (water == null || water.fluid == null || water.fluid == Fluids.WATER) return new float[] {1.0F, 1.0F, 1.0F};
-        return rainColor(water.fluid.getColor());
+        return SkyMath.precipitationColor(body, true, true);
     }
 
     /** 1.7 {@code BiomeGenBase.getFloatTemperature(x, y, z)}. */

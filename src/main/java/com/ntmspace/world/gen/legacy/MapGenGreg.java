@@ -8,10 +8,9 @@ import com.ntmspace.world.gen.noise.NoiseCaveGenerator;
  * hbm-space's {@code MapGenGreg} (com.hbm.dim.mapgen), ported line for line: 1.7 tunnel caves plus "noise caves", a
  * cave density field built from the same noise pipeline as the terrain.
  *
- * <p><b>Ported oddity:</b> the noise generators are created from this generator's own {@code Random} the first time
- * it runs for a world, BEFORE that Random is seeded from the world seed. In 1.7 that Random was {@code new Random()},
- * so the noise caves differed from one game session to the next and could tear at the border between chunks generated
- * in different sessions. That is what hbm-space did; it is kept.
+ * <p>The cave field is initialized from the world seed before its noise generators are constructed. The 1.7
+ * generator initialized them from an unseeded random, which changed the caves after a restart and tore chunk borders.
+ * Tunnel geometry still uses the original per-origin chunk seeds below.
  */
 public class MapGenGreg extends Caves17 {
 
@@ -32,6 +31,7 @@ public class MapGenGreg extends Caves17 {
     @Override
     public void generate(Legacy17World w, int chunkX, int chunkZ, Block17[] blocks) {
         if (world != w) {
+            this.rand.setSeed(w.seed());
             this.caveNoise = new double[825];
             this.biomeWeightTable = new float[25];
             this.lowerNoise = new Noise17Octaves(this.rand, 16);

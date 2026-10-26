@@ -1,5 +1,7 @@
 package com.ntmspace.block.flora;
 
+import java.util.function.Supplier;
+import net.minecraft.world.item.Item;
 import com.hbm.blocks.generic.BlockTerrainPlant;
 import com.ntmspace.block.terrain.PlantType;
 import com.ntmspace.registry.FloraBlocks;
@@ -24,8 +26,10 @@ import net.minecraft.world.level.storage.loot.LootParams;
 import org.jspecify.annotations.Nullable;
 
 /**
- * hbm-space's {@code sapling} ({@code BlockNTSapling}, a 1.7 {@code BlockSapling}): the vinyl sapling ("Vinyl Sapling")
- * and the PVC one ("Plastic Sapling"), one block item each ({@link TypedItems}); they drop themselves.
+ * hbm-space's saplings ({@code BlockNTSapling}, a 1.7 {@code BlockSapling}): the vinyl sapling ("Vinyl Sapling",
+ * {@code sapling_vinyl}) and the PVC one ("Plastic Sapling", {@code sapling_pvc}), one split block each (upstream
+ * splits 1.7's single {@code sapling} block the same way). Each split keeps its own type: placing always yields the
+ * split's state, and drops and pick-block answer the split's item.
  *
  * <ul>
  *   <li>Growth: on a random tick with light 9 or more above, one in seven; bonemeal succeeds 45 % of the time and grows
@@ -47,9 +51,23 @@ public class BlockSpaceSapling extends BlockTerrainPlant implements CompatBoneme
 
     public static final EnumProperty<PlantType.Sapling> TYPE = EnumProperty.create("type", PlantType.Sapling.class);
 
+    /** The split's own type, or null for the legacy merged block (state-typed by its item). */
+    private final PlantType.Sapling fixed;
+    /** The split's own item, answering drops and pick-block (null for the legacy merged block). */
+    private final Supplier<Item> drop;
+
     public BlockSpaceSapling(Properties properties) {
+        this(properties, null, null);
+    }
+
+    /** A split block: placing, drops and pick-block are always {@code fixed} (see {@link FloraBlocks}). */
+    public BlockSpaceSapling(Properties properties, PlantType.Sapling fixed,
+                             Supplier<Item> drop) {
         super(properties);
-        registerDefaultState(stateDefinition.any().setValue(TYPE, PlantType.Sapling.VINYL));
+        this.fixed = fixed;
+        this.drop = drop;
+        registerDefaultState(stateDefinition.any().setValue(TYPE,
+                fixed != null ? fixed : PlantType.Sapling.VINYL));
     }
 
     @Override
@@ -68,13 +86,14 @@ public class BlockSpaceSapling extends BlockTerrainPlant implements CompatBoneme
         return (level.getRawBrightness(pos, 0) >= 8 || level.canSeeSky(pos)) && sustains(level.getBlockState(pos.below()));
     }
 
-    /** 1.7 {@code canPlaceBlockOnSide}. */
+    /** 1.7 {@code canPlaceBlockOnSide}; a split always places its own type. */
     @Override
     public @Nullable BlockState getStateForPlacement(BlockPlaceContext context) {
         BlockState soil = context.getLevel().getBlockState(context.getClickedPos().below());
         if (!soil.is(LaytheTektoBlocks.RUBBER_GRASS.get()) && !soil.is(LaytheTektoBlocks.RUBBER_SILT.get()) && !sustains(soil)) {
             return null;
         }
+        if (fixed != null) return defaultBlockState();
         return TypedItems.placement(this, TYPE, context);
     }
 
@@ -114,11 +133,13 @@ public class BlockSpaceSapling extends BlockTerrainPlant implements CompatBoneme
 
     @Override
     public List<ItemStack> getDrops(BlockState state, LootParams.Builder params) {
+        if (fixed != null && drop != null) return List.of(new ItemStack(drop.get()));
         return List.of(TypedItems.stack(state, TYPE));
     }
 
     @Override
     protected ItemStack onPickBlock(BlockGetter level, BlockPos pos, BlockState state) {
+        if (fixed != null && drop != null) return new ItemStack(drop.get());
         return TypedItems.stack(state, TYPE);
     }
 }

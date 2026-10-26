@@ -34,6 +34,10 @@ public class EntityAITankshell extends Goal {
     private int reloadTimer;
     private final int reloadDelay;
 
+    public EntityAITankshell(PathfinderMob owner, int delay, int switchAttackDistance, int reloadDelay) {
+        this(owner, true, true, delay, switchAttackDistance, reloadDelay);
+    }
+
     public EntityAITankshell(PathfinderMob owner, boolean checkSight, boolean nearbyOnly, int delay,
                              int switchAttackDistance, int reloadDelay) {
         this.owner = owner;

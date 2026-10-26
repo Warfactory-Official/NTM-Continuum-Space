@@ -38,6 +38,10 @@ public class BlockBodyOre extends CompatBlock implements BodyOre {
             return name;
         }
 
+        public String itemPath(String family) {
+            return this == KERBIN ? family : family + "_" + name;
+        }
+
         /** The body of 1.7 metadata {@code meta} ({@code SolarSystem.Body} ordinal); orbit (0) draws as Kerbin. */
         public static Body ofMeta(int meta) {
             return meta >= 2 && meta <= 10 ? values()[meta - 1] : KERBIN;

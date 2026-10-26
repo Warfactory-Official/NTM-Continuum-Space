@@ -1,5 +1,6 @@
 package com.ntmspace.client;
 
+import com.ntmspace.satellite.SatelliteSettings;
 import com.ntmspace.client.gui.rocket.GUILaunchPadRocket;
 import com.ntmspace.client.gui.rocket.GUIMachineRocketAssembly;
 import com.ntmspace.client.render.rocket.RenderNothing;
@@ -29,6 +30,7 @@ public final class RocketClient {
         ClientRegistrations.screens(screens -> {
             screens.register(RocketBlocks.ROCKET_ASSEMBLY_MENU.get(), GUIMachineRocketAssembly::new);
             screens.register(RocketBlocks.LAUNCH_PAD_ROCKET_MENU.get(), GUILaunchPadRocket::new);
+            screens.register(SatelliteSettings.MENU.get(), SatelliteSettingsScreen::new);
         });
         ClientRegistrations.renderers(r -> {
             r.entity(RocketEntities.RIDEABLE_ROCKET.get(), RenderRocketCustom::new);

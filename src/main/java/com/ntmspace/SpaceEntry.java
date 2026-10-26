@@ -1,7 +1,26 @@
 package com.ntmspace;
 
+import com.ntmspace.block.SpaceMachineFan;
+import com.ntmspace.block.fluid.SpaceSchrabidicBlock;
+import com.ntmspace.block.generic.BlockSpacePlushie;
+import com.ntmspace.data.SpaceData;
+import com.ntmspace.fluid.SpaceFluidPropertyData;
+import com.ntmspace.fork.ForkBaseChanges;
+import com.ntmspace.fork.SpaceOilDetector;
+import com.ntmspace.fork.V1ArmorEffects;
+import com.ntmspace.registry.SpaceCreativeOrder;
+import com.ntmspace.satellite.SpaceSatellites;
+import com.ntmspace.tileentity.machine.StardarHeightmap;
+import com.ntmspace.world.OverworldFlora;
+import com.ntmspace.world.OverworldFloraData;
+import com.ntmspace.world.TektoTreeData;
+import com.ntmspace.world.TektoTrees;
 import com.ntmspace.fluid.SpaceWorldFluids;
+import com.ntmspace.fork.ForkTweaks;
+import com.hbm.capability.ForeignFluids;
+import com.hbm.capability.ForeignItems;
 import dev.golem.core.platform.ModEntry;
+import dev.golem.core.registry.Substitutions;
 
 /**
  * NTM: Space's common start-up in Golem Core's three phases: the Fabric {@code golemcore:entry}, and what the NeoForge
@@ -11,20 +30,28 @@ public final class SpaceEntry implements ModEntry {
 
     @Override
     public void substitute() {
+        ForkTweaks.substituteFoods();
+        Substitutions.block(NtmSpace.MOD_ID, "hbm:plushie", BlockSpacePlushie.Base::new);
+        SpaceSchrabidicBlock.substitute();
+        SpaceSatellites.substitute();
         // hbm-space's fan is sealable-aware (IBlockSealable); same id, HBM's own registration properties
-        dev.golem.core.registry.Substitutions.block(NtmSpace.MOD_ID, "hbm:fan", com.ntmspace.block.SpaceMachineFan::new);
+        Substitutions.block(NtmSpace.MOD_ID, "hbm:fan", SpaceMachineFan::new);
         // hbm-space's LPW-2 is an orbital-station engine: its block and block entity type, HBM's renderer (animationTime)
         com.ntmspace.block.station.SpaceMachineLPW2.substitute();
         // hbm-space's damageable Leviathan turbine and powered condenser (fork content: blown open / structure wrecks, blowtorch repair)
         com.ntmspace.fork.machine.SpaceMachineChungus.substitute();
         com.ntmspace.fork.machine.SpaceMachineCondenserPowered.substitute();
         // hbm-space's oil detector finds every body's oil, gas, brine and bedrock oil and names the reserve (fork content)
-        dev.golem.core.registry.Substitutions.item(NtmSpace.MOD_ID, "hbm:oil_detector", com.ntmspace.fork.SpaceOilDetector::new);
+        Substitutions.item(NtmSpace.MOD_ID, "hbm:oil_detector", SpaceOilDetector::new);
     }
 
     @Override
     public void declare() {
         NtmSpace.LOG.info("NTM: Space declaring its content");
+        ForeignFluids.registerMachines(NtmSpace.MOD_ID);
+        ForeignItems.registerContents(NtmSpace.MOD_ID);
+        SpaceData.init();
+        SpaceFluidPropertyData.init();
         com.ntmspace.fluid.SpaceFluids.init();
         SpaceWorldFluids.init();
         com.ntmspace.registry.SpaceBlocks.init();
@@ -32,6 +59,8 @@ public final class SpaceEntry implements ModEntry {
         com.ntmspace.registry.PlanetTerrainBlocks.init();
         com.ntmspace.registry.LaytheTektoBlocks.init();
         com.ntmspace.registry.FloraBlocks.init();
+        TektoTrees.init();
+        TektoTreeData.init();
         com.ntmspace.registry.BodyOreBlocks.init();
         com.ntmspace.registry.PopulateBlocks.init();
         com.ntmspace.registry.SpaceFluidBlocks.init();
@@ -73,6 +102,7 @@ public final class SpaceEntry implements ModEntry {
         com.ntmspace.registry.SpaceMachinesB.init();
         com.ntmspace.registry.SpaceMachinesC.init();
         com.ntmspace.registry.SpaceMachinesD.init();
+        StardarHeightmap.init();
         com.ntmspace.registry.DropPodContent.init();
         // war between bodies and invasions (war controller, siege craft, invasion spawns/kills, railgun firing/sky sync)
         com.ntmspace.registry.WarContent.init();
@@ -83,6 +113,9 @@ public final class SpaceEntry implements ModEntry {
         com.ntmspace.registry.DysonContent.init();
         // leftovers: orrery, fence gate, oil barrel, algae film, vocaloid plushies, wild flowers; StarDar computer; JEI tables
         com.ntmspace.registry.LeftoverContent.init();
+        OverworldFlora.init();
+        OverworldFloraData.init();
+        SpaceCreativeOrder.init();
         com.ntmspace.trait.TraitSync.init();
         com.ntmspace.breathing.OxygenSync.init();
         com.ntmspace.atmosphere.AtmosphereHandler.init();
@@ -98,6 +131,8 @@ public final class SpaceEntry implements ModEntry {
     @Override
     public void registered() {
         NtmSpace.LOG.info("NTM: Space registered");
+        ForkBaseChanges.registered();
+        V1ArmorEffects.init();
         // furnace fuels on Fabric and Forge (NeoForge: the authored neoforge:furnace_fuels data map)
         dev.golem.core.registry.Fuels.register(com.ntmspace.registry.FloraBlocks.burnTimes());
     }

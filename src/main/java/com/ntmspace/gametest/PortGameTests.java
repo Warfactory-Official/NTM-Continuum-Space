@@ -126,7 +126,7 @@ public final class PortGameTests {
             MultiblockHandlerXR.placeAssembled(helper.getLevel(), core, block.get(), Direction.NORTH);
             BlockState state = helper.getLevel().getBlockState(core);
             DirPos[] expected = points.apply(core, MachineCore.facing(state));
-            PortDef[] ports = MachinePorts.ports(state, core, expected);
+            PortDef[] ports = MachinePorts.ports(helper.getLevel(), state, core, expected);
             List<String> wrong = new ArrayList<>();
             for (DirPos point : expected) {
                 boolean found = false;

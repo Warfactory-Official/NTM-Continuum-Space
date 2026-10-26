@@ -19,6 +19,7 @@ import com.hbm.blocks.ModOreBlocks;
 import com.hbm.items.ModAutogenItems;
 import com.hbm.items.ModBedrockOreItems;
 import com.hbm.items.ModSatelliteItems;
+import com.hbm.items.special.BedrockOreSample;
 import com.hbm.items.special.BedrockOreType;
 import com.hbm.items.special.BedrockOreType.BedrockOreOutput;
 import com.hbm.items.special.ItemBedrockOreBase;
@@ -138,7 +139,7 @@ public final class BedrockSatelliteGameTests {
                 Mats.MAT_SCHRABIDIUM, 3);
         expectRow(errors, "tekto", "plastic", Mats.MAT_POLYMER, 18, Mats.MAT_RUBBER, 9, Mats.matByName.get("semtex"), 6,
                 Mats.MAT_PVC, 3);
-        expectRow(errors, "dres", "light", Mats.matByName.get("nickel"), 18, Mats.MAT_TITANIUM, 9, Mats.MAT_CADMIUM, 6,
+        expectRow(errors, "dres", "light", Mats.matByName.get("nickel_pure"), 18, Mats.MAT_TITANIUM, 9, Mats.MAT_CADMIUM, 6,
                 Mats.matByName.get("gallium"), 3);
         // 1.7 getTotalTypeCount and the first index of each body (the noise salt Populate17 uses)
         int[] start = {0, 4, 9, 14, 20, 26, 32, 38, 42, 48};
@@ -405,8 +406,8 @@ public final class BedrockSatelliteGameTests {
         double mult = 1.2D;
         ItemStack stack = new ItemStack(ModOreBlocks.bedrock_ore_base.get());
         ItemBedrockOreBase.setOreAmount(overworld, stack, x, z, mult);
-        ItemBedrockOreBase.Composition composition = ItemBedrockOreBase.COMPOSITION.get(stack).orElse(null);
-        if (composition == null || !composition.origin().equals("body.kerbin")) {
+        BedrockOreSample composition = ItemBedrockOreBase.SAMPLE.get(stack).orElse(null);
+        if (composition == null || composition.set() != CelestialBedrockOre.getSet("kerbin")) {
             errors.add("composition " + composition);
             finish(helper, errors);
             return;
@@ -423,11 +424,14 @@ public final class BedrockSatelliteGameTests {
         for (BedrockOreType type : BedrockOreType.VALUES) {
             if (ItemBedrockOreBase.getOreAmount(stack, type) != 0D) errors.add("the stack has HBM's " + type);
         }
-        if (!ItemBedrockOreBase.COMPOSITION.get(stack.copy()).equals(ItemBedrockOreBase.COMPOSITION.get(stack))) {
+        if (!ItemBedrockOreBase.SAMPLE.get(stack.copy()).equals(ItemBedrockOreBase.SAMPLE.get(stack))) {
             errors.add("the composition did not survive a copy");
         }
-        Tag saved = ItemBedrockOreBase.Composition.CODEC.encodeStart(NbtOps.INSTANCE, composition).result().orElseThrow();
-        if (!saved.toString().contains("ntmspace:kerbin_light")) errors.add("composition not saved by type name: " + saved);
+        Tag saved = BedrockOreSample.CODEC.encodeStart(NbtOps.INSTANCE, composition).result().orElseThrow();
+        if (!saved.toString().contains("kerbin") || !BedrockOreSample.CODEC.parse(
+                NbtOps.INSTANCE, saved).result().orElseThrow().equals(composition)) {
+            errors.add("sample did not round-trip its registered set and amounts: " + saved);
+        }
 
         // the slopper pays a Duna raw ore out as Duna BASE ores
         for (BedrockOreType type : CelestialBedrockOre.get("duna")) {

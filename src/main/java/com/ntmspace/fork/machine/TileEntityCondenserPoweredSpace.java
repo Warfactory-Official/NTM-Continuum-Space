@@ -1,5 +1,6 @@
 package com.ntmspace.fork.machine;
 
+import net.minecraft.nbt.CompoundTag;
 import com.hbm.inventory.RecipesCommon.AStack;
 import com.hbm.inventory.RecipesCommon.TagStack;
 import com.hbm.tileentity.machine.TileEntityCondenserPowered;
@@ -24,7 +25,6 @@ import org.jspecify.annotations.Nullable;
 public class TileEntityCondenserPoweredSpace extends TileEntityCondenserPowered
         implements DamagedMachines.Damageable, INBTTileEntityTransformable {
 
-    public boolean damaged;
     private @Nullable Object lastExplosion;
     private final List<AStack> repair = new ArrayList<>();
 
@@ -33,7 +33,8 @@ public class TileEntityCondenserPoweredSpace extends TileEntityCondenserPowered
     }
 
     public static void serverTick(Level level, BlockPos pos, BlockState state, TileEntityCondenserPoweredSpace condenser) {
-        if (condenser.damaged) {
+        if (condenser.isDamaged()) {
+            condenser.waterTimer = 0;
             condenser.networkPackNT();
             return;
         }
@@ -46,13 +47,17 @@ public class TileEntityCondenserPoweredSpace extends TileEntityCondenserPowered
 
     @Override
     public boolean isDamaged() {
-        return damaged;
+        return DamagedMachines.damaged(this);
     }
 
     @Override
     public void setDamaged(boolean damaged) {
-        this.damaged = damaged;
-        setChanged();
+        DamagedMachines.set(this, damaged);
+    }
+
+    @Override public void damage() {
+        waterTimer = 0;
+        setDamaged(true);
     }
 
     @Override
@@ -77,36 +82,35 @@ public class TileEntityCondenserPoweredSpace extends TileEntityCondenserPowered
     /** 1.7: a condenser an NBT structure places is a wreck. */
     @Override
     public void transformTE(LevelAccessor level, int coordBaseMode) {
-        damaged = true;
+        damage();
     }
 
     @Override
     public void serialize(RegistryFriendlyByteBuf buf) {
         super.serialize(buf);
-        buf.writeBoolean(damaged);
+        buf.writeBoolean(isDamaged());
     }
 
     @Override
     public void deserialize(RegistryFriendlyByteBuf buf) {
         super.deserialize(buf);
-        damaged = buf.readBoolean();
+        setDamaged(buf.readBoolean());
     }
 
     @Override
     protected void saveData(DataOut output) {
         super.saveData(output);
-        output.putBoolean("damaged", damaged);
+        output.putBoolean("damaged", isDamaged());
     }
 
     @Override
     protected void loadData(DataIn input) {
         super.loadData(input);
-        damaged = input.getBooleanOr("damaged", false);
+        setDamaged(input.getBooleanOr("damaged", isDamaged()));
     }
 
-    /** 1.7 {@code IPersistentNBT.restoreData}: a damaged item places a damaged machine. */
     @Override
-    protected void applyCarriedData(net.minecraft.nbt.CompoundTag data) {
+    protected void applyCarriedData(CompoundTag data) {
         super.applyCarriedData(data);
         DamagedMachines.applyCarried(this, data);
     }

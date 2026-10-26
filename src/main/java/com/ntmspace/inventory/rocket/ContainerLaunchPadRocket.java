@@ -31,19 +31,19 @@ public class ContainerLaunchPadRocket extends AbstractContainerMenu {
     public ContainerLaunchPadRocket(int containerId, Inventory playerInventory, @Nullable TileEntityLaunchPadRocket pad) {
         super(RocketBlocks.LAUNCH_PAD_ROCKET_MENU.get(), containerId);
         this.pad = pad;
-        this.machine = pad != null ? pad : new SimpleContainer(5);
+        this.machine = pad != null ? pad : new SimpleContainer(TileEntityLaunchPadRocket.SLOT_COUNT);
 
-        addSlot(new Slot(machine, 0, 37, 21) { // Rocket slot
+        addSlot(new Slot(machine, TileEntityLaunchPadRocket.SLOT_ROCKET, 37, 21) { // Rocket slot
             @Override public boolean mayPlace(ItemStack stack) { return machine.canPlaceItem(0, stack); }
         });
-        addSlot(new Slot(machine, 1, 37, 39) { // Drive slot
+        addSlot(new Slot(machine, TileEntityLaunchPadRocket.SLOT_DRIVE, 37, 39) { // Drive slot
             @Override public boolean mayPlace(ItemStack stack) { return machine.canPlaceItem(1, stack); }
         });
-        addSlot(new Slot(machine, 2, 167, 90) { // Battery slot
+        addSlot(new Slot(machine, TileEntityLaunchPadRocket.SLOT_BATTERY, 167, 90) { // Battery slot
             @Override public boolean mayPlace(ItemStack stack) { return machine.canPlaceItem(2, stack); }
         });
-        addSlot(new Slot(machine, 3, 77, 21)); // Input
-        addSlot(new Slot(machine, 4, 77, 39)); // Output
+        addSlot(new Slot(machine, TileEntityLaunchPadRocket.SLOT_FUEL_IN, 77, 21)); // Input
+        addSlot(new Slot(machine, TileEntityLaunchPadRocket.SLOT_FUEL_OUT, 77, 39)); // Output
 
         Compat.addPlayerInventory(this::addSlot, playerInventory, 14, 154);
     }
@@ -65,8 +65,8 @@ public class ContainerLaunchPadRocket extends AbstractContainerMenu {
         if (slot != null && slot.hasItem()) {
             ItemStack stack = slot.getItem();
             result = stack.copy();
-            if (index < 5) {
-                if (!moveItemStackTo(stack, 5, this.slots.size(), true)) return ItemStack.EMPTY;
+            if (index < TileEntityLaunchPadRocket.SLOT_COUNT) {
+                if (!moveItemStackTo(stack, TileEntityLaunchPadRocket.SLOT_COUNT, this.slots.size(), true)) return ItemStack.EMPTY;
             } else if (!moveItemStackTo(stack, 0, 5, false)) {
                 return ItemStack.EMPTY;
             }

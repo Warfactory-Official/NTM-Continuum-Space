@@ -1,8 +1,11 @@
 package com.ntmspace.tileentity.rocket;
 
+import com.hbm.api.energymk2.IBatteryItem;
+import net.minecraft.util.Mth;
 import com.hbm.api.energymk2.IEnergyReceiverMK2;
 import com.hbm.api.fluidmk2.IFluidStandardReceiverMK2;
 import com.hbm.interfaces.IControlReceiver;
+import com.hbm.interfaces.IClimbable;
 import com.hbm.inventory.fluid.FluidType;
 import com.hbm.inventory.fluid.Fluids;
 import com.hbm.inventory.fluid.tank.FluidTankNTM;
@@ -60,7 +63,14 @@ import org.jspecify.annotations.Nullable;
  * fluids, which is what those ids were.
  */
 public class TileEntityLaunchPadRocket extends TileEntityMachineBase implements MenuProvider, IControlReceiver,
-        IEnergyReceiverMK2, IFluidStandardReceiverMK2 {
+        IEnergyReceiverMK2, IFluidStandardReceiverMK2, IClimbable {
+
+    public static final int SLOT_ROCKET = 0;
+    public static final int SLOT_DRIVE = 1;
+    public static final int SLOT_BATTERY = 2;
+    public static final int SLOT_FUEL_IN = 3;
+    public static final int SLOT_FUEL_OUT = 4;
+    public static final int SLOT_COUNT = SLOT_FUEL_OUT + 1;
 
     public long power;
     public final long maxPower = 100_000;
@@ -79,7 +89,7 @@ public class TileEntityLaunchPadRocket extends TileEntityMachineBase implements 
     public int height;
 
     public TileEntityLaunchPadRocket(BlockPos pos, BlockState state) {
-        super(RocketBlocks.LAUNCH_PAD_ROCKET_BE.get(), pos, state, 5); // 0 rocket, 1 drive, 2 battery, 3/4 liquid/solid fuel in/out
+        super(RocketBlocks.LAUNCH_PAD_ROCKET_BE.get(), pos, state, SLOT_COUNT); // 0 rocket, 1 drive, 2 battery, 3/4 liquid/solid fuel in/out
         tanks = new FluidTankNTM[RocketStruct.MAX_STAGES * 2]; // enough tanks for any combination of rocket stages
         for (int i = 0; i < tanks.length; i++) tanks[i] = new FluidTankNTM(Fluids.NONE, 64_000);
     }
@@ -94,7 +104,7 @@ public class TileEntityLaunchPadRocket extends TileEntityMachineBase implements 
     }
 
     public static void serverTick(Level level, BlockPos pos, BlockState state, TileEntityLaunchPadRocket te) {
-        ItemVOTVdrive.getTarget(te.getItem(1), level);
+        ItemVOTVdrive.getTarget(te.getItem(SLOT_DRIVE), level);
 
         // Setup tanks required for the current rocket
         te.updateTanks();
@@ -105,17 +115,17 @@ public class TileEntityLaunchPadRocket extends TileEntityMachineBase implements 
         if (te.hasRocket()) te.receiveFluid(te.getReceivingTanks());
 
         // Fills, note that the liquid input also takes solid fuel
-        te.power = Library.chargeTEFromItems(te.inventory, 2, te.power, te.maxPower);
+        te.power = Library.chargeTEFromItems(te.inventory, SLOT_BATTERY, te.power, te.maxPower);
         for (FluidTankNTM tank : te.tanks) {
-            if (tank.getTankType() != Fluids.NONE) MachineFluidContainerIO.load(tank, te.inventory, 3, 4);
+            if (tank.getTankType() != Fluids.NONE) MachineFluidContainerIO.load(tank, te.inventory, SLOT_FUEL_IN, SLOT_FUEL_OUT);
         }
-        if (!te.getItem(3).isEmpty() && te.getItem(3).getItem() == ModFuelItems.rocket_fuel.get() && te.solidFuel.level < te.solidFuel.max) {
-            te.removeItem(3, 1);
+        if (!te.getItem(SLOT_FUEL_IN).isEmpty() && te.getItem(SLOT_FUEL_IN).getItem() == ModFuelItems.rocket_fuel.get() && te.solidFuel.level < te.solidFuel.max) {
+            te.removeItem(SLOT_FUEL_IN, 1);
             te.solidFuel.level += 250;
             if (te.solidFuel.level > te.solidFuel.max) te.solidFuel.level = te.solidFuel.max;
         }
 
-        te.rocket = ItemCustomRocket.get(te.getItem(0));
+        te.rocket = ItemCustomRocket.get(te.getItem(SLOT_ROCKET));
         if (te.rocket != null) {
             int newHeight = (int) Math.floor(te.rocket.getHeight() - (te.rocket.capsule != null ? te.rocket.capsule.height() : 0) + 1);
             if (newHeight <= 8) newHeight = 0;
@@ -130,12 +140,12 @@ public class TileEntityLaunchPadRocket extends TileEntityMachineBase implements 
             }
         }
 
-        te.climbLadders(level);
+        te.registerClimbable();
         te.networkPackNT();
     }
 
     public static void clientTick(Level level, BlockPos pos, BlockState state, TileEntityLaunchPadRocket te) {
-        te.climbLadders(level);
+        te.registerClimbable();
     }
 
     /** Fills in the tower with structure cells (1.7 under {@code safeRem}). */
@@ -190,24 +200,40 @@ public class TileEntityLaunchPadRocket extends TileEntityMachineBase implements 
         }
     }
 
-    /**
-     * 1.7 set {@code HbmPlayerProps.isOnLadder} for players in the side ladder (3 high) and, with a tower, the main ladder
-     * up it: vanilla's ladder motion, on both sides (the local player's motion is the client's).
-     */
-    private void climbLadders(Level level) {
-        ForgeDirection dir = ForgeDirection.getOrientation(facing());
-        ForgeDirection rot = dir.getRotation(ForgeDirection.UP);
-        int x = worldPosition.getX(), y = worldPosition.getY(), z = worldPosition.getZ();
+    @Override
+    public boolean isEntityInClimbAABB(LivingEntity entity) {
+        var block = (LaunchPadRocket) getBlockState().getBlock();
+        var dir = ForgeDirection.getOrientation(facing());
+        var rot = dir.getRotation(ForgeDirection.UP);
+        var bounds = entity.getBoundingBox();
+        return intersectsLadder(bounds, block, rot, dir, 6, 0, 3)
+                || height > 8 && intersectsLadder(bounds, block, rot, dir, 2, 3, height + 3);
+    }
 
-        AABB side = new AABB(x + 0.25, y, z + 0.25, x + 0.75, y + 3, z + 0.75)
-                .move(-rot.offsetX * 6.5 - dir.offsetX * 5, 0, -rot.offsetZ * 6.5 - dir.offsetZ * 5);
-        for (Player player : level.getEntitiesOfClass(Player.class, side)) RocketLadders.climb(player);
-
-        if (height >= 8) {
-            AABB main = new AABB(x + 0.25, y + 3, z + 0.25, x + 0.75, y + 3 + height, z + 0.75)
-                    .move(-rot.offsetX * 2.5 - dir.offsetX * 5, 0, -rot.offsetZ * 2.5 - dir.offsetZ * 5);
-            for (Player player : level.getEntitiesOfClass(Player.class, main)) RocketLadders.climb(player);
+    private boolean intersectsLadder(AABB bounds, LaunchPadRocket block, ForgeDirection rot, ForgeDirection dir,
+                                     int offset, int minY, int maxY) {
+        int x = worldPosition.getX() - rot.offsetX * offset - dir.offsetX * 5;
+        int z = worldPosition.getZ() - rot.offsetZ * offset - dir.offsetZ * 5;
+        var column = new AABB(x + 0.25, worldPosition.getY() + minY, z + 0.25,
+                x + 0.75, worldPosition.getY() + maxY, z + 0.75)
+                .move(-rot.offsetX * 0.5, 0, -rot.offsetZ * 0.5);
+        if (!bounds.intersects(column)) return false;
+        int first = Math.max(worldPosition.getY() + minY, Mth.floor(bounds.minY));
+        int last = Math.min(worldPosition.getY() + maxY - 1, Mth.floor(bounds.maxY));
+        for (int y = first; y <= last; y++) {
+            var pos = new BlockPos(x, y, z);
+            var state = level.getBlockState(pos);
+            if (!state.is(block)) continue;
+            var box = block.climbBox(state);
+            if (box != null && bounds.intersects(box.move(pos))) return true;
         }
+        return false;
+    }
+
+    @Override
+    public void setRemoved() {
+        unregisterClimbable();
+        super.setRemoved();
     }
 
     /** 1.7 {@code canBlockSeeTheSky(x, y + 2, z)} of the core column. */
@@ -220,8 +246,8 @@ public class TileEntityLaunchPadRocket extends TileEntityMachineBase implements 
     public void launch(@Nullable LivingEntity player) {
         if (!canLaunch()) return;
 
-        EntityRideableRocket entity = EntityRideableRocket.create(level, worldPosition.getX() + 0.5F, worldPosition.getY() + 3.0F,
-                worldPosition.getZ() + 0.5F, getItem(0)).withProgram(getItem(1)).launchedBy(player);
+        EntityRideableRocket entity = EntityRideableRocket.create(level, worldPosition.getX() + 0.5, worldPosition.getY() + 3.0,
+                worldPosition.getZ() + 0.5, getItem(SLOT_ROCKET)).withProgram(getItem(SLOT_DRIVE)).launchedBy(player);
         level.addFreshEntity(entity);
 
         // Deplete all fills
@@ -230,8 +256,8 @@ public class TileEntityLaunchPadRocket extends TileEntityMachineBase implements 
 
         power -= (long) (maxPower * 0.75);
 
-        setItem(0, ItemStack.EMPTY);
-        setItem(1, ItemStack.EMPTY);
+        setItem(SLOT_ROCKET, ItemStack.EMPTY);
+        setItem(SLOT_DRIVE, ItemStack.EMPTY);
     }
 
     private PortDef[] cachedPorts;
@@ -248,11 +274,11 @@ public class TileEntityLaunchPadRocket extends TileEntityMachineBase implements 
     }
 
     private boolean hasRocket() {
-        return ItemCustomRocket.get(getItem(0)) != null;
+        return ItemCustomRocket.get(getItem(SLOT_ROCKET)) != null;
     }
 
     private boolean hasDrive() {
-        return getItem(1).getItem() instanceof ItemVOTVdrive;
+        return getItem(SLOT_DRIVE).getItem() instanceof ItemVOTVdrive;
     }
 
     private boolean areTanksFull() {
@@ -263,19 +289,19 @@ public class TileEntityLaunchPadRocket extends TileEntityMachineBase implements 
 
     private boolean canReachDestination() {
         // Check that the drive is processed
-        if (!ItemVOTVdrive.getProcessed(getItem(1))) {
+        if (!ItemVOTVdrive.getProcessed(getItem(SLOT_DRIVE))) {
             return false;
         }
 
-        RocketStruct rocket = ItemCustomRocket.get(getItem(0));
+        RocketStruct rocket = ItemCustomRocket.get(getItem(SLOT_ROCKET));
         String capsule = rocket.capsule != null ? rocket.capsule.id() : "";
 
-        DriveBody target = ItemVOTVdrive.getBody(getItem(1));
+        DriveBody target = ItemVOTVdrive.getBody(getItem(SLOT_DRIVE));
         if (target == DriveBody.ORBIT && !RocketParts.CAPSULE.equals(capsule) && !RocketParts.STATION_CORE.equals(capsule))
             return false;
 
         RocketTarget from = RocketTarget.of(level, worldPosition.getX(), worldPosition.getZ());
-        RocketTarget to = ItemVOTVdrive.getTarget(getItem(1), level);
+        RocketTarget to = ItemVOTVdrive.getTarget(getItem(SLOT_DRIVE), level);
 
         if (!to.isValid() && !RocketParts.STATION_CORE.equals(capsule)) return false;
         if (to.isValid() && RocketParts.STATION_CORE.equals(capsule)) return false;
@@ -291,11 +317,11 @@ public class TileEntityLaunchPadRocket extends TileEntityMachineBase implements 
     private void updateTanks() {
         if (!hasRocket()) return;
 
-        RocketStruct rocket = ItemCustomRocket.get(getItem(0));
+        RocketStruct rocket = ItemCustomRocket.get(getItem(SLOT_ROCKET));
 
         // If the rocket is already fueled, unmark it and fill the tanks
-        boolean hasFuel = ItemCustomRocket.hasFuel(getItem(0));
-        if (hasFuel) ItemCustomRocket.setFuel(getItem(0), false);
+        boolean hasFuel = ItemCustomRocket.hasFuel(getItem(SLOT_ROCKET));
+        if (hasFuel) ItemCustomRocket.setFuel(getItem(SLOT_ROCKET), false);
 
         updateStorageTanks(rocket, tanks, solidFuel, hasFuel);
     }
@@ -418,7 +444,7 @@ public class TileEntityLaunchPadRocket extends TileEntityMachineBase implements 
         if (!hasRocket()) return issues;
 
         // Check that the rocket is fully fueled and capable of leaving our starting planet
-        RocketStruct rocket = ItemCustomRocket.get(getItem(0));
+        RocketStruct rocket = ItemCustomRocket.get(getItem(SLOT_ROCKET));
 
         if (!canSeeSky) {
             issues.add(Component.literal("Pad is obstructed").withStyle(ChatFormatting.RED));
@@ -429,11 +455,11 @@ public class TileEntityLaunchPadRocket extends TileEntityMachineBase implements 
         }
 
         findTankIssues(issues, tanks, solidFuel);
-        if (findDriveIssues(issues, rocket, getItem(1))) return issues;
+        if (findDriveIssues(issues, rocket, getItem(SLOT_DRIVE))) return issues;
 
         // Check that the rocket is actually capable of reaching our destination
         RocketTarget from = RocketTarget.of(level, worldPosition.getX(), worldPosition.getZ());
-        RocketTarget to = ItemVOTVdrive.getTarget(getItem(1), level);
+        RocketTarget to = ItemVOTVdrive.getTarget(getItem(SLOT_DRIVE), level);
 
         findTravelIssues(issues, rocket, from, to);
 
@@ -443,10 +469,10 @@ public class TileEntityLaunchPadRocket extends TileEntityMachineBase implements 
     @Override
     public boolean isItemValidForSlot(int index, ItemStack stack) {
         if (stack.isEmpty()) return true;
-        if (index == 0 && !(stack.getItem() instanceof ItemCustomRocket)) return false;
-        if (index == 1 && !(stack.getItem() instanceof ItemVOTVdrive)) return false;
-        if (index == 2 && !(stack.getItem() instanceof com.hbm.api.energymk2.IBatteryItem)) return false;
-        if (index == 3 && stack.getItem() != ModFuelItems.rocket_fuel.get()) return false;
+        if (index == SLOT_ROCKET && !(stack.getItem() instanceof ItemCustomRocket)) return false;
+        if (index == SLOT_DRIVE && !(stack.getItem() instanceof ItemVOTVdrive)) return false;
+        if (index == SLOT_BATTERY && !(stack.getItem() instanceof IBatteryItem)) return false;
+        if (index == SLOT_FUEL_IN && stack.getItem() != ModFuelItems.rocket_fuel.get()) return false;
         return true;
     }
 

@@ -1,6 +1,7 @@
 package com.ntmspace.gametest;
 
 import com.google.gson.JsonElement;
+import com.google.gson.JsonPrimitive;
 import com.hbm.inventory.RecipesCommon.AStack;
 import com.hbm.inventory.fluid.FluidStack;
 import com.hbm.inventory.fluid.Fluids;
@@ -186,7 +187,7 @@ public final class RecipeChangeNuclearGameTests {
         finish(helper, errors);
     }
 
-    private static final String X = "ntmspace:xray";
+    private static final String X = "XRAY";
     private static final String WS = "ntmspace:nuclear_waste_short_tiny_";
 
     /** An X-ray family's stage {@code i} and its xenon twin {@code i + 5} (the xenon output after the head outputs). */
@@ -216,7 +217,9 @@ public final class RecipeChangeNuclearGameTests {
         List<String> actual = new ArrayList<>();
         for (SILEXRecipes.WeightedOutput out : recipe.outputs) actual.add(id(out.stack().getItem()) + "@" + out.weight());
         String wave = recipe.laserStrength.name().toLowerCase(Locale.ROOT);
-        if (recipe.fluidProduced != produced || recipe.fluidConsumed != consumed || !wave.equals(laser) || !actual.equals(expected)) {
+        var expectedWavelength = SILEXRecipes.WAVELENGTH.parse(JsonOps.INSTANCE, new JsonPrimitive(laser)).result()
+                .orElseThrow(() -> new IllegalStateException("No native SILEX wavelength " + laser));
+        if (recipe.fluidProduced != produced || recipe.fluidConsumed != consumed || recipe.laserStrength != expectedWavelength || !actual.equals(expected)) {
             errors.add("silex " + in + ": " + recipe.fluidProduced + "/" + recipe.fluidConsumed + " " + wave + " " + actual
                     + " expected " + produced + "/" + consumed + " " + laser + " " + expected);
         }

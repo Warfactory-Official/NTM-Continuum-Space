@@ -1,5 +1,9 @@
 package com.ntmspace.atmosphere;
 
+import com.hbm.inventory.fluid.FluidType;
+import com.ntmspace.fluid.trait.SpaceFluidTraits;
+import com.ntmspace.handler.ReentryFlames;
+import net.minecraft.server.level.ServerLevel;
 import com.hbm.api.environment.Environment;
 import com.hbm.inventory.fluid.Fluids;
 import com.ntmspace.breathing.Breathing;
@@ -46,6 +50,7 @@ public final class AtmosphereHooks {
         Environment.PRESSURE.register(AtmosphereHandler::pressure);
         Environment.COMPRESSION.register((level, pos, amount) -> canCompress(level, pos, amount) ? Verdict.ALLOW : Verdict.DENY);
         Environment.GROWTH.register(AtmosphereHooks::grow);
+        Environment.CHEMICAL_IMPACT.register(AtmosphereHooks::chemicalImpact);
         Environment.GROUNDWATER.register((level, pos) -> {
             CBT_Water water = CelestialTraits.getTrait(level, CBT_Water.class);
             return water == null ? Fluids.NONE : water.fluid;
@@ -58,6 +63,7 @@ public final class AtmosphereHooks {
         com.ntmspace.orbit.OrbitEnvironment.HAS_GRAVITY.register(entity -> Breathing.hasGravity(entity) ? Verdict.ALLOW : Verdict.PASS);
         Environment.SURFACE.register(level -> CelestialBodies.of(level) != null ? Verdict.ALLOW : Verdict.PASS);
         Breathing.init();
+        ReentryFlames.init();
     }
 
     /** 1.7 {@code TileEntityMachineBase.breatheAir}. */
@@ -111,6 +117,17 @@ public final class AtmosphereHooks {
             return Verdict.ALLOW;
         }
         return Verdict.DENY;
+    }
+
+    /** A terraforming spray converts only its configured soil, then seeds the real neighboring-growth queue. */
+    public static void chemicalImpact(ServerLevel level, BlockPos pos,
+                                      FluidType type) {
+        var trait = type.getTrait(SpaceFluidTraits.FT_Terraformer.class);
+        if (trait == null) return;
+        var target = trait.getTargetBlock();
+        if (!level.getBlockState(pos).is(target)) return;
+        level.setBlockAndUpdate(pos, Blocks.DIRT.defaultBlockState());
+        AtmosphereHandler.addGrowth(level, target, Blocks.DIRT, pos.getX(), pos.getY(), pos.getZ(), 4, 6);
     }
 
     /**

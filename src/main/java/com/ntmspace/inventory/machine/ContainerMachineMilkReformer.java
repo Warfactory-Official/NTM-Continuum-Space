@@ -45,33 +45,27 @@ public class ContainerMachineMilkReformer extends AbstractContainerMenu {
         return te;
     }
 
+    public long getPower() {
+        return te != null ? te.power : 0L;
+    }
+
     @Override
     public boolean stillValid(Player player) {
         return machine.stillValid(player);
     }
 
-    /**
-     * 1.7 {@code transferStackInSlot}, kept as it was: indices up to 10 count as machine slots (the first two player slots
-     * too) and go to index 11 and up; a battery tries the empty range 1..0, so it never moves.
-     */
+    /** Routes against the nine visible machine slots; batteries enter slot zero and canisters each input in turn. */
     @Override
     public ItemStack quickMoveStack(Player player, int index) {
-        ItemStack result = ItemStack.EMPTY;
-        Slot slot = slots.get(index);
-        if (slot != null && slot.hasItem()) {
-            ItemStack stack = slot.getItem();
-            result = stack.copy();
-            if (index <= 10) {
-                if (!moveItemStackTo(stack, 11, slots.size(), true)) return ItemStack.EMPTY;
-            } else if (Library.isBattery(result)) {
-                return ItemStack.EMPTY;
-            } else if (!moveItemStackTo(stack, 1, 2, false) && !moveItemStackTo(stack, 3, 4, false)
-                    && !moveItemStackTo(stack, 5, 6, false) && !moveItemStackTo(stack, 7, 8, false)) {
-                return ItemStack.EMPTY;
+        return MachineMenus.quickMove(player, slots.get(index), stack -> {
+            if (index < TileEntityMachineMilkReformer.SLOT_COUNT) {
+                return moveItemStackTo(stack, TileEntityMachineMilkReformer.SLOT_COUNT, slots.size(), true);
             }
-            if (stack.isEmpty()) slot.setByPlayer(ItemStack.EMPTY);
-            else slot.setChanged();
-        }
-        return result;
+            if (Library.isBattery(stack)) return moveItemStackTo(stack, TileEntityMachineMilkReformer.SLOT_BATTERY,
+                    TileEntityMachineMilkReformer.SLOT_BATTERY + 1, false);
+            for (var input = TileEntityMachineMilkReformer.SLOT_INPUT_IN; input < TileEntityMachineMilkReformer.SLOT_COUNT; input += 2)
+                if (moveItemStackTo(stack, input, input + 1, false)) return true;
+            return false;
+        });
     }
 }

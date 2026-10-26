@@ -1,5 +1,16 @@
 package com.ntmspace.registry;
 
+import com.hbm.creativetabs.ModTabs;
+import com.ntmspace.atmosphere.EveDeath;
+import com.ntmspace.block.generic.MeltedFlesh;
+import dev.golem.core.dejson.Models;
+import dev.golem.core.dejson.Slots;
+import dev.golem.core.registry.Preset;
+import dev.golem.core.world.Deaths;
+import net.minecraft.core.particles.ParticleTypes;
+import net.minecraft.world.level.block.state.BlockBehaviour;
+import net.minecraft.world.level.material.MapColor;
+import net.minecraft.world.level.material.PushReaction;
 import com.hbm.creativetabs.HbmTab;
 import com.hbm.registration.Presets;
 import com.ntmspace.NtmSpace;
@@ -60,9 +71,43 @@ public final class AtmosphereContent {
     /** Ticks the PLSS has been breathed from without pause (1.7 NBT {@code ticks}; the breathing sound needs > 20). */
     public static final GolemComponent<Integer> PLSS_TICKS = GolemComponent.integer(NtmSpace.MOD_ID, "plss_ticks");
 
+    private static BlockBehaviour.Properties flesh(
+            BlockBehaviour.Properties properties) {
+        return properties.mapColor(MapColor.SNOW).strength(0.1F, 0.3F)
+                .sound(SoundType.GRAVEL).noOcclusion().replaceable().randomTicks()
+                .pushReaction(PushReaction.DESTROY);
+    }
+
+    private static Preset fleshModel(String texture) {
+        return Presets.shape(Models.parented("minecraft:block/snow_height2",
+                Slots.of("particle", texture, "texture", texture)));
+    }
+
+    public static final RegistryObject<MeltedFlesh> FLESH_BLOCK = REG.block("flesh_block",
+            p -> new MeltedFlesh(p, () -> AtmosphereContent.CHARRED_FLESH_BLOCK.get(),
+                    ParticleTypes.SMOKE, ParticleTypes.CLOUD), AtmosphereContent::flesh)
+            .transform(fleshModel("ntmspace:blocks/meltedflesh")).loot(Loot.only("ntmspace:flesh"));
+    public static final RegistryObject<MeltedFlesh> CHARRED_FLESH_BLOCK = REG.block("charred_flesh_block",
+            p -> new MeltedFlesh(p, () -> AtmosphereContent.CARBONIZED_FLESH_BLOCK.get(),
+                    ParticleTypes.LARGE_SMOKE), AtmosphereContent::flesh)
+            .transform(fleshModel("ntmspace:blocks/charredflesh")).loot(Loot.only("ntmspace:grilled_flesh"));
+    public static final RegistryObject<MeltedFlesh> CARBONIZED_FLESH_BLOCK = REG.block("carbonized_flesh_block",
+            p -> new MeltedFlesh(p, null), AtmosphereContent::flesh)
+            .transform(fleshModel("ntmspace:blocks/carbonizedflesh")).loot(Loot.only("hbm:powder_coal_tiny"));
+    public static final RegistryObject<BlockItem> FLESH_BLOCK_ITEM = REG.blockItem(FLESH_BLOCK).tab(HbmTab.BLOCKS);
+    public static final RegistryObject<BlockItem> CHARRED_FLESH_BLOCK_ITEM = REG.blockItem(CHARRED_FLESH_BLOCK).tab(HbmTab.BLOCKS);
+    public static final RegistryObject<BlockItem> CARBONIZED_FLESH_BLOCK_ITEM = REG.blockItem(CARBONIZED_FLESH_BLOCK).tab(HbmTab.BLOCKS);
+
+    static {
+        ModTabs.insertAfter(HbmTab.BLOCKS, "hbm:trapdoor_steel",
+                "ntmspace:flesh_block", "ntmspace:charred_flesh_block", "ntmspace:carbonized_flesh_block");
+    }
+
     private AtmosphereContent() {}
 
-    public static void init() {}
+    public static void init() {
+        Deaths.onDeath(EveDeath::onDeath);
+    }
 
     private static boolean declared;
 
@@ -72,7 +117,9 @@ public final class AtmosphereContent {
         declared = true;
 
         // 1.7 ModDamageSource.oxyprime: setDamageIsAbsolute().setDamageBypassesArmor()
-        Damage.declare(NtmSpace.MOD_ID, Damage.type("oxyprime").tags(Damage.BYPASSES_ARMOR, Damage.BYPASSES_EFFECTS));
+        Damage.declare(NtmSpace.MOD_ID,
+                Damage.type("oxyprime").tags(Damage.BYPASSES_ARMOR, Damage.BYPASSES_EFFECTS),
+                Damage.type("eve").tags(Damage.BYPASSES_ARMOR, Damage.BYPASSES_EFFECTS));
 
         // 1.7 IBlockSealable blocks that answer false although they are full blocks (MachineBrickFurnace, MachineDiFurnace,
         // MachineDiesel; the fan is NTM: Space's substitute block, which answers itself)

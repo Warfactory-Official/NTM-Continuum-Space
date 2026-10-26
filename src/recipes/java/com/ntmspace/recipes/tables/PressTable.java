@@ -29,7 +29,7 @@ public final class PressTable extends RecipeSource<Row> {
     @Override
     protected void registerDefaults() {
         makeRecipe(StampType.CIRCUIT, tag("c:billets/gaas"), item("ntmspace:circuit_gaas"), 1, after("hbm:press/circuit_silicon"));
-        makeRecipe(StampType.PLATE, tag("c:ingots/nickel"), item("ntmspace:plate_nickel"), 1, after("hbm:press/plate_titanium"));
+        makeRecipe(StampType.PLATE, tag("c:ingots/nickel_pure"), item("ntmspace:plate_nickel"), 1, after("hbm:press/plate_titanium"));
         makeRecipe(StampType.PLATE, tag("c:ingots/stainless"), item("ntmspace:plate_stainless"), 1, after("hbm:press/plate_steel"));
         makeRecipe(StampType.WIRE, tag("c:ingots/zinc"), item("ntmspace:wire_fine_zinc"), 8, after("hbm:press/wire_fine_zirconium")); // before carbon
     }

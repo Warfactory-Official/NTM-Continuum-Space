@@ -55,31 +55,19 @@ public class ContainerMachineCryoDistill extends AbstractContainerMenu {
         return machine.stillValid(player);
     }
 
-    /**
-     * 1.7 {@code transferStackInSlot}, kept as it was: machine slots go to indices 8 and up (so also the last two machine
-     * slots), and a fluid identifier goes to index 11, which is a player slot, not the identifier slot.
-     */
+    /** Routes the battery, identifier and unload containers to their actual machine slots. */
     @Override
     public ItemStack quickMoveStack(Player player, int index) {
-        ItemStack result = ItemStack.EMPTY;
-        Slot slot = slots.get(index);
-        if (slot != null && slot.hasItem()) {
-            ItemStack stack = slot.getItem();
-            result = stack.copy();
-            if (index <= 9) {
-                if (!moveItemStackTo(stack, 8, slots.size(), true)) return ItemStack.EMPTY;
-            } else if (Library.isBattery(result)) {
-                if (!moveItemStackTo(stack, 0, 1, false)) return ItemStack.EMPTY;
-            } else if (result.getItem() instanceof IItemFluidId) {
-                if (!moveItemStackTo(stack, 11, 12, false)) return ItemStack.EMPTY;
-            } else if (!moveItemStackTo(stack, 1, 2, false) && !moveItemStackTo(stack, 3, 4, false)
-                    && !moveItemStackTo(stack, 5, 6, false) && !moveItemStackTo(stack, 7, 8, false)
-                    && !moveItemStackTo(stack, 9, 10, false)) {
-                return ItemStack.EMPTY;
-            }
-            if (stack.isEmpty()) slot.setByPlayer(ItemStack.EMPTY);
-            else slot.setChanged();
-        }
-        return result;
+        return MachineMenus.quickMove(player, slots.get(index), stack -> {
+            if (index < TileEntityMachineCryoDistill.SLOT_COUNT)
+                return moveItemStackTo(stack, TileEntityMachineCryoDistill.SLOT_COUNT, slots.size(), true);
+            if (Library.isBattery(stack)) return moveItemStackTo(stack, TileEntityMachineCryoDistill.SLOT_BATTERY,
+                    TileEntityMachineCryoDistill.SLOT_BATTERY + 1, false);
+            if (stack.getItem() instanceof IItemFluidId) return moveItemStackTo(stack, TileEntityMachineCryoDistill.SLOT_FLUID_ID,
+                    TileEntityMachineCryoDistill.SLOT_FLUID_ID + 1, false);
+            for (var pair : TileEntityMachineCryoDistill.SLOT_UNLOAD)
+                if (moveItemStackTo(stack, pair[0], pair[0] + 1, false)) return true;
+            return false;
+        });
     }
 }

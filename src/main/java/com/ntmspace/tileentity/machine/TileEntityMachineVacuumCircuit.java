@@ -1,5 +1,8 @@
 package com.ntmspace.tileentity.machine;
 
+import io.netty.buffer.ByteBuf;
+import net.minecraft.core.registries.BuiltInRegistries;
+import net.minecraft.util.RandomSource;
 import com.hbm.api.energymk2.IEnergyReceiverMK2;
 import com.hbm.inventory.UpgradeManagerNT;
 import com.hbm.inventory.recipes.loader.GenericRecipe;
@@ -51,13 +54,16 @@ import org.jspecify.annotations.Nullable;
  * ({@code duration - duration * speed / 6 + duration * power / 3}; {@code consumption + consumption * speed - consumption
  * * power / 6}). The buffer follows the recipe: {@code max(consumption * 20, power)} (2,000 HE idle).
  *
- * <p>Ported as 1.7 has it: the upgrades are read from slot 4 ({@code checkSlots(this, slots, 4, 4)}), the output slot,
- * not from the upgrade slots 6-7, so in 1.7 the upgrades never take effect (the slots still take upgrades, play the plug
- * sound and the GUI still lists them).
+ * <p>Speed and power upgrades are read from the two upgrade slots exposed by the menu.
  */
 public class TileEntityMachineVacuumCircuit extends TileEntityMachineBase implements MenuProvider, IEnergyReceiverMK2,
         IUpgradeInfoProvider, WorldlyContainer {
 
+    public static final int SLOT_OUTPUT = 4;
+    public static final int SLOT_BATTERY = 5;
+    public static final int SLOT_UPGRADE_START = 6;
+    public static final int SLOT_UPGRADE_END = 7;
+    public static final int SLOT_COUNT = 8;
     private static final int[] SLOTS = {0, 1, 2, 3, 4};
 
     public long power;
@@ -68,6 +74,7 @@ public class TileEntityMachineVacuumCircuit extends TileEntityMachineBase implem
     public int processTime = 1;
 
     private @Nullable VacuumCircuitRecipe recipe;
+    public final RandomSource outputRandom = RandomSource.create();
     public ItemStack display = ItemStack.EMPTY;
 
     public boolean canOperate = true;
@@ -106,7 +113,7 @@ public class TileEntityMachineVacuumCircuit extends TileEntityMachineBase implem
                 inventory.getStackInSlot(0), inventory.getStackInSlot(1), inventory.getStackInSlot(2), inventory.getStackInSlot(3)});
         long intendedMaxPower;
 
-        upgradeManager.checkSlots(inventory, 4, 4); // sic, 1.7 (class comment)
+        upgradeManager.checkSlots(inventory, SLOT_UPGRADE_START, SLOT_UPGRADE_END);
         int redLevel = upgradeManager.getLevel(UpgradeType.SPEED);
         int blueLevel = upgradeManager.getLevel(UpgradeType.POWER);
 
@@ -121,11 +128,7 @@ public class TileEntityMachineVacuumCircuit extends TileEntityMachineBase implem
 
                 if (progress >= processTime) {
                     progress = 0;
-                    consumeItems(recipe);
-                    ItemStack out = inventory.getStackInSlot(4);
-                    if (out.isEmpty()) inventory.setStackInSlot(4, recipe.output().copy());
-                    else inventory.setStackInSlot(4, ItemStacks.copyWithCount(out, out.getCount() + recipe.output().getCount()));
-                    setChanged();
+                    consumeAndProduce(recipe);
                 }
 
                 if (level.getGameTime() % 20 == 0) {
@@ -147,19 +150,34 @@ public class TileEntityMachineVacuumCircuit extends TileEntityMachineBase implem
         }
 
         maxPower = Math.max(intendedMaxPower, power);
-        display = recipe == null ? ItemStack.EMPTY : recipe.output();
+        display = recipe == null ? ItemStack.EMPTY : new ItemStack(recipe.previewItem());
     }
 
     public boolean canProcess(VacuumCircuitRecipe recipe) {
         if (!canOperate) return false;
         if (power < consumption) return false;
-        ItemStack out = inventory.getStackInSlot(4);
-        if (!out.isEmpty()) {
-            // 1.7 compared item and damage, not the rest of the stack's data
-            if (out.getItem() != recipe.output().getItem()) return false;
-            if (out.getCount() + recipe.output().getCount() > out.getMaxStackSize()) return false;
+        return recipe.canFitOutput(0, inventory.getStackInSlot(SLOT_OUTPUT), inventory.getSlotLimit(SLOT_OUTPUT));
+    }
+
+    private void consumeAndProduce(VacuumCircuitRecipe recipe) {
+        var made = recipe.output(outputRandom);
+        consumeItems(recipe);
+        if (!made.isEmpty()) {
+            var out = inventory.getStackInSlot(SLOT_OUTPUT);
+            inventory.setStackInSlot(SLOT_OUTPUT, out.isEmpty() ? made
+                    : ItemStacks.copyWithCount(out, out.getCount() + made.getCount()));
         }
-        return true;
+        setChanged();
+    }
+
+    private void writeDisplay(ByteBuf output) {
+        output.writeBoolean(recipe != null);
+        if (recipe != null) output.writeInt(BuiltInRegistries.ITEM.getId(recipe.previewItem()));
+    }
+
+    private void readDisplay(ByteBuf input) {
+        display = input.readBoolean() ? new ItemStack(BuiltInRegistries.ITEM.byId(input.readInt()))
+                : ItemStack.EMPTY;
     }
 
     public void consumeItems(VacuumCircuitRecipe recipe) {
@@ -208,7 +226,7 @@ public class TileEntityMachineVacuumCircuit extends TileEntityMachineBase implem
     private PortDef[] cachedPorts;
 
     public PortDef[] getPorts() {
-        if (cachedPorts == null) cachedPorts = MachinePorts.ports(getBlockState(), worldPosition, conPos(worldPosition));
+        if (cachedPorts == null) cachedPorts = MachinePorts.ports(level, getBlockState(), worldPosition, conPos(worldPosition));
         return cachedPorts;
     }
 
@@ -236,8 +254,7 @@ public class TileEntityMachineVacuumCircuit extends TileEntityMachineBase implem
         buf.writeInt(progress);
         buf.writeInt(processTime);
         buf.writeBoolean(canOperate);
-        // 1.7 wrote the output's numeric item id and damage; the port sends the stack (network only, never saved)
-        ItemStacks.writeOptional(buf, display);
+        writeDisplay(buf);
     }
 
     @Override
@@ -249,7 +266,7 @@ public class TileEntityMachineVacuumCircuit extends TileEntityMachineBase implem
         progress = buf.readInt();
         processTime = buf.readInt();
         canOperate = buf.readBoolean();
-        display = ItemStacks.readOptional(buf);
+        readDisplay(buf);
     }
 
     @Override

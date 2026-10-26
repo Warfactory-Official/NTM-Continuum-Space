@@ -1,6 +1,5 @@
 package com.ntmspace.fork.antimatter;
 
-import com.hbm.entity.ModNtmEntities;
 import com.hbm.entity.effect.EntityNukeTorex;
 import com.hbm.entity.logic.EntityBalefire;
 import com.hbm.explosion.ExplosionBalefire;
@@ -35,7 +34,7 @@ import net.minecraft.world.phys.AABB;
 
 /**
  * hbm-space's antimatter balefire (1.7 {@code EntityBalefire.antimatter()} / {@code ExplosionBalefire(..., antimatter)}),
- * through HBM's balefire variant and hooks (ADDON-API-INVENTORY H-65..H-68, V-170..V-172):
+ * through HBM's balefire variant and hooks:
  * <ul>
  *   <li>crater ({@code ntmspace:antimatter}): no balefire fire and no schrabidium-cluster stop; snow and ice in a
  *       column burst into a gas flame and stay; each of the five floor layers has a 1-in-{@code dist} chance to put
@@ -48,14 +47,15 @@ import net.minecraft.world.phys.AABB;
  *       and antimatter arms without the 50-nuke floor; a dropped antimatter cell blasts at 5 (1.7: 3); antimatter in a
  *       matter barrel is an {@code ExplosionVNT(5).makeAmat()} at the barrel's corner.</li>
  * </ul>
- * Not ported: the barrel's {@code IOverpressurable} antimatter/aschrab blast ({@code hasExploded} is never set in
- * hbm-space, dead code) and the {@code particle_amat} drop blast ({@code particle_amat} is a plain {@code Item}, so
- * {@code ItemDrop.onEntityItemUpdate} never runs for it).
+ * A barrel ruptured by pipe pressure selects {@link BarrelPressure}; a surviving receiver retires before its
+ * blast and cannot exchange fluid or emit another blast, including after saving and loading.
+ * The {@code particle_amat} drop blast remains absent: that plain item has no item-entity update behavior.
  */
 public final class AntimatterBalefire {
 
     /** The crater variant name, saved on the balefire entity. */
     public static final Identifier ID = Ids.of(NtmSpace.MOD_ID, "antimatter");
+    static final ExplosionBalefire.Variant CRATER = new Crater();
 
     private AntimatterBalefire() {}
 
@@ -64,7 +64,7 @@ public final class AntimatterBalefire {
     public static synchronized void init() {
         if (started) return;
         started = true;
-        ExplosionBalefire.registerVariant(ID, new Crater());
+        ExplosionBalefire.registerVariant(ID, CRATER);
         EntityBalefire.TICK.register(AntimatterBalefire::tick);
         // hbm-space NukeCustom: bf at the (already centred) position + 0.5, startFacAnti five blocks up
         ExplosionNukeCustom.ANTIMATTER.register((level, x, y, z, amat) -> {
@@ -77,6 +77,7 @@ public final class AntimatterBalefire {
             new ExplosionVNT(level, pos.getX(), pos.getY(), pos.getZ(), 5F).makeAmat().explode();
             return true;
         });
+        TileEntityBarrel.PRESSURE_BLAST.register(new BarrelPressure());
         // hbm-space TileEntityNukeCustom: "//if(nuke < 50) amat = 0;"
         TileEntityNukeCustom.amatNukeFloor = 0F;
         // hbm-space ItemDrop: cell_antimatter ExplosionVNT 5F (1.7 3F)
@@ -84,18 +85,13 @@ public final class AntimatterBalefire {
     }
 
     /** Spawns an antimatter balefire of {@code range} at the position (1.7 {@code new EntityBalefire(w).antimatter()}). */
-    public static EntityBalefire spawn(Level level, double x, double y, double z, int range) {
-        EntityBalefire bf = new EntityBalefire(ModNtmEntities.BALEFIRE.get(), level);
-        bf.setPos(x, y, z);
-        bf.destructionRange = range;
-        bf.variant = ID;
-        level.addFreshEntity(bf);
-        return bf;
+    public static EntityAntimatterBlast spawn(Level level, double x, double y, double z, int range) {
+        return EntityAntimatterBlast.spawn(level, x, y, z, range);
     }
 
     /** hbm-space {@code EntityNukeTorex.startFacAnti}: type 2, scale {@code clamp(scale * 0.01, 0.5, 5)} (no square root). */
     public static EntityNukeTorex cloud(Level level, double x, double y, double z, float scale) {
-        EntityNukeTorex torex = EntityNukeTorex.statFacExact(level, x, y, z, Mth.clamp(scale * 0.01F, 0.5F, 5F), 2);
+        EntityNukeTorex torex = EntityNukeTorex.statFacExact(level, x, y, z, Mth.clamp(scale * 0.01F, 0.5F, 5F), TorexAntimatter.TYPE);
         level.addFreshEntity(torex);
         return torex;
     }
@@ -141,7 +137,9 @@ public final class AntimatterBalefire {
     /** hbm-space {@code EntityBalefire.onUpdate}'s additions, after the spiral and before the blast damage. */
     static void tick(EntityBalefire bf, boolean finished) {
         if (!(bf.level() instanceof ServerLevel level)) return;
-        if (ID.equals(bf.variant) && bf.tickCount < 10) {
+        if (bf instanceof EntityAntimatterBlast blast) {
+            blast.flash();
+        } else if (ID.equals(bf.variant) && bf.tickCount < 10) {
             radiate(level, bf, 40000F * bf.destructionRange, bf.destructionRange * 2);
         }
         if (bf.getRandom().nextInt(5) == 0) {
@@ -160,6 +158,7 @@ public final class AntimatterBalefire {
         List<LivingEntity> entities = level.getEntitiesOfClass(LivingEntity.class,
                 new AABB(px, py, pz, px, py, pz).inflate(range));
         BlockPos.MutableBlockPos pos = new BlockPos.MutableBlockPos();
+        entities:
         for (LivingEntity e : entities) {
             double vx = e.getX() - px, vy = (e.getY() + e.getEyeHeight()) - py, vz = e.getZ() - pz;
             double len = Math.sqrt(vx * vx + vy * vy + vz * vz);
@@ -171,14 +170,17 @@ public final class AntimatterBalefire {
             float res = 0;
             for (int i = 1; i < len; i++) {
                 pos.set(Mth.floor(px + vx * i), Mth.floor(py + vy * i), Mth.floor(pz + vz * i));
-                res += level.getBlockState(pos).getBlock().getExplosionResistance();
+                // A flash must not generate or load a chunk while tracing shielding.
+                var chunk = level.getChunkSource().getChunkNow(pos.getX() >> 4, pos.getZ() >> 4);
+                if (chunk == null) continue entities;
+                res += chunk.getBlockState(pos).getBlock().getExplosionResistance();
             }
             if (res < 1) res = 1;
             float eRads = rads;
             eRads /= res;
             eRads /= (float) (len * len);
             ContaminationUtil.contaminate(e, HazardType.RADIATION, ContaminationType.CREATIVE, eRads);
-            if (eRads >= 500 && !(e instanceof Player player && player.isCreative())) {
+            if (eRads >= 500 && !(e instanceof Player player && player.getAbilities().instabuild)) {
                 e.setHealth(0);
                 ExplosionLarge.spawnShock(level, e.getX(), e.getY(), e.getZ(), 10, 10);
                 // 1.7 setDead: a mob simply vanishes; a player dies (a removed player would be a broken session)

@@ -1,5 +1,16 @@
 package com.ntmspace.fork;
 
+import com.hbm.blocks.ModDecoCrateBlocks;
+import com.hbm.items.ItemFamily;
+import com.hbm.items.block.ItemBlockDecoVariant;
+import com.hbm.world.gen.nbt.MultiblockAssemblyProcessor;
+import com.ntmspace.fork.antimatter.EntityAntimatterBlast;
+import com.ntmspace.fork.bobble.BlockSpaceBobble;
+import com.ntmspace.fork.machine.ThermalTemplateDamage;
+import com.ntmspace.registry.BodyOreBlocks;
+import dev.golem.core.registry.Entities;
+import net.minecraft.world.entity.EntityType;
+import net.minecraft.world.entity.MobCategory;
 import com.hbm.creativetabs.HbmTab;
 import com.hbm.handler.BobmazonOfferFactory;
 import com.hbm.registration.Presets;
@@ -31,10 +42,11 @@ public final class ForkContent {
     public static final DeferredRegister<MobEffect> EFFECTS = DeferredRegister.create(() -> Registries.MOB_EFFECT, NS);
     public static final DeferredRegister.BlockEntityTypes BLOCK_ENTITIES = DeferredRegister.createBlockEntityTypes(NS);
     public static final DeferredRegister.MenuTypes MENUS = DeferredRegister.createMenuTypes(NS);
-    private static final Registrar REG = Registrar.of(BLOCKS, ITEMS, EFFECTS, BLOCK_ENTITIES, MENUS);
+    public static final DeferredRegister.EntityTypes ENTITY_TYPES = DeferredRegister.createEntityTypes(NS);
+    private static final Registrar REG = Registrar.of(BLOCKS, ITEMS, EFFECTS, BLOCK_ENTITIES, MENUS, ENTITY_TYPES);
 
     // Effects go on EFFECTS directly: REG.register(Registries.MOB_EFFECT, ...) would read Registries in this static
-    // initialiser, which 1.20.1 cannot do in Dejson's plain JVM (AGENTS.md section 8).
+    // initialiser, which 1.20.1 cannot do in Dejson's plain JVM.
     /** hbm-space {@code HbmPotion.nitan} ("Ambrosia"). */
     public static final RegistryObject<MobEffect> NITAN_EFFECT = EFFECTS.register("nitan", () -> new ForkEffects.Nitan());
     /** hbm-space {@code HbmPotion.flashbang}. */
@@ -48,12 +60,11 @@ public final class ForkContent {
 
     /**
      * hbm-space {@code det_salt} ("Salted Nuclear Charge", {@code ExplosiveCharge}, iron, hardness 0.1, resistance 0, nuke
-     * tab): it detonates exactly like {@code det_nuke} - hbm-space's {@code statFacSalted} sets an MK5 {@code salted} flag
-     * that nothing reads (its fallout rain never learns it), so no salted fallout falls. Top and bottom
+     * tab): det_nuke's blast with its fallout rain laying {@link #SALTED_FALLOUT} ({@link BlockDetSalt}). Top and bottom
      * {@code det_cobalt_top}, sides {@code det_nuke}.
      */
-    public static final RegistryObject<com.hbm.blocks.bomb.ExplosiveCharge> DET_SALT = REG.block("det_salt",
-                    p -> new com.hbm.blocks.bomb.ExplosiveCharge(p, com.hbm.blocks.bomb.ExplosiveCharge.Kind.NUKE),
+    public static final RegistryObject<BlockDetSalt> DET_SALT = REG.block("det_salt",
+                    BlockDetSalt::new,
                     p -> p.strength(0.1F, 0.0F).requiresCorrectToolForDrops())
             .transform(Presets.column(NS + ":blocks/det_cobalt_top", "hbm:blocks/det_nuke"))
             .loot(dev.golem.core.registry.Loot.self()).tag(dev.golem.core.registry.BlockTag.PICKAXE);
@@ -61,7 +72,7 @@ public final class ForkContent {
 
     /**
      * hbm-space {@code salted_fallout} (a {@code BlockFallout}, texture {@code ash}, blocks tab): random ticks add 50 RAD
-     * to the chunk ({@link SaltedFallout}). Nothing places it in hbm-space (see {@link #DET_SALT}); creative only.
+     * to the chunk ({@link SaltedFallout}). Placed by {@link #DET_SALT}'s blast; creative only otherwise.
      */
     public static final RegistryObject<SaltedFallout> SALTED_FALLOUT = REG.block("salted_fallout", SaltedFallout::new,
                     p -> p.strength(0.1F).sound(net.minecraft.world.level.block.SoundType.SAND).noOcclusion().replaceable()
@@ -92,6 +103,15 @@ public final class ForkContent {
             NUKE_ANTIMATTER_MENU = REG.menu("nuke_antimatter",
                     () -> dev.golem.core.gui.Menus.typeWithPos(com.ntmspace.fork.antimatter.ContainerNukeAntimatter::new));
 
+    /** Antimatter uses the shared balefire driver and its own entity identity. */
+    public static final Registrar.EntityHandle<EntityAntimatterBlast> ANTIMATTER_BLAST =
+            REG.entity("entity_antimatter", key -> Entities.build(
+                    Entities.noLoot(EntityType.Builder
+                            .<EntityAntimatterBlast>of(
+                                    EntityAntimatterBlast::new,
+                                    MobCategory.MISC))
+                            .sized(0.6F, 1.8F).clientTrackingRange(63).updateInterval(1), key));
+
     /**
      * hbm-space {@code ore_bedrock_oil} off Kerbin ({@link BlockBedrockOilBody}): Tekto's bedrock oil (Tekto crude +
      * hydrogen-rich gas). Unbreakable like HBM's {@code hbm:ore_bedrock_oil}, no item, no drops.
@@ -99,6 +119,10 @@ public final class ForkContent {
     public static final RegistryObject<BlockBedrockOilBody> ORE_BEDROCK_OIL = REG.block("ore_bedrock_oil", BlockBedrockOilBody::new,
                     p -> p.strength(-1.0F, 3600000.0F).noLootTable())
             .transform(Presets.cubeAll("hbm:blocks/ore_bedrock_oil"));
+
+    static {
+        BodyOreBlocks.registerFamily("ore_bedrock_oil", ORE_BEDROCK_OIL, "hbm:ore_bedrock_oil");
+    }
 
     /** hbm-space's new bobbleheads ({@link com.ntmspace.fork.bobble.BlockSpaceBobble}): iron, hardness 0, drawn by its renderer. */
     public static final RegistryObject<com.ntmspace.fork.bobble.BlockSpaceBobble> BOBBLEHEAD = REG.block("bobblehead",
@@ -108,6 +132,10 @@ public final class ForkContent {
             .loot(dev.golem.core.registry.Loot.nothing());
     /** One item per type, index = type ordinal (HBM's variant-family order: 1..n-1, then 0 = the block's own item). */
     public static final List<RegistryObject<com.hbm.items.block.ItemBlockDecoVariant>> BOBBLEHEAD_ITEMS = bobbleItems();
+    public static final ItemFamily<BlockSpaceBobble.Type,
+            ItemBlockDecoVariant> BOBBLEHEAD_FAMILY = ItemFamily.of(
+                    BlockSpaceBobble.Type.class, type -> BOBBLEHEAD_ITEMS.get(type.ordinal()))
+            .joins(ModDecoCrateBlocks.bobblehead_family);
     public static final RegistryObject<net.minecraft.world.level.block.entity.BlockEntityType<com.ntmspace.fork.bobble.BlockSpaceBobble.Bobble>>
             BOBBLEHEAD_BE = REG.blockEntity("bobblehead", () -> dev.golem.core.registry.BlockEntities.type(
                     (pos, state) -> new com.ntmspace.fork.bobble.BlockSpaceBobble.Bobble(ForkContent.BOBBLEHEAD_BE.get(), pos, state),
@@ -163,6 +191,8 @@ public final class ForkContent {
     public static synchronized void init() {
         if (started) return;
         started = true;
+        MultiblockAssemblyProcessor.TRANSFORMS.register(
+                ThermalTemplateDamage::mark);
         Nitan.init();
         BombPlacementLog.init();
         com.ntmspace.fork.antimatter.AntimatterBalefire.init();

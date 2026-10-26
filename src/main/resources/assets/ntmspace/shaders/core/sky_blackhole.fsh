@@ -1,9 +1,8 @@
 #version 150
 
-// NTM: Space (new-hbm-space): hbm-space's shaders/blackhole.frag, ported verbatim to Golem Sky.shaderQuads (GLSL 1.50, every
-// node). Mechanical changes only: its uniforms are the call's parameters (PARAM, layout in com.ntmspace.client
-// .PlanetShaders), its samplers Sampler0/Sampler1, gl_TexCoord[0] is texCoord0, texture2D texture, gl_FragColor
-// fragColor.
+// The black-hole ray march follows hbm-space's shaders/blackhole.frag. Emission retains its glow opacity;
+// alpha separately records captured-ray occlusion, so premultiplied blending preserves the sky beyond the horizon.
+// Uniforms are Golem Sky parameters (PlanetShaders); texture coordinates and samplers use modern GLSL names.
 
 #ifdef GOLEM_SKY_UBO
 layout(std140) uniform GolemSkyShader {
@@ -129,5 +128,6 @@ void main() {
 		}
 	}
 
-	fragColor = vec4(smoothstep(0.1, 0.6, col.r), smoothstep(0.5, 0.9, col.g), smoothstep(0.1, 0.9, col.b),alpha);
+	vec3 emission = vec3(smoothstep(0.1, 0.6, col.r), smoothstep(0.5, 0.9, col.g), smoothstep(0.1, 0.9, col.b)) * clamp(alpha, 0.0, 1.0);
+	fragColor = vec4(emission, 1.0 - noncaptured);
 }

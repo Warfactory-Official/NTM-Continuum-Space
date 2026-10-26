@@ -33,7 +33,7 @@ import net.minecraft.world.phys.AABB;
  * (20 MHE buffer) for 1.4 MN of thrust; ten seconds to start and ten to cool. It powers the station only facing west
  * (prograde) and only in orbit. Power and xenon come in at the three blocks behind it.
  */
-public class TileEntityXenonThruster extends TileEntityMachineBase implements Propulsion, IFluidStandardReceiverMK2, IEnergyReceiverMK2 {
+public class TileEntityXenonThruster extends TileEntityMachineBase implements Propulsion, IFluidStandardReceiverMK2, IEnergyReceiverMK2, OrbitConnector {
 
     public final FluidTankNTM[] tanks;
 
@@ -88,7 +88,7 @@ public class TileEntityXenonThruster extends TileEntityMachineBase implements Pr
     private PortDef[] cachedPorts;
 
     public PortDef[] getPorts() {
-        if (cachedPorts == null) cachedPorts = MachinePorts.ports(getBlockState(), worldPosition, getConPos());
+        if (cachedPorts == null) cachedPorts = MachinePorts.ports(level, getBlockState(), worldPosition, getConPos());
         return cachedPorts;
     }
 

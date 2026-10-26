@@ -14,7 +14,6 @@ import net.minecraft.sounds.SoundSource;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.EntityType;
 import net.minecraft.world.level.Level;
-import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.state.BlockState;
 import org.jetbrains.annotations.Nullable;
 
@@ -23,7 +22,7 @@ import org.jetbrains.annotations.Nullable;
  * hatches open (each tick 20% of the way to +90 / -90 degrees, on both sides: the client animates from the synced
  * state) and, on the server, releases {@code amount} copies of the payload entity at the block's centre, one block up,
  * with the hatch sound. With hbm-space's {@code SpaceConfig.combatPodDespawn} (default off) the block also removes itself
- * whenever the world time is a multiple of 1000.
+ * 1000 ticks after the opening delay ends, using a scheduled block tick.
  *
  * <p>1.7 synced the whole tile entity once through its description packet ({@code markBlockForUpdate}); here that is the
  * full update tag of {@link TileEntityLoadedBase} plus {@code sendBlockUpdated}. Its {@code IBufPacketReceiver} methods
@@ -35,8 +34,7 @@ import org.jetbrains.annotations.Nullable;
  */
 public class TileEntityCombatDropPod extends TileEntityLoadedBase {
 
-    /** hbm-space {@code SpaceConfig.combatPodDespawn} ({@code 1.94_combatPodDespawn}), default false. */
-    public static boolean combatPodDespawn = false;
+    public static final int DESPAWN_TICKS = 1000;
 
     public @Nullable CompoundTag entityType;
     public int amount;
@@ -82,6 +80,7 @@ public class TileEntityCombatDropPod extends TileEntityLoadedBase {
 
         if (delay > 0) {
             delay--;
+            if (delay == 0 && server) level.scheduleTick(pos, getBlockState().getBlock(), DESPAWN_TICKS);
             return;
         }
 
@@ -105,10 +104,6 @@ public class TileEntityCombatDropPod extends TileEntityLoadedBase {
             return;
         }
 
-        // 1.7 also ran this on the client; the server's removal reaches the client anyway
-        if (combatPodDespawn && server && level.getGameTime() % 1000 == 0) {
-            level.setBlockAndUpdate(pos, Blocks.AIR.defaultBlockState());
-        }
     }
 
     /** 1.7 {@code EntityList.createEntityFromNBT}: the type named by {@code "id"}, loaded from the tag; null if unknown. */

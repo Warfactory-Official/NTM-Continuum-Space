@@ -58,7 +58,7 @@ public final class RocketContent {
     /** 1.7 {@code TileEntityOrbitalStation.spawnRocket}: the craft stands on the port, landed (a pod needing fuel). */
     public static EntityRideableRocket spawnRocket(TileEntityOrbitalStation port, ItemStack stack) {
         BlockPos pos = port.getBlockPos();
-        EntityRideableRocket rocket = EntityRideableRocket.create(port.getLevel(), pos.getX() + 0.5F, pos.getY() + 1.5F, pos.getZ() + 0.5F, stack);
+        EntityRideableRocket rocket = EntityRideableRocket.create(port.getLevel(), pos.getX() + 0.5, pos.getY() + 1.5, pos.getZ() + 0.5, stack);
         rocket.setPos(rocket.getX(), rocket.getY() - rocket.getBbHeight(), rocket.getZ());
         rocket.setState(rocket.isReusable() ? RocketState.NEEDSFUEL : RocketState.LANDED);
         port.getLevel().addFreshEntity(rocket);

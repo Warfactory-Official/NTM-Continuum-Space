@@ -36,6 +36,7 @@ import net.minecraft.world.phys.Vec3;
  */
 public class TileEntityMachineMagma extends TileEntityLoadedBase implements IEnergyReceiverMK2 {
 
+    public static final int OUTPUT_INTERVAL = 10;
     /** Old {@code AuxParticlePacketNT "foundry"} stream: kept on screen this long after the last pour. */
     private static final int STREAM_LIFETIME = 15;
 
@@ -89,9 +90,7 @@ public class TileEntityMachineMagma extends TileEntityLoadedBase implements IEne
         if (operating) {
             power -= consumption;
 
-            int timeBetweenOutputs = 10;
-
-            if (time % timeBetweenOutputs == 0) {
+            if (time % OUTPUT_INTERVAL == 0) {
                 for (Mats.MaterialStack mat : getOutputs()) {
                     int totalLiquid = 0;
                     for (Mats.MaterialStack m : liquids) totalLiquid += m.amount;
@@ -167,7 +166,7 @@ public class TileEntityMachineMagma extends TileEntityLoadedBase implements IEne
     private PortDef[] cachedPorts;
 
     public PortDef[] getPorts() {
-        if (cachedPorts == null) cachedPorts = MachinePorts.ports(getBlockState(), worldPosition, conPos(worldPosition, MachineCore.facing(getBlockState())));
+        if (cachedPorts == null) cachedPorts = MachinePorts.ports(level, getBlockState(), worldPosition, conPos(worldPosition, MachineCore.facing(getBlockState())));
         return cachedPorts;
     }
 

@@ -6,6 +6,7 @@ import com.hbm.inventory.material.NTMMaterial;
 import com.hbm.inventory.recipes.BlastFurnaceRecipesNT;
 import com.hbm.inventory.recipes.loader.GenericRecipe;
 import com.hbm.inventory.recipes.loader.GenericTableSource;
+import com.ntmspace.inventory.material.SpaceOreMaterials;
 import com.ntmspace.registry.SpaceItems;
 import net.minecraft.world.item.ItemStack;
 
@@ -16,8 +17,7 @@ import net.minecraft.world.item.ItemStack;
  */
 public final class BlastFurnaceTable extends GenericTableSource<GenericRecipe> {
 
-    // hbm-space OreDictManager's NI: the c: nickel tags
-    private static final NTMMaterial NI = new NTMMaterial(-1, "nickel");
+    // hbm-space OreDictManager's NI: Space's pure-nickel material (nickel_pure tags).
 
     public BlastFurnaceTable() {
         super(BlastFurnaceRecipesNT.INSTANCE);
@@ -27,7 +27,7 @@ public final class BlastFurnaceTable extends GenericTableSource<GenericRecipe> {
     protected void registerDefaults() {
         // the only place not corrupted by capitalism
         GenericRecipe stainless = new GenericRecipe("blast.stainless").setDuration(400)
-                .inputItems(STEEL.ingot(), NI.ingot())
+                .inputItems(STEEL.ingot(), SpaceOreMaterials.NICKEL.ingot())
                 .outputItems(new ItemStack(SpaceItems.INGOT_STAINLESS.get(), 2));
         stainless.order = orderOf("hbm:blast_furnace/firebricklimestone");
         this.register(stainless);

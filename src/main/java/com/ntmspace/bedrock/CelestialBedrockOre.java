@@ -1,9 +1,16 @@
 package com.ntmspace.bedrock;
 
+import com.hbm.blocks.ModOreBlocks;
+import java.util.Arrays;
+import net.minecraft.network.chat.Component;
+import net.minecraft.world.item.ItemStack;
 import static com.hbm.inventory.material.Mats.*;
 
 import com.hbm.inventory.material.NTMMaterial;
 import com.hbm.items.special.BedrockOreType;
+import com.hbm.items.special.BedrockOreSet;
+import com.hbm.items.special.BedrockOreSample;
+import com.hbm.items.special.ItemBedrockOreBase;
 import com.hbm.items.special.BedrockOreType.BedrockOreOutput;
 import com.ntmspace.inventory.material.SpaceOreMaterials;
 import java.util.ArrayList;
@@ -110,6 +117,7 @@ public final class CelestialBedrockOre {
 
     private static volatile List<BedrockOreType> types;
     private static final Map<String, List<BedrockOreType>> BY_BODY = new LinkedHashMap<>();
+    private static final Map<String, BedrockOreSet> SETS_BY_BODY = new LinkedHashMap<>();
     private static final Map<BedrockOreType, Spec> SPEC_OF = new LinkedHashMap<>();
 
     private CelestialBedrockOre() {}
@@ -138,6 +146,12 @@ public final class CelestialBedrockOre {
             BY_BODY.computeIfAbsent(spec.body(), b -> new ArrayList<>()).add(type);
             SPEC_OF.put(type, spec);
         }
+        for (String body : BODIES) {
+            var origin = Component.translatableWithFallback(
+                    "item.ntmspace.bedrock_ore_base.mined_on", "Mined on: %s",
+                    Component.translatable("body." + body));
+            SETS_BY_BODY.put(body, BedrockOreSet.SETS.register(new BedrockOreSet(body, BY_BODY.get(body), origin)));
+        }
         types = Collections.unmodifiableList(all);
         return types;
     }
@@ -152,6 +166,20 @@ public final class CelestialBedrockOre {
         register();
         List<BedrockOreType> list = BY_BODY.get(body);
         return list == null ? null : Collections.unmodifiableList(list);
+    }
+
+    public static @Nullable BedrockOreSet getSet(String body) {
+        register();
+        return SETS_BY_BODY.get(body);
+    }
+
+    public static ItemStack sample(String body) {
+        var set = getSet(body);
+        double[] amounts = new double[set.kinds().size()];
+        Arrays.fill(amounts, 1D);
+        var stack = new ItemStack(ModOreBlocks.bedrock_ore_base.get());
+        ItemBedrockOreBase.SAMPLE.set(stack, new BedrockOreSample(set, amounts));
+        return stack;
     }
 
     /** 1.7 {@code type.index}: the global registration index, which salts the bedrock ore noise. -1 for no such type. */

@@ -1,5 +1,9 @@
 package com.ntmspace.block.station;
 
+import com.ntmspace.registry.StationBlocks;
+import com.hbm.capability.ICapabilityBlock;
+import com.hbm.capability.MachineCaps;
+
 import com.hbm.api.fluidmk2.IFluidConnectorBlockMK2;
 import com.hbm.blocks.multiblock.BlockMultiblockMachine;
 import com.hbm.blocks.multiblock.MultiblockSurface;
@@ -32,9 +36,15 @@ import net.minecraft.world.phys.BlockHitResult;
  * turned a quarter from the player's facing like the LPW-2), the propellant port at the end of its long axis. A fluid
  * identifier sets the tank to the heated form of the identified fluid, if that form is a rocket propellant.
  */
-public class MachineHTR3 extends BlockMultiblockMachine implements IFluidConnectorBlockMK2, ILookOverlay {
+public class MachineHTR3 extends BlockMultiblockMachine implements IFluidConnectorBlockMK2, ILookOverlay, ICapabilityBlock {
 
     private static final int[] DIMS = {3, 3, 3, 3, 5, 5};
+
+    @Override
+    public MachineCaps caps() {
+        return MachineCaps.of(StationBlocks.HTR3_BE).fluidIn()
+                .fluidFaces(TileEntityMachineHTR3.class, (be, side) -> Orbit.inOrbit(be.getLevel()));
+    }
 
     public MachineHTR3(Properties properties) {
         super(properties);

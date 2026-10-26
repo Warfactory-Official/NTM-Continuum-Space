@@ -42,8 +42,4 @@ public class MachineDysonConverterHE extends BlockMultiblockMachine implements I
         MachinePorts.ports(core, facing, cell::equals, new DirPos[] {out}, ROLE_POWER, visitor);
     }
 
-    @Override
-    protected void visitPassiveCells(BlockPos core, Direction facing, PassiveCellVisitor visitor) {
-        visitor.passiveCell(powerCell(core, facing), MASK_ALL, PASSIVE_POWER_IN);
-    }
 }

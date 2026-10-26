@@ -3,6 +3,7 @@ package com.ntmspace.recipes.data;
 import com.hbm.api.data.FluidDataMaps;
 import com.hbm.api.data.FluidDataMaps.Container;
 import com.hbm.api.data.FluidDataMaps.Containers;
+import com.ntmspace.block.BlockBodyOre.Body;
 import dev.golem.core.data.DataMapSource;
 import java.util.Optional;
 
@@ -55,6 +56,9 @@ public final class SpaceFluidContainers {
 
         @Override
         protected void values() {
+            // 1.7 FluidContainerRegistry registers the same consumed item contents for every body.
+            ore("ore_oil", "hbm:oil", 250);
+            ore("ore_gas", "hbm:gas", 100);
             container("ntmspace:bucket_mercury", "hbm:mercury", 1000, "minecraft:bucket");
             container("ntmspace:bucket_bromine", "ntmspace:bromine", 1000, "minecraft:bucket");
             container("ntmspace:bucket_ccl", "ntmspace:ccl", 1000, "minecraft:bucket");
@@ -65,6 +69,12 @@ public final class SpaceFluidContainers {
             container("ntmspace:bottle_honey", "ntmspace:honey", 100, "minecraft:glass_bottle");
             // dry ice is used up (no empty container)
             container("ntmspace:dry_ice", "hbm:carbondioxide", 1000, null);
+        }
+
+        private void ore(String family, String fluid, int amount) {
+            for (var body : Body.values()) {
+                container("ntmspace:" + body.itemPath(family), fluid, amount, null);
+            }
         }
 
         private void container(String item, String fluid, int amount, String empty) {

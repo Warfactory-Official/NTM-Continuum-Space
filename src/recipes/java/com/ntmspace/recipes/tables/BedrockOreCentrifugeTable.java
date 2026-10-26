@@ -79,6 +79,6 @@ public final class BedrockOreCentrifugeTable extends RecipeSource<Row> {
     private void put(ComparableStack input, ItemStack[] outputs) {
         List<Output> out = new ArrayList<>();
         for (ItemStack stack : outputs) out.add(new ItemOutput(ItemOut.of(stack)));
-        register(BuiltInRegistries.ITEM.getKey(input.item).getPath(), new Row(input, out, List.of(), Integer.MAX_VALUE));
+        register(BuiltInRegistries.ITEM.getKey(input.item).getPath(), new Row(input, out, List.of(), orderAfterBase(Row::order)));
     }
 }

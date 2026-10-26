@@ -1,5 +1,6 @@
 package com.ntmspace.registry;
 
+import dev.golem.core.dejson.Tags;
 import com.hbm.creativetabs.HbmTab;
 import com.hbm.inventory.material.MaterialShapes;
 import com.hbm.inventory.material.NTMMaterial;
@@ -93,6 +94,8 @@ public final class BedrockOreItems {
             ModAutogenItems.registerAutogen(ITEMS, mat, MaterialShapes.FRAGMENT);
             if (ModAutogenItems.registeredCount() > before) {
                 FRAGMENTS.add(mat);
+                Tags.member("item", "c", MaterialShapes.FRAGMENT.tagPlural + "/" + mat.name,
+                        NtmSpace.MOD_ID + ":" + ModAutogenItems.base(MaterialShapes.FRAGMENT) + "_" + mat.name);
                 sprites.add(mat.name);
             }
         }

@@ -5,15 +5,18 @@ import java.util.Random;
 /**
  * hbm-space's {@code ChunkProviderIke} with {@code BiomeGenIke}, ported line for line: one biome everywhere
  * ({@code WorldChunkManagerHell}), thick Ike regolith over Ike stone, then tilted spires ({@link MapGenTiltedSpires17}),
- * vanilla caves ({@link Caves17}), brine bubbles ({@link MapGenBubble}) and rare "Sellafield" hot-spot craters
+ * vanilla cave geometry digging Ike stone ({@link VanillaCaves17}), brine bubbles ({@link MapGenBubble}) and rare "Sellafield" hot-spot craters
  * ({@link MapGenTerrainCrater17}), in that order.
  *
- * <p><b>Ported oddities:</b> the caves are Forge's plain {@code MapGenCaves}, which digs only vanilla stone and the
- * biome's top and filler blocks: on Ike they carve the regolith and stop at Ike stone. The hot spots start in one origin
- * chunk in {@code WorldConfig.radfreq / 10} (500), and a crater laid over a brine bubble keeps the bubble's metadata, so
+ * <p>The caves retain Forge's plain {@code MapGenCaves} geometry, with Ike stone as their host instead of the absent
+ * vanilla stone. The hot spots start in one origin chunk in {@code WorldConfig.radfreq / 10} (500), and a crater laid
+ * over a brine bubble keeps the bubble's metadata, so
  * its sellafite there reads as level 5 (1.7 had the same metadata in its primer).
  */
 public class IkeTerrain17 extends CelestialTerrain17 {
+
+    /** hbm-space's {@code SpaceConfig.ikeBiome} default, used by its fixed biome source. */
+    public static final int BIOME_ID = 93;
 
     /** hbm-space's {@code WorldConfig.ikeBrineSpawn} default. */
     public static final int BRINE_SPAWN = 100;
@@ -22,7 +25,7 @@ public class IkeTerrain17 extends CelestialTerrain17 {
 
     public final Biome17 biome = new BiomeIke();
 
-    private final Caves17 caveGenerator = new Caves17();
+    private final Caves17 caveGenerator = new VanillaCaves17(DunaIkeDresBlocks17.IKE_STONE);
     private final MapGenTiltedSpires17 spires = new MapGenTiltedSpires17(6, 6, 0F);
     private final MapGenBubble brine = new MapGenBubble(BRINE_SPAWN);
     private final MapGenTerrainCrater17 sellafield = new MapGenTerrainCrater17(SELLAFIELD_FREQUENCY);

@@ -1,5 +1,6 @@
 package com.ntmspace.trait;
 
+import com.ntmspace.client.CelestialTimeClient;
 import com.ntmspace.NtmSpace;
 import dev.golem.core.Ids;
 import dev.golem.core.net.GolemCodec;
@@ -69,9 +70,11 @@ public final class TraitSync {
 
     /** Common start-up: the payload, the server tick and the join sync. */
     public static void init() {
+        CelestialTimeSync.init();
         GolemNetwork.declarePlayToClient(CODEC);
         Lifecycle.onServerStarted(CelestialTraits::serverStarted);
         Lifecycle.onServerStopping(server -> CelestialTraits.serverStopping());
+        Lifecycle.onBeforeLevelTicks(CelestialTraits::serverTick);
         Lifecycle.onServerTick(TraitSync::tick);
         // 1.7 ModEventHandler.onLivingDeath: a kill counts for the body's invasion
         dev.golem.core.world.Deaths.onDeath((entity, source) -> {
@@ -89,12 +92,13 @@ public final class TraitSync {
 
     /** Client start-up: the handler. */
     public static void initClient() {
+        CelestialTimeClient.init();
         GolemNetwork.registerPlayToClient(CODEC, (payload, context) -> CelestialTraits.receive(payload.traits()));
         dev.golem.core.client.ClientTicks.onEndTick(CelestialTraits::clientTick);
     }
 
     private static void tick(MinecraftServer server) {
-        CelestialTraits.serverTick(server);
+        CelestialTraits.serverMaintenance(server);
         if (!CelestialTraits.takeChanged()) return;
         Payload payload = snapshot();
         for (ServerPlayer player : server.getPlayerList().getPlayers()) {

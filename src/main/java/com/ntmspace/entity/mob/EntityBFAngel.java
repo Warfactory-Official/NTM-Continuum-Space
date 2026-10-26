@@ -3,8 +3,6 @@ package com.ntmspace.entity.mob;
 import com.hbm.entity.projectile.EntityBulletBaseMK4;
 import com.hbm.entity.projectile.EntityBulletBeamBase;
 import com.hbm.interfaces.IRadiationImmune;
-import com.hbm.items.weapon.sedna.factory.XFactoryEnergy;
-import com.hbm.items.weapon.sedna.factory.XFactoryFlamer;
 import com.hbm.lib.ModDamageSources;
 import com.hbm.particle.helper.HbmEffectNT;
 import com.hbm.sound.ModSounds;
@@ -15,7 +13,9 @@ import com.ntmspace.registry.SpaceMobs;
 import dev.golem.core.data.CompatMob;
 import dev.golem.core.data.SynchedData;
 import dev.golem.core.world.Compat;
+import dev.golem.core.world.EntityLoot;
 import java.util.ArrayList;
+import java.util.EnumSet;
 import java.util.List;
 import net.minecraft.ChatFormatting;
 import net.minecraft.core.BlockPos;
@@ -36,12 +36,13 @@ import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.EntityType;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.Mob;
-import net.minecraft.world.entity.MoverType;
 import net.minecraft.world.entity.ai.attributes.AttributeSupplier;
 import net.minecraft.world.entity.ai.attributes.Attributes;
+import net.minecraft.world.entity.ai.control.LookControl;
+import net.minecraft.world.entity.ai.control.MoveControl;
+import net.minecraft.world.entity.ai.goal.Goal;
 import net.minecraft.world.entity.monster.Enemy;
 import net.minecraft.world.entity.player.Player;
-import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.levelgen.Heightmap;
@@ -75,10 +76,12 @@ public class EntityBFAngel extends CompatMob implements Enemy, IRadiationImmune 
     public int courseChangeCooldown;
     public int scanCooldown;
 
+    private @Nullable DamageSource deathLoot;
+    private @Nullable Player deathLootPlayer;
+
     public int hurtCooldown;
     public int beamTimer;
-    private @Nullable Entity target;
-    private final List<Entity> secondaries = new ArrayList<>();
+    private final List<LivingEntity> secondaries = new ArrayList<>();
 
     private double lockedX;
     private double lockedY;
@@ -97,12 +100,19 @@ public class EntityBFAngel extends CompatMob implements Enemy, IRadiationImmune 
     public EntityBFAngel(EntityType<? extends EntityBFAngel> type, Level level) {
         super(type, level);
         setNoGravity(true); // 1.7 EntityFlying never applied gravity in moveEntityWithHeading
+        this.moveControl = new DashControl(this);
+        this.lookControl = new EaseLookControl(this);
         this.xpReward = 500;
         this.deathTime = -30;
     }
 
     public static AttributeSupplier.Builder createAttributes() {
         return Mob.createMobAttributes().add(Attributes.MAX_HEALTH, 10000.0D);
+    }
+
+    @Override
+    protected void registerGoals() {
+        this.targetSelector.addGoal(1, new ScanGoal(this));
     }
 
     @Override
@@ -117,13 +127,6 @@ public class EntityBFAngel extends CompatMob implements Enemy, IRadiationImmune 
     @Override
     protected void checkFallDamage(double ya, boolean onGround, BlockState onState, BlockPos pos) {
         // 1.7 EntityFlying.fall() was empty
-    }
-
-    /** 1.7 {@code EntityFlying.moveEntityWithHeading}: move, then a flat 0.91 drag (0.546 on the ground). */
-    @Override
-    public void travel(Vec3 input) {
-        move(MoverType.SELF, getDeltaMovement());
-        setDeltaMovement(getDeltaMovement().scale(onGround() ? 0.6D * 0.91D : 0.91D));
     }
 
     @Override
@@ -146,8 +149,8 @@ public class EntityBFAngel extends CompatMob implements Enemy, IRadiationImmune 
     }
 
     /** 1.7 {@code canAttackClass}: anything but another angel (its {@code IProjectile} clause never matched). */
-    private boolean canTarget(Entity entity) {
-        return !(entity instanceof EntityBFAngel);
+    private boolean canAttackClass(Entity entity) {
+        return entity.getClass() != getClass();
     }
 
     /** 1.7 {@code updateEntityActionState}, which ran on the server only. */
@@ -161,63 +164,70 @@ public class EntityBFAngel extends CompatMob implements Enemy, IRadiationImmune 
 
         if (this.hurtCooldown > 0) this.hurtCooldown--;
         if (this.courseChangeCooldown > 0) this.courseChangeCooldown--;
-        if (this.scanCooldown > 0) this.scanCooldown--;
 
-        if (this.target != null && !this.target.isAlive()) this.target = null;
-
-        if (this.scanCooldown <= 0) scanForTargets();
-
-        if (this.target != null && this.courseChangeCooldown <= 0) {
-            Vec3 vec = new Vec3(getX() - this.target.getX(), 0, getZ() - this.target.getZ());
-
-            if (this.random.nextInt(3) > 0) vec = vec.yRot((float) Math.PI * 2 * this.random.nextFloat());
-
-            double length = vec.length();
-            double overshoot = 35;
-
-            int wX = (int) Math.floor(this.target.getX() - vec.x / length * overshoot);
-            int wZ = (int) Math.floor(this.target.getZ() - vec.z / length * overshoot);
-
-            setWaypoint(wX, Math.max(level.getHeight(Heightmap.Types.WORLD_SURFACE, wX, wZ) + this.random.nextInt(15),
-                    (int) this.target.getY() - 5), wZ);
-
-            this.courseChangeCooldown = 40 + this.random.nextInt(20);
-        }
+        LivingEntity target = getTarget();
+        if (target != null && this.courseChangeCooldown <= 0) setCourse(target);
 
         tickBeam(level);
-        tickWeapons(level);
-        tickStrikes(level);
-        move();
-        face();
+        tickWeapons(level, target);
+        if (target == null) return;
+
+        tickStrikes(level, target);
+        // 1.7:352-364 orbit waypoint dead: setCourse resets the cooldown first
+        if (this.courseChangeCooldown <= 10) {
+            this.moveControl.setWantedPosition(getWaypointX(), getWaypointY(), getWaypointZ(),
+                    2.0D * (this.courseChangeCooldown / 15.0));
+        }
+        this.courseChangeCooldown--;
+        this.lookControl.setLookAt(target.getX(), target.getY() + target.getBbHeight() * 0.5, target.getZ());
     }
 
-    private void scanForTargets() {
-        List<Entity> entities = level().getEntities(this, getBoundingBox().inflate(100, 50, 100));
+    // 1.7:129-165: the nearest eligible player, anything living in sight a secondary, one of those if no player
+    private void scan() {
+        List<Entity> entities = level().getEntities(this, getBoundingBox().inflate(100D, 50D, 100D));
         this.secondaries.clear();
-        this.target = null;
+        LivingEntity target = null;
 
         for (Entity entity : entities) {
 
-            if (!entity.isAlive() || !canTarget(entity)) continue;
+            if (!entity.isAlive() || !canAttackClass(entity)) continue;
 
             if (entity instanceof Player player) {
                 if (player.isCreative()) continue;
                 if (player.hasEffect(MobEffects.INVISIBILITY)) continue;
 
-                if (this.target == null || distanceToSqr(entity) < distanceToSqr(this.target)) this.target = entity;
+                if (target == null || distanceToSqr(entity) < distanceToSqr(target)) target = player;
             }
 
-            if (entity instanceof LivingEntity living && distanceToSqr(living) < 100 * 100
-                    && getSensing().hasLineOfSight(living) && living != this.target) {
+            if (entity instanceof LivingEntity living && distanceToSqr(living) < 100D * 100D
+                    && getSensing().hasLineOfSight(living) && living != target) {
                 this.secondaries.add(living);
             }
         }
 
-        if (this.target == null && !this.secondaries.isEmpty()) {
-            this.target = this.secondaries.get(this.random.nextInt(this.secondaries.size()));
+        if (target == null && !this.secondaries.isEmpty()) {
+            target = this.secondaries.get(this.random.nextInt(this.secondaries.size()));
         }
 
+        setTarget(target);
         this.scanCooldown = 50;
+    }
+
+    // 1.7:167-183
+    private void setCourse(LivingEntity target) {
+        Vec3 vec = new Vec3(getX() - target.getX(), 0D, getZ() - target.getZ());
+        if (this.random.nextInt(3) > 0) vec = vec.yRot((float) Math.PI * 2F * this.random.nextFloat());
+
+        double length = vec.length();
+        double overshoot = 35D;
+
+        int wX = (int) Math.floor(target.getX() - vec.x / length * overshoot);
+        int wZ = (int) Math.floor(target.getZ() - vec.z / length * overshoot);
+
+        int surface = level().getHeight(Heightmap.Types.WORLD_SURFACE, wX, wZ) + this.random.nextInt(15);
+        setWaypoint(wX, Math.max(surface, (int) target.getY() - 5), wZ);
+
+        this.courseChangeCooldown = 40 + this.random.nextInt(20);
     }
 
     /** The ground beam: kills the column below for as long as {@code beamTimer} runs (never armed in hbm-space). */
@@ -233,7 +243,7 @@ public class EntityBFAngel extends CompatMob implements Enemy, IRadiationImmune 
                 AABB column = new AABB(getX(), iy, getZ(), getX(), getY(), getZ()).inflate(5, 0, 5);
 
                 for (Entity e : level.getEntities(this, column)) {
-                    if (canTarget(e)) {
+                    if (canAttackClass(e)) {
                         Compat.hurt(e, level, ModDamageSources.source(level, ModDamageSources.COMBINE, this, e), 1000F);
                         dev.golem.core.world.Effects.ignite(e, 5);
 
@@ -250,73 +260,63 @@ public class EntityBFAngel extends CompatMob implements Enemy, IRadiationImmune 
         }
     }
 
-    private void tickWeapons(ServerLevel level) {
+    private void tickWeapons(ServerLevel level, LivingEntity target) {
         if (this.tickCount % 300 < 200) {
-
             if (!this.secondaries.isEmpty()) {
                 // 1.7 drew a random secondary here only to forget the dead ones
-                Entity e = this.secondaries.get(this.random.nextInt(this.secondaries.size()));
+                LivingEntity e = this.secondaries.get(this.random.nextInt(this.secondaries.size()));
                 if (!e.isAlive()) this.secondaries.remove(e);
             }
 
-            if (this.target != null) {
+            if (target == null) return;
 
-                if (!this.isChargingGatling) {
-                    this.isChargingGatling = true;
-                    this.gatlingCharge = 70;
+            if (!this.isChargingGatling) {
+                this.isChargingGatling = true;
+                this.gatlingCharge = 70;
+                return;
+            }
+
+            if (this.gatlingCharge > 10) {
+                this.lockedX = target.getX();
+                this.lockedY = target.getY();
+                this.lockedZ = target.getZ();
+            }
+
+            this.gatlingCharge--;
+
+            if (this.gatlingCharge == 30) {
+                level.playSound(null, this, SpaceMobs.BFA_TALK.get(), SoundSource.HOSTILE, 10.0F, 1.0F);
+            }
+
+            if (this.gatlingCharge <= 0) {
+                fireBeamAt(this.lockedX, this.lockedY, this.lockedZ);
+
+                this.isChargingGatling = false;
+                this.gatlingCharge = 0;
+            }
+
+        } else if (this.tickCount % 20 == 0) {
+
+            if (!this.secondaries.isEmpty()) {
+                LivingEntity e = this.secondaries.get(this.random.nextInt(this.secondaries.size()));
+
+                if (e.isAlive()) {
+                    rocketAttack(e);
                 } else {
-
-                    if (this.gatlingCharge > 10) {
-                        this.lockedX = this.target.getX();
-                        this.lockedY = this.target.getY();
-                        this.lockedZ = this.target.getZ();
-                    }
-
-                    this.gatlingCharge--;
-
-                    if (this.gatlingCharge == 30) {
-                        level.playSound(null, this, SpaceMobs.BFA_TALK.get(), SoundSource.HOSTILE, 10.0F, 1.0F);
-                    }
-
-                    if (this.gatlingCharge <= 0) {
-                        fireBeamAt(this.lockedX, this.lockedY, this.lockedZ);
-
-                        this.isChargingGatling = false;
-                        this.gatlingCharge = 0;
-                    }
+                    this.secondaries.remove(e);
                 }
+
+            } else if (target != null) {
+                rocketAttack(target);
             }
 
-        } else {
-
-            if (this.tickCount % 20 == 0) {
-
-                if (!this.secondaries.isEmpty()) {
-                    Entity e = this.secondaries.get(this.random.nextInt(this.secondaries.size()));
-
-                    if (e.isAlive()) {
-                        rocketAttack(e);
-                    } else {
-                        this.secondaries.remove(e);
-                    }
-
-                } else if (this.target != null) {
-                    rocketAttack(this.target);
-                }
-
-            } else if (this.tickCount % 4 == 2) {
-
-                if (this.target != null) {
-                    rocketAttack(this.target);
-                }
-            }
+        } else if (this.tickCount % 4 == 2 && target != null) {
+            rocketAttack(target);
         }
     }
 
     /** Three telegraphed strikes around the target: 60 ticks of red dust and lock-on beeps each, then a beam from above. */
-    private void tickStrikes(ServerLevel level) {
-        if (this.target == null) return;
-
+    private void tickStrikes(ServerLevel level, LivingEntity target) {
         if (this.aoeCooldown <= 0 && this.aoeStage == 0) {
             this.aoeStage = 1;
 
@@ -324,7 +324,7 @@ public class EntityBFAngel extends CompatMob implements Enemy, IRadiationImmune 
                 double offsetX = (this.random.nextDouble() - 0.5) * 12;
                 double offsetZ = (this.random.nextDouble() - 0.5) * 12;
 
-                this.strikepositions[i] = new Vec3(this.target.getX() + offsetX, this.target.getY(), this.target.getZ() + offsetZ);
+                this.strikepositions[i] = new Vec3(target.getX() + offsetX, target.getY(), target.getZ() + offsetZ);
 
                 this.strikeTimers[i] = -i * 4;
                 this.strikeArmed[i] = true;
@@ -333,34 +333,29 @@ public class EntityBFAngel extends CompatMob implements Enemy, IRadiationImmune 
             this.aoeCooldown = 200;
         }
 
-        for (int i = 0; i < 3; i++) {
-
-            if (this.strikeArmed[i]) {
-
-                this.strikeTimers[i]++;
-
-                if (this.strikeTimers[i] < 0) continue;
-
-                Vec3 pos = this.strikepositions[i];
-
-                if (this.strikeTimers[i] < 60 && this.strikeTimers[i] % 5 == 0) {
-                    level.playSound(null, pos.x, pos.y, pos.z, STINGER_LOCK_ON, SoundSource.HOSTILE, 1.0F, 1F);
-                    // 1.7 "vanillaburst" mode "reddust", 35 particles, motion 0.2, 100-block radius
-                    level.sendParticles(DustParticleOptions.REDSTONE, pos.x, pos.y, pos.z, 35, 0D, 0D, 0D, 0.2D);
-                }
-
-                if (this.strikeTimers[i] >= 60) {
-                    fireDownwardBeamAt(pos.x, pos.y, pos.z);
-                    this.strikeArmed[i] = false;
-                }
-            }
-        }
-
         boolean allDone = true;
         for (int i = 0; i < 3; i++) {
-            if (this.strikeArmed[i]) {
+            if (!this.strikeArmed[i]) continue;
+
+            this.strikeTimers[i]++;
+            if (this.strikeTimers[i] < 0) {
                 allDone = false;
-                break;
+                continue;
+            }
+
+            Vec3 pos = this.strikepositions[i];
+
+            if (this.strikeTimers[i] < 60 && this.strikeTimers[i] % 5 == 0) {
+                level.playSound(null, pos.x, pos.y, pos.z, STINGER_LOCK_ON, SoundSource.HOSTILE, 1.0F, 1F);
+                // 1.7 "vanillaburst" mode "reddust", 35 particles, motion 0.2, 100-block radius
+                level.sendParticles(DustParticleOptions.REDSTONE, pos.x, pos.y, pos.z, 35, 0D, 0D, 0D, 0.2D);
+            }
+
+            if (this.strikeTimers[i] >= 60) {
+                fireDownwardBeamAt(pos.x, pos.y, pos.z);
+                this.strikeArmed[i] = false;
+            } else {
+                allDone = false;
             }
         }
 
@@ -369,58 +364,11 @@ public class EntityBFAngel extends CompatMob implements Enemy, IRadiationImmune 
         if (this.aoeCooldown > 0) this.aoeCooldown--;
     }
 
-    /** 1.7: hover in place, then dash at the waypoint in the last 10 ticks of the course (the speed falling to 0). */
-    private void move() {
-        setDeltaMovement(Vec3.ZERO);
-
-        if (this.target != null) {
-
-            // 1.7: a second course block that can never run (the one above has just reset the cooldown)
-            if (this.courseChangeCooldown <= 0) {
-                double angle = this.random.nextDouble() * Math.PI * 2;
-                double radius = 15 + this.random.nextInt(10);
-
-                int targetX = (int) (this.target.getX() + Math.cos(angle) * radius);
-                int targetZ = (int) (this.target.getZ() + Math.sin(angle) * radius);
-                int targetY = (int) (this.target.getY() + 5 + this.random.nextInt(5));
-
-                setWaypoint(targetX, targetY, targetZ);
-
-                this.courseChangeCooldown = 85;
-            }
-
-            if (this.courseChangeCooldown <= 10) {
-                double dx = getWaypointX() - getX();
-                double dy = getWaypointY() - getY();
-                double dz = getWaypointZ() - getZ();
-
-                Vec3 dir = new Vec3(dx, dy, dz).normalize();
-
-                double t = this.courseChangeCooldown / 15.0;
-                double dashSpeed = 2.0D * t;
-
-                setDeltaMovement(dir.x * dashSpeed, dir.y * dashSpeed, dir.z * dashSpeed);
-            }
-
-            // 1.7 counted the course down a second time here
-            this.courseChangeCooldown--;
-        }
-    }
-
-    private void face() {
-        if (this.target == null) return;
-        double dx = this.target.getX() - getX();
-        double dy = this.target.getY() + this.target.getBbHeight() * 0.5 - (getY() + 1);
-        double dz = this.target.getZ() - getZ();
-
-        float targetYaw = (float) (Math.atan2(dz, dx) * 180D / Math.PI) + 90F;
-
-        float delta = Mth.wrapDegrees(targetYaw - getYRot());
-        setYRot(getYRot() + delta * 0.15F);
-
-        double dist = Math.sqrt(dx * dx + dz * dz);
-        float targetPitch = (float) (-(Math.atan2(dy, dist) * -180D / Math.PI));
-        setXRot(getXRot() + (targetPitch - getXRot()) * 0.1F);
+    /** The death table waits for the explosion, while retaining the player credited at death. */
+    @Override
+    protected void dropFromLootTable(ServerLevel level, DamageSource source, boolean killedByPlayer) {
+        deathLoot = source;
+        deathLootPlayer = killedByPlayer ? compatLastHurtByPlayer() : null;
     }
 
     /** 1.7 {@code onDeathUpdate}, the clock started at -30: the alarm at -10, the flash, the drop and the omen at 19. */
@@ -439,10 +387,16 @@ public class EntityBFAngel extends CompatMob implements Enemy, IRadiationImmune 
             HbmEffectNT.TinyTot.send(server, getX(), getY() + 0.5, getZ(), null, 250D);
             server.playSound(null, getX(), getY(), getZ(), ModSounds.MUKE_EXPLOSION.get(), SoundSource.HOSTILE, 15.0F, 1.0F);
 
-            spawnAtLocation(server, new ItemStack(SpaceMobs.CORE_ANGEL.get()), 1F);
+            if (deathLoot != null) {
+                for (var drop : EntityLoot.roll(server, "ntmspace:entities/entity_bfa", this, deathLoot, deathLootPlayer)) {
+                    spawnAtLocation(server, drop, 1F);
+                }
+                deathLoot = null;
+                deathLootPlayer = null;
+            }
 
             for (Player player : server.getEntitiesOfClass(Player.class, getBoundingBox().inflate(200, 200, 200))) {
-                player.sendSystemMessage(Component.literal("Stars are starting to flicker...").withStyle(ChatFormatting.RED));
+                player.sendSystemMessage(Component.translatable("chat.hbmspace.angel.flicker").withStyle(ChatFormatting.RED));
             }
 
             // 1.7: CelestialBody.getBody(world).modifyTraits(new CBT_Invasion(0, 122, false)) when the body had no
@@ -458,8 +412,7 @@ public class EntityBFAngel extends CompatMob implements Enemy, IRadiationImmune 
         double spawnY = getY() + 4;
         double spawnZ = getZ();
 
-        // 1.7 setKnockback(0) mutates HBM's shared tesla-overcharge config; hbm-space's side effect, ported as found
-        EntityBulletBeamBase bullet = new EntityBulletBeamBase(this, XFactoryEnergy.energy_tesla_overcharge.setKnockback(0), 8F);
+        EntityBulletBeamBase bullet = new EntityBulletBeamBase(this, MobWeaponsSpace.TESLA_OVERCHARGE_STILL, 8F);
         bullet.setPos(spawnX, spawnY, spawnZ);
         bullet.setRotationsFromVector(new Vec3(x - spawnX, y - spawnY, z - spawnZ));
         bullet.performHitscanExternal(250D);
@@ -469,7 +422,7 @@ public class EntityBFAngel extends CompatMob implements Enemy, IRadiationImmune 
     }
 
     private void fireDownwardBeamAt(double x, double y, double z) {
-        EntityBulletBeamBase bullet = new EntityBulletBeamBase(this, XFactoryEnergy.energy_tesla_overcharge.setKnockback(0), 6F);
+        EntityBulletBeamBase bullet = new EntityBulletBeamBase(this, MobWeaponsSpace.TESLA_OVERCHARGE_STILL, 6F);
         bullet.setPos(x, y + 40, z);
         bullet.setRotationsFromVector(new Vec3(0, -1, 0));
         bullet.performHitscanExternal(250D);
@@ -482,7 +435,7 @@ public class EntityBFAngel extends CompatMob implements Enemy, IRadiationImmune 
         Vec3 heading = new Vec3(e.getX() - getX(), e.getY() + e.getBbHeight() / 2.0 - getY() - 0.5D, e.getZ() - getZ()).normalize();
 
         // 1.7: the gun constructor from the eyes with no offset and a spread of 1, then the motion overwritten
-        EntityBulletBaseMK4 bullet = new EntityBulletBaseMK4(this, XFactoryFlamer.flame_balefire.setKnockback(0), 0.5F, 1, 0, 0, 0);
+        EntityBulletBaseMK4 bullet = new EntityBulletBaseMK4(this, MobWeaponsSpace.FLAME_BALEFIRE_STILL, 0.5F, 1, 0, 0, 0);
         double speed = 1.0;
         bullet.setDeltaMovement(heading.x * speed, heading.y * speed, heading.z * speed);
 
@@ -534,5 +487,75 @@ public class EntityBFAngel extends CompatMob implements Enemy, IRadiationImmune 
 
     public int getWaypointZ() {
         return this.entityData.get(WAYPOINT_Z);
+    }
+
+    private static final class ScanGoal extends Goal {
+
+        private final EntityBFAngel angel;
+
+        private ScanGoal(EntityBFAngel angel) {
+            this.angel = angel;
+            setFlags(EnumSet.of(Flag.TARGET));
+        }
+
+        @Override
+        public boolean canUse() {
+            return true;
+        }
+
+        @Override
+        public boolean requiresUpdateEveryTick() {
+            return true;
+        }
+
+        @Override
+        public void tick() {
+            if (this.angel.scanCooldown > 0) this.angel.scanCooldown--;
+            if (this.angel.scanCooldown <= 0) this.angel.scan();
+        }
+    }
+
+    // 1.7 EntityFlying: motion zeroed every AI tick, a dash sets it; speedModifier is blocks per tick.
+    // The raw return type matches the superclass signature across nodes.
+    private static final class DashControl extends MoveControl {
+
+        private DashControl(EntityBFAngel angel) {
+            super(angel);
+        }
+
+        @Override
+        public void tick() {
+            Vec3 motion = Vec3.ZERO;
+            if (this.operation == Operation.MOVE_TO) {
+                this.operation = Operation.WAIT;
+                motion = new Vec3(this.wantedX - this.mob.getX(), this.wantedY - this.mob.getY(),
+                        this.wantedZ - this.mob.getZ()).normalize().scale(this.speedModifier);
+            }
+            this.mob.setDeltaMovement(motion);
+        }
+    }
+
+    // 1.7:385-398: eases yRot (+90) and xRot from one above the feet; LookControl.tick resets xRot every tick
+    private static final class EaseLookControl extends LookControl {
+
+        private EaseLookControl(EntityBFAngel angel) {
+            super(angel);
+        }
+
+        @Override
+        public void tick() {
+            if (!isLookingAtTarget()) return;
+            this.lookAtCooldown = 0;
+
+            double dx = this.wantedX - this.mob.getX();
+            double dy = this.wantedY - (this.mob.getY() + 1);
+            double dz = this.wantedZ - this.mob.getZ();
+
+            float yaw = (float) (Math.atan2(dz, dx) * 180D / Math.PI) + 90F;
+            this.mob.setYRot(this.mob.getYRot() + Mth.wrapDegrees(yaw - this.mob.getYRot()) * 0.15F);
+
+            float pitch = (float) (Math.atan2(dy, Math.sqrt(dx * dx + dz * dz)) * 180D / Math.PI);
+            this.mob.setXRot(this.mob.getXRot() + (pitch - this.mob.getXRot()) * 0.1F);
+        }
     }
 }

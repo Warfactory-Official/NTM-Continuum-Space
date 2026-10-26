@@ -1,18 +1,19 @@
 package com.ntmspace.entity.mob;
 
 import dev.golem.core.data.CompatSquid;
-import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.DifficultyInstance;
-import net.minecraft.world.damagesource.DamageSource;
 import net.minecraft.world.entity.AgeableMob;
 import net.minecraft.world.entity.EntityDimensions;
 import net.minecraft.world.entity.EntitySpawnReason;
+import dev.golem.core.data.DataIn;
+import dev.golem.core.data.DataOut;
+import dev.golem.core.data.SynchedData;
+import net.minecraft.network.syncher.EntityDataAccessor;
+import net.minecraft.network.syncher.EntityDataSerializers;
+import net.minecraft.network.syncher.SynchedEntityData;
 import net.minecraft.world.entity.EntityType;
-import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.Pose;
 import net.minecraft.world.entity.SpawnGroupData;
-import net.minecraft.world.item.ItemStack;
-import net.minecraft.world.item.Items;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.LevelAccessor;
 import net.minecraft.world.level.ServerLevelAccessor;
@@ -23,8 +24,7 @@ import org.jspecify.annotations.Nullable;
  * hbm-space {@code EntityDepthSquid}: a vanilla squid of the Sagan Sea in one of seven colours, with a real limb swing
  * (1.7's squid "just blasts through everything"; the depth squid's fins follow the walk cycle).
  *
- * <p>The colour is rolled in the constructor from the world's random and is neither saved nor synced, exactly as in
- * 1.7: each client, and each reload, rolls its own. Ported as found.
+ * <p>The server chooses the colour once and preserves it through saves and entity tracking.
  */
 public class EntityDepthSquid extends CompatSquid implements IEntityEnumMulti {
 
@@ -38,16 +38,36 @@ public class EntityDepthSquid extends CompatSquid implements IEntityEnumMulti {
         VICIOUS,
     }
 
-    public final DepthSquid type;
+    private static final DepthSquid[] VARIANTS = DepthSquid.values();
+    private static final EntityDataAccessor<Byte> VARIANT =
+            SynchedEntityData.defineId(EntityDepthSquid.class, EntityDataSerializers.BYTE);
 
     public EntityDepthSquid(EntityType<? extends EntityDepthSquid> type, Level level) {
         super(type, level);
-        this.type = DepthSquid.values()[level.getRandom().nextInt(DepthSquid.values().length)];
+        if (!level.isClientSide()) entityData.set(VARIANT, (byte) level.getRandom().nextInt(VARIANTS.length));
     }
 
     @Override
-    public Enum<?> getEnum() {
-        return this.type;
+    public DepthSquid getEnum() {
+        return VARIANTS[entityData.get(VARIANT)];
+    }
+
+    @Override
+    protected void defineData(SynchedData data) {
+        super.defineData(data);
+        data.define(VARIANT, (byte) 0);
+    }
+
+    @Override
+    protected void loadData(DataIn input) {
+        super.loadData(input);
+        MobVariants.load(entityData, VARIANT, VARIANTS, input);
+    }
+
+    @Override
+    protected void saveData(DataOut output) {
+        super.saveData(output);
+        MobVariants.save(entityData, VARIANT, output);
     }
 
     /** 1.7 {@code EntitySquid.setSize(0.95F, 0.95F)}; the modern squid is 0.8. */
@@ -76,13 +96,4 @@ public class EntityDepthSquid extends CompatSquid implements IEntityEnumMulti {
         return getY() > 45.0D && getY() < 63.0D;
     }
 
-    /** 1.7 {@code EntitySquid.dropFewItems}: {@code rand.nextInt(3 + looting) + 1} ink sacs (the type has no loot table). */
-    @Override
-    protected void dropCustomDeathLoot(ServerLevel level, DamageSource source, boolean killedByPlayer) {
-        super.dropCustomDeathLoot(level, source, killedByPlayer);
-        int looting = source.getEntity() instanceof LivingEntity attacker
-                ? dev.golem.core.world.Compat.lootingLevel(level, attacker) : 0;
-        int j = this.random.nextInt(3 + looting) + 1;
-        for (int k = 0; k < j; ++k) spawnAtLocation(level, new ItemStack(Items.INK_SAC));
-    }
 }

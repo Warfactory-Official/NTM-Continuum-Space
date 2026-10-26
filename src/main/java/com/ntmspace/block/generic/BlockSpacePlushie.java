@@ -1,6 +1,7 @@
 package com.ntmspace.block.generic;
 
 import com.hbm.blocks.generic.BlockTrinket;
+import com.hbm.blocks.generic.BlockPlushie;
 import com.hbm.tileentity.deco.TileEntityTrinket;
 import com.ntmspace.registry.LeftoverContent;
 import dev.golem.core.Ids;
@@ -22,8 +23,8 @@ import org.jspecify.annotations.Nullable;
 
 /**
  * The plushies hbm-space added to HBM's {@code BlockPlushie}: Kasane Teto, Hatsune Miku, Akita Neru and FAT TETO
- * ({@code PlushieType.TETO/MIKU/NERU/FATO}). HBM's plushie types are a closed variant family (inventory E-094: an addon
- * registers its own blocks), so they are {@code ntmspace:plushie}, on HBM's {@link BlockTrinket} figure (sixteen-way
+ * ({@code PlushieType.TETO/MIKU/NERU/FATO}). HBM's {@link BlockPlushie.PlushieType} is a closed variant family,
+ * so the additional types use {@code ntmspace:plushie}, on HBM's {@link BlockTrinket} figure (sixteen-way
  * facing, the type in the block entity saved by name, dropped by a player's break only) with one item each,
  * {@code ntmspace:plushie_teto}, {@code _miku}, {@code _neru}, {@code _fato}. Cloth, hardness 0, resistance 0.
  *
@@ -35,6 +36,19 @@ import org.jspecify.annotations.Nullable;
  * a change hbm-space made to HBM's own presses).
  */
 public class BlockSpacePlushie extends BlockTrinket implements TickingBlock {
+
+    /** Space 1.7 BlockPlushie.onBlockActivated plays every original plushie at volume 0.25. */
+    public static final class Base extends BlockPlushie {
+
+        public Base(Properties properties) {
+            super(properties);
+        }
+
+        @Override
+        protected float squishVolume(PlushieType type) {
+            return 0.25F;
+        }
+    }
 
     public enum Type {
         TETO("Kasane Teto", "please help I've been trapped in her basement for da-", "block.teto"),
@@ -78,6 +92,8 @@ public class BlockSpacePlushie extends BlockTrinket implements TickingBlock {
     protected InteractionResult onUseItem(BlockState state, Level level, BlockPos pos, Player player, InteractionHand hand,
                                           ItemStack stack, BlockHitResult hit) {
         if (feed(level, pos, player, stack)) return InteractionResult.SUCCESS;
+        // Butter is only for Teto: anyone else holding it passes, rather than squishing.
+        if (isButter(stack)) return InteractionResult.TRY_WITH_EMPTY_HAND;
         return onUseWithoutItem(state, level, pos, player, hit);
     }
 

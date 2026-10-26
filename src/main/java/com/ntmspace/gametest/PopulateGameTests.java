@@ -1,5 +1,6 @@
 package com.ntmspace.gametest;
 
+import com.hbm.config.GeneralConfig;
 import com.ntmspace.NtmSpace;
 import com.ntmspace.world.DresChunkGenerator;
 import com.ntmspace.world.DunaChunkGenerator;
@@ -83,8 +84,9 @@ public final class PopulateGameTests {
                 "{hbm:basalt=688, hbm:ore_basalt_fluorite=1, hbm:ore_basalt_molysite=8, hbm:ore_basalt_sulfur=16, hbm:stone_keyhole=1, hbm:stone_resource_bauxite=398, hbm:stone_resource_hematite=4328, ntmspace:cluster_aluminium=15, ntmspace:cluster_copper=28, ntmspace:cluster_iron=29, ntmspace:cluster_titanium=15, ntmspace:ore_aluminium=64, ntmspace:ore_australium=36, ntmspace:ore_beryllium=24, ntmspace:ore_cinnebar=3, ntmspace:ore_cobalt=13, ntmspace:ore_copper=62, ntmspace:ore_diamond=3, ntmspace:ore_fire=95, ntmspace:ore_fluorite=20, ntmspace:ore_glowstone=294, ntmspace:ore_gold=20, ntmspace:ore_iron=168, ntmspace:ore_lead=55, ntmspace:ore_mineral=63, ntmspace:ore_nickel=80, ntmspace:ore_niter=53, ntmspace:ore_rare=36, ntmspace:ore_redstone=48, ntmspace:ore_shale=20, ntmspace:ore_sulfur=39, ntmspace:ore_thorium=48, ntmspace:ore_titanium=60, ntmspace:ore_tungsten=101, ntmspace:ore_uranium=42, ntmspace:ore_zinc=59, ntmspace:stone_resource_calcium=25}");
         pin(Body.LAYTHE, -568718117742332150L,
                 "{hbm:ore_depth_cinnabar=114, hbm:ore_depth_zirconium=57, hbm:stone_depth=205, hbm:stone_keyhole=1, hbm:stone_resource_bauxite=398, hbm:stone_resource_hematite=2320, ntmspace:cluster_aluminium=17, ntmspace:cluster_copper=35, ntmspace:cluster_iron=23, ntmspace:cluster_titanium=11, ntmspace:ore_aluminium=48, ntmspace:ore_asbestos=8, ntmspace:ore_beryllium=43, ntmspace:ore_cinnebar=3, ntmspace:ore_cobalt=10, ntmspace:ore_copper=82, ntmspace:ore_fluorite=10, ntmspace:ore_lead=77, ntmspace:ore_nickel=87, ntmspace:ore_niter=34, ntmspace:ore_rare=68, ntmspace:ore_sulfur=60, ntmspace:ore_thorium=37, ntmspace:ore_titanium=56, ntmspace:ore_tungsten=98, ntmspace:ore_uranium=51, ntmspace:ore_zinc=54, ntmspace:stone_resource_calcium=17}");
-        pin(Body.TEKTO, 4777017272004281683L,
-                "{hbm:ore_bedrock_block=4, hbm:stone_depth=103, hbm:stone_keyhole=1, hbm:stone_resource_bauxite=398, hbm:stone_resource_hematite=3686, ntmspace:cluster_aluminium=18, ntmspace:cluster_copper=28, ntmspace:cluster_iron=35, ntmspace:cluster_titanium=15, ntmspace:ore_aluminium=65, ntmspace:ore_beryllium=25, ntmspace:ore_cinnebar=3, ntmspace:ore_cobalt=13, ntmspace:ore_copper=81, ntmspace:ore_diamond=4, ntmspace:ore_fluorite=20, ntmspace:ore_gold=21, ntmspace:ore_iron=181, ntmspace:ore_lead=65, ntmspace:ore_nickel=91, ntmspace:ore_niter=53, ntmspace:ore_rare=35, ntmspace:ore_redstone=47, ntmspace:ore_sulfur=39, ntmspace:ore_thorium=49, ntmspace:ore_titanium=60, ntmspace:ore_tungsten=102, ntmspace:ore_uranium=43, ntmspace:ore_zinc=60, ntmspace:stone_resource_calcium=27}");
+        // This base-primer pass reseeds Tekto's surface random, matching its actual per-chunk surface choices.
+        pin(Body.TEKTO, -2593641461929070627L,
+                "{hbm:ore_bedrock_block=4, hbm:stone_depth=103, hbm:stone_keyhole=1, hbm:stone_resource_bauxite=398, hbm:stone_resource_hematite=3689, ntmspace:cluster_aluminium=18, ntmspace:cluster_copper=28, ntmspace:cluster_iron=35, ntmspace:cluster_titanium=15, ntmspace:ore_aluminium=65, ntmspace:ore_beryllium=25, ntmspace:ore_cinnebar=3, ntmspace:ore_cobalt=13, ntmspace:ore_copper=81, ntmspace:ore_diamond=4, ntmspace:ore_fluorite=20, ntmspace:ore_gold=21, ntmspace:ore_iron=181, ntmspace:ore_lead=65, ntmspace:ore_nickel=91, ntmspace:ore_niter=53, ntmspace:ore_rare=35, ntmspace:ore_redstone=47, ntmspace:ore_sulfur=39, ntmspace:ore_thorium=49, ntmspace:ore_titanium=60, ntmspace:ore_tungsten=102, ntmspace:ore_uranium=43, ntmspace:ore_zinc=60, ntmspace:stone_resource_calcium=27}");
         pin(Body.THATMO, 1L,
                 "{}");
     }
@@ -254,9 +256,9 @@ public final class PopulateGameTests {
         net.minecraft.server.level.ServerLevel level = helper.getLevel();
 
         String[][] cases = {
-                {"ore_uranium", "duna", "ntmspace:ore_uranium_duna"},
-                {"ore_nickel", "minmus", "ntmspace:ore_nickel_minmus"},
-                {"ore_iron", "mun", "ntmspace:ore_iron_mun"},
+                {"ore_uranium", "duna", GeneralConfig.enableRawOres ? "hbm:raw_uranium" : "ntmspace:ore_uranium_duna"},
+                {"ore_nickel", "minmus", GeneralConfig.enableRawOres ? "ntmspace:raw_nickel" : "ntmspace:ore_nickel_minmus"},
+                {"ore_iron", "mun", "minecraft:raw_iron"},
                 {"ore_sulfur", "eve", "hbm:sulfur"},
                 {"ore_glowstone", "moho", "minecraft:glowstone_dust"},
                 {"ore_gas", "eve", "ntmspace:ore_gas_empty"},

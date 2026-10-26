@@ -1,11 +1,13 @@
 package com.ntmspace.world;
 
+import dev.golem.core.Ids;
 import dev.golem.core.client.Clouds;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import net.minecraft.util.Mth;
 import net.minecraft.world.level.Level;
+import net.minecraft.world.phys.Vec3;
 
 /**
  * The clouds of a celestial body, ported from hbm-space's {@code CloudProviderCelestial} and
@@ -24,8 +26,9 @@ import net.minecraft.world.level.Level;
  *       tinted towards the non-neutral fluids of the air by their share of the pressure, at most 65 %: earth air,
  *       oxygen, nitrogen, Duna air and CO2 are neutral; Eve air is (53, 32, 74), others their fluid colour.</li>
  * </ul>
- * Kerbin (the overworld) keeps vanilla's clouds: hbm-space drew 1.7 vanilla's single neutral layer there too, and the
- * overworld's terrain and cloud height are vanilla's. The orbit level has none (1.7 {@code WorldProviderOrbit}).
+ * Kerbin (the overworld) keeps the native first layer's geometry, height, alpha and drift. Its atmosphere tints or
+ * hides that layer, and higher pressure adds layers relative to the native one. Other bodies use the legacy layer
+ * geometry below. The orbit level has none (1.7 {@code WorldProviderOrbit}).
  *
  * <p>Differences, each from the renderer being the node's vanilla one: the "fast" setting draws vanilla's flat 12-block
  * cells (1.7's fast clouds were 8 blocks a texel), and the cloud distance and fog are vanilla's.
@@ -195,7 +198,10 @@ public final class CloudLayers17 {
     public static List<Clouds.Layer> layers(List<Atmospheres.Entry> air, String levelName, double cloudTime, float[] base) {
         int count = Math.min(layerCount(air), HEIGHT_OFFSETS.length);
         if (count <= 0) return List.of();
-        double[] colour = tinted(air, base[0], base[1], base[2]);
+        return coloredLayers(count, levelName, cloudTime, tinted(air, base[0], base[1], base[2]));
+    }
+
+    private static List<Clouds.Layer> coloredLayers(int count, String levelName, double cloudTime, double[] colour) {
         long dimension = dimensionId(levelName);
         List<Clouds.Layer> layers = new ArrayList<>(count);
         for (int i = 0; i < count; i++) {
@@ -208,14 +214,51 @@ public final class CloudLayers17 {
         return layers;
     }
 
+    /** Upper decks above a real native first layer; its colour already includes the body's atmosphere tint. */
+    public static List<Clouds.Layer> additionalLayers(Level level, Clouds.NativeLayer base) {
+        var body = SpaceSkies.airBody(level);
+        if (body == null) return List.of();
+        var count = Math.min(layerCount(Atmospheres.of(body, level.isClientSide())), HEIGHT_OFFSETS.length);
+        if (count <= 1) return List.of();
+        var dimension = Ids.keyId(level.dimension()).hashCode();
+        var time = base.gameTime() + base.partialTick();
+        var argb = base.argb();
+        var red = ((argb >>> 16) & 255) / 255.0F;
+        var green = ((argb >>> 8) & 255) / 255.0F;
+        var blue = (argb & 255) / 255.0F;
+        var layers = new ArrayList<Clouds.Layer>(count - 1);
+        for (var i = 1; i < count; i++) {
+            var shiftX = (SCROLL_MULTIPLIERS[i] - 1.0D) * time * 0.03D
+                    + layerOffset(0L, dimension, i, SALT_X);
+            var shiftZ = layerOffset(0L, dimension, i, SALT_Z);
+            var alpha = Math.round((argb >>> 24) * ALPHA_MULTIPLIERS[i]) / 255.0F;
+            layers.add(new Clouds.Layer(base.height() + HEIGHT_OFFSETS[i], red, green, blue, alpha, shiftX, shiftZ));
+        }
+        return layers;
+    }
+
+    /** The body's live cloud colour, shared by environment queries and the rendered layer colours. */
+    public static Vec3 color(Level level, float partialTicks) {
+        var body = SpaceSkies.airBody(level);
+        var air = body == null ? List.<Atmospheres.Entry>of() : Atmospheres.of(body, level.isClientSide());
+        var colour = color(level, partialTicks, air);
+        return new Vec3(colour[0], colour[1], colour[2]);
+    }
+
+    private static double[] color(Level level, float partialTicks, List<Atmospheres.Entry> air) {
+        var base = baseColor(SpaceSkies.angle(level, partialTicks), level.getRainLevel(partialTicks),
+                level.getThunderLevel(partialTicks));
+        return tinted(air, base[0], base[1], base[2]);
+    }
+
     /** {@link #layers} for a body level now: its air, its own time of day, rain and thunder. */
     public static List<Clouds.Layer> layers(Level level, double cloudTime, float partialTicks) {
-        String air = SpaceSkies.airBody(level);
+        var air = SpaceSkies.airBody(level);
         if (air == null) return List.of();
-        List<Atmospheres.Entry> entries = Atmospheres.of(air);
-        if (layerCount(entries) <= 0) return List.of();
-        float[] base = baseColor(SpaceSkies.angle(level, partialTicks), level.getRainLevel(partialTicks),
-                level.getThunderLevel(partialTicks));
-        return layers(entries, dev.golem.core.Ids.keyId(level.dimension()).getPath(), cloudTime, base);
+        var entries = Atmospheres.of(air, level.isClientSide());
+        var count = Math.min(layerCount(entries), HEIGHT_OFFSETS.length);
+        if (count <= 0) return List.of();
+        return coloredLayers(count, Ids.keyId(level.dimension()).getPath(), cloudTime,
+                color(level, partialTicks, entries));
     }
 }

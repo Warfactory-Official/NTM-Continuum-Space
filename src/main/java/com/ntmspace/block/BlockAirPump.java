@@ -1,7 +1,7 @@
 package com.ntmspace.block;
 
+import com.ntmspace.atmosphere.AtmosphereText;
 import com.hbm.interfaces.ILookOverlay;
-import com.hbm.inventory.fluid.FluidType;
 import com.hbm.items.machine.IItemFluidId;
 import com.ntmspace.atmosphere.BlockSealable;
 import com.ntmspace.tileentity.TileEntityAirPump;
@@ -82,13 +82,8 @@ public class BlockAirPump extends CompatBlock implements TickingBlock, ILookOver
         if (level.isClientSide()) return InteractionResult.SUCCESS;
         if (!(level.getBlockEntity(pos) instanceof TileEntityAirPump pump)) return InteractionResult.TRY_WITH_EMPTY_HAND;
 
-        FluidType type = identifier.getType(level, pos.getX(), pos.getY(), pos.getZ(), stack);
-        if (CelestialTraits.isGas(type)) {
-            pump.tank.setTankType(type);
-            pump.setChanged();
-            player.sendSystemMessage(Component.literal("Changed type to ").withStyle(ChatFormatting.YELLOW)
-                    .append(Component.literal(type.getDisplayNameString())).append(Component.literal("!")));
-        }
+        var type = identifier.getType(level, pos.getX(), pos.getY(), pos.getZ(), stack);
+        AtmosphereText.retypeGaseous(type, player, pump.tank, pump);
         return InteractionResult.SUCCESS;
     }
 

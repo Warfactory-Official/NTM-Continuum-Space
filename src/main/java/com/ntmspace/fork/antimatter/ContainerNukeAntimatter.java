@@ -6,7 +6,6 @@ import com.ntmspace.fork.ForkContent;
 import net.minecraft.core.BlockPos;
 import net.minecraft.world.entity.player.Inventory;
 import net.minecraft.world.entity.player.Player;
-import net.minecraft.world.inventory.Slot;
 import net.minecraft.world.item.ItemStack;
 import org.jspecify.annotations.Nullable;
 
@@ -15,6 +14,8 @@ import org.jspecify.annotations.Nullable;
  * (134,43); player inventory at y = 140.
  */
 public class ContainerNukeAntimatter extends ContainerNukeBomb {
+
+    public static final int SHOWN = 5;
 
     private static final int[][] POSITIONS = {{26, 15}, {134, 14}, {81, 15}, {26, 44}, {134, 43}};
 
@@ -28,7 +29,7 @@ public class ContainerNukeAntimatter extends ContainerNukeBomb {
 
     private ContainerNukeAntimatter(int containerId, Inventory playerInventory, @Nullable TileEntityNukeBomb bomb, BlockPos pos) {
         super(ForkContent.NUKE_ANTIMATTER_MENU.get(), containerId, playerInventory, bomb, pos,
-                ForkContent.NUKE_ANTIMATTER.get(), 5, POSITIONS, 140);
+                ForkContent.NUKE_ANTIMATTER.get(), SHOWN, POSITIONS, 140);
     }
 
     public @Nullable TileEntityAntimatter getAntimatter() {
@@ -36,20 +37,21 @@ public class ContainerNukeAntimatter extends ContainerNukeBomb {
     }
 
     /**
-     * hbm-space {@code transferStackInSlot}: slots 0..2 merge into everything from slot 2 on, backwards (the hotbar
-     * fills first, and the bomb's slots 2..4 are part of the range - kept); every other slot does nothing. The core slot
-     * skips itself (1.7's merge could not match the one-item pellet with itself either).
+     * Empty any visible bomb slot into the player's inventory, hotbar first. The old three-slot bounds included
+     * the bomb's own components; the visible five-slot menu keeps those components out of the destination range.
      */
     @Override
     public ItemStack quickMoveStack(Player player, int index) {
-        if (index > 2) return ItemStack.EMPTY;
-        Slot slot = this.slots.get(index);
-        if (slot == null || !slot.hasItem()) return ItemStack.EMPTY;
-        ItemStack stack = slot.getItem();
-        ItemStack result = stack.copy();
-        if (!this.moveItemStackTo(stack, index == 2 ? 3 : 2, this.slots.size(), true)) return ItemStack.EMPTY;
+        if (index >= SHOWN) return ItemStack.EMPTY;
+        var slot = this.slots.get(index);
+        if (!slot.hasItem()) return ItemStack.EMPTY;
+        var stack = slot.getItem();
+        var result = stack.copy();
+        if (!this.moveItemStackTo(stack, SHOWN, this.slots.size(), true)) return ItemStack.EMPTY;
+        slot.onQuickCraft(stack, result);
         if (stack.isEmpty()) slot.setByPlayer(ItemStack.EMPTY);
         else slot.setChanged();
+        slot.onTake(player, stack);
         return result;
     }
 }

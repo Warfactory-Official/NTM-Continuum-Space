@@ -41,7 +41,7 @@ import net.minecraft.world.phys.AABB;
  * hbm-space has no plasma heater any more and the engine subscribes its connection points to power only; it is the
  * "(LEGACY)" thruster, superseded by the NEO. Ported as it is: power connects, plasma does not.
  */
-public class TileEntityMachineHTRF4 extends TileEntityMachineBase implements Propulsion, IFluidStandardReceiverMK2, IEnergyReceiverMK2 {
+public class TileEntityMachineHTRF4 extends TileEntityMachineBase implements Propulsion, IFluidStandardReceiverMK2, IEnergyReceiverMK2, OrbitConnector {
 
     public final FluidTankNTM[] tanks;
 
@@ -145,7 +145,7 @@ public class TileEntityMachineHTRF4 extends TileEntityMachineBase implements Pro
     private PortDef[] cachedPorts;
 
     public PortDef[] getPorts() {
-        if (cachedPorts == null) cachedPorts = MachinePorts.ports(getBlockState(), worldPosition, getConPos());
+        if (cachedPorts == null) cachedPorts = MachinePorts.ports(level, getBlockState(), worldPosition, getConPos());
         return cachedPorts;
     }
 

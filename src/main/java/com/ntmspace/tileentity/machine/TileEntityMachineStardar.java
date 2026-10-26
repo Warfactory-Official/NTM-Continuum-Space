@@ -16,12 +16,12 @@ import dev.golem.core.Ids;
 import dev.golem.core.data.DataIn;
 import dev.golem.core.data.DataOut;
 import dev.golem.core.data.Tags;
-import dev.golem.core.platform.Platform;
 import dev.golem.core.world.Chunks;
 import net.minecraft.core.BlockPos;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.network.RegistryFriendlyByteBuf;
 import net.minecraft.network.chat.Component;
+import net.minecraft.resources.Identifier;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.util.Mth;
 import net.minecraft.util.RandomSource;
@@ -29,7 +29,6 @@ import net.minecraft.world.MenuProvider;
 import net.minecraft.world.entity.player.Inventory;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.inventory.AbstractContainerMenu;
-import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.state.BlockState;
@@ -57,14 +56,16 @@ import org.jspecify.annotations.Nullable;
  */
 public class TileEntityMachineStardar extends TileEntityMachineBase implements MenuProvider, IControlReceiver {
 
-    // 1.7 oddity, kept: pointAtTime, targetYaw and targetPitch are STATIC, so every StarDar in the game (and, in
-    // singleplayer, the client and server halves alike) shares one pointing schedule and one target, and the last
-    // StarDar loaded overwrites the target with its saved one.
+    public static final int MAP_SIZE = 256;
+
+    // The pointing schedule is shared; each dish receives and interpolates its own synchronized target.
     private static long pointAtTime = 0;
 
     // Sent by the server for the client to smoothly lerp to
-    public static float targetYaw = 0;
-    public static float targetPitch = 0;
+    private static float pointYaw;
+    private static float pointPitch;
+    public float targetYaw;
+    public float targetPitch;
 
     // Used to point the dish on the client
     public float dishYaw = 0;
@@ -78,8 +79,8 @@ public class TileEntityMachineStardar extends TileEntityMachineBase implements M
 
     public int @Nullable [] heightmap;
     public boolean updateHeightmap = false;
-    /** 1.7 {@code previousStack} compared with {@code isItemEqual} (item and damage = the drive's body = the item here). */
-    private @Nullable Item previousItem;
+    /** The exact body and rough coordinates whose map is being built or displayed. */
+    private ItemVOTVdrive.@Nullable Destination mapped;
     private @Nullable HeightmapScan scan;
 
     /** Whether the slot holds anything (synced: the remote console draws the drive from it). */
@@ -95,60 +96,43 @@ public class TileEntityMachineStardar extends TileEntityMachineBase implements M
     }
 
     public static void serverTick(Level level, BlockPos pos, BlockState state, TileEntityMachineStardar te) {
-        RandomSource rand = level.getRandom();
+        var random = level.getRandom();
         if (level.getGameTime() >= pointAtTime) {
-            pointAtTime = level.getGameTime() + rand.nextInt(300) + 300;
-
-            targetYaw = Mth.wrapDegrees(rand.nextFloat() * 360);
-            targetPitch = rand.nextFloat() * 80;
+            pointAtTime = level.getGameTime() + random.nextInt(300) + 300;
+            pointYaw = Mth.wrapDegrees(random.nextFloat() * 360);
+            pointPitch = random.nextFloat() * 80;
         }
-
-        ItemStack slot = te.getItem(0);
+        te.targetYaw = pointYaw;
+        te.targetPitch = pointPitch;
+        var slot = te.getItem(0);
         if (slot.getItem() instanceof ItemVOTVdrive) {
-            if ((te.heightmap == null && te.scan == null) || slot.getItem() != te.previousItem) {
-                te.previousItem = slot.getItem();
-
-                ItemVOTVdrive.Destination destination = ItemVOTVdrive.getApproximateDestination(slot, rand);
+            var destination = ItemVOTVdrive.getApproximateDestination(slot, random);
+            if (!destination.equals(te.mapped)) {
                 te.cancelScan();
-
-                if (destination.body != DriveBody.ORBIT && level.getServer() != null) {
-                    ServerLevel body = level.getServer().getLevel(destination.body.level());
-                    if (body != null) {
-                        // 1.7 filled a fresh array at once; the GUI says "loading" until the scan is done
-                        te.heightmap = null;
-                        te.updateHeightmap = true;
-                        te.scan = new HeightmapScan(body, destination.x >> 4, destination.z >> 4);
-                    }
-                }
+                te.heightmap = null;
+                te.mapped = destination;
             }
-
+            if (te.heightmap == null && te.scan == null && destination.body != DriveBody.ORBIT) {
+                var body = level.getServer().getLevel(destination.body.level());
+                if (body != null) te.scan = new HeightmapScan(body, destination.x >> 4, destination.z >> 4);
+            }
             if (te.scan != null && te.scan.tick()) {
-                if (Platform.isDevelopment()) {
-                    NtmSpace.LOG.info("StarDar height map ready: 256 chunks of {} around chunk {}, {} after {} ticks",
-                            Ids.keyId(te.scan.level.dimension()), te.scan.baseX + 8, te.scan.baseZ + 8, te.scan.ticks);
-                }
                 te.heightmap = te.scan.map;
-                te.updateHeightmap = true;
                 te.scan = null;
             }
         } else {
             te.cancelScan();
-            te.previousItem = null;
-            if (te.heightmap != null) {
-                te.heightmap = null;
-                te.updateHeightmap = true;
-            }
+            te.mapped = null;
+            te.heightmap = null;
         }
-
         te.networkPackNT();
-        te.updateHeightmap = false;
     }
 
     public static void clientTick(Level level, BlockPos pos, BlockState state, TileEntityMachineStardar te) {
-        float yawOffset = Mth.wrapDegrees(targetYaw - te.dishYaw);
+        float yawOffset = Mth.wrapDegrees(te.targetYaw - te.dishYaw);
         float moveYaw = clamp17(yawOffset, -te.maxSpeedYaw, te.maxSpeedYaw);
 
-        float pitchOffset = targetPitch - te.dishPitch;
+        float pitchOffset = te.targetPitch - te.dishPitch;
         // 1.7: 0 / 0 when the yaw is on target, and 1.7's clamp then hands the full offset back (see clamp17)
         float pitchSpeed = (moveYaw / yawOffset) * Math.abs(pitchOffset);
         float movePitch = clamp17(pitchOffset, -pitchSpeed, pitchSpeed);
@@ -193,6 +177,10 @@ public class TileEntityMachineStardar extends TileEntityMachineBase implements M
      * processed for the current station (on a station) or a free grid square.
      */
     public void processDrive(String target, int ix, int iz) {
+        processDrive(target, ix, iz, ix != 0 || iz != 0);
+    }
+
+    private void processDrive(String target, int ix, int iz, boolean here) {
         if (level == null) return;
         DriveBody body = DriveBody.byName(target);
         if (body == null) return;
@@ -201,7 +189,7 @@ public class TileEntityMachineStardar extends TileEntityMachineBase implements M
 
         ItemStack drive = new ItemStack(RocketItems.drive(body));
 
-        if ((ix != 0 || iz != 0) && !Orbit.inOrbit(level)) {
+        if (here && level.dimension().equals(body.level()) && !Orbit.inOrbit(level)) {
             RocketItems.DRIVE.set(drive, DriveData.EMPTY.withApproximate(ix, iz).withProcessed(true));
         } else if (body == DriveBody.ORBIT) {
             int[] pos;
@@ -222,33 +210,59 @@ public class TileEntityMachineStardar extends TileEntityMachineBase implements M
         // time, so the next tick (world time >= 300..599) picks a new random target straight away.
         RandomSource rand = level.getRandom();
         pointAtTime = rand.nextInt(300) + 300;
-        targetYaw = Mth.wrapDegrees(rand.nextFloat() * 360);
-        targetPitch = rand.nextFloat() * 80;
+        pointYaw = Mth.wrapDegrees(rand.nextFloat() * 360);
+        pointPitch = rand.nextFloat() * 80;
+        targetYaw = pointYaw;
+        targetPitch = pointPitch;
 
         setChanged();
     }
 
-    /**
-     * 1.7 {@code updateDriveCoords}: the landing spot clicked on the height map ({@code x}, {@code z} its pixel, 0..255)
-     * becomes the drive's coordinates. 1.7 oddity, kept: it is taken relative to the approximate destination minus 128,
-     * while the map starts at the destination's chunk minus 8 chunks, so the spot is off by the destination's position
-     * inside its chunk ({@code ax & 15}, {@code az & 15}).
-     */
+    /** Programs a body's dimension; only this body's ground may use the machine's own coordinates. */
+    public void setTarget(Identifier target, boolean here) {
+        for (var body : DriveBody.values()) {
+            if (Ids.keyId(body.level()).equals(target)) {
+                processDrive(body.key(), worldPosition.getX(), worldPosition.getZ(), here);
+                return;
+            }
+        }
+    }
+
+    /** A map pixel refers to the chunk-aligned column displayed by the scan. */
     public void updateDriveCoords(int x, int z) {
-        if (level == null) return;
-        ItemStack slot = getItem(0);
-        if (!(slot.getItem() instanceof ItemVOTVdrive)) return;
-
-        ItemVOTVdrive.Destination destination = ItemVOTVdrive.getApproximateDestination(slot, level.getRandom());
-        ItemVOTVdrive.setCoordinates(slot, destination.x + x - 8 * 16, destination.z + z - 8 * 16);
-
+        var slot = getItem(0);
+        if (!(slot.getItem() instanceof ItemVOTVdrive) || heightmap == null) return;
+        var data = ItemVOTVdrive.data(slot);
+        if (data.ax().isEmpty() || data.az().isEmpty()) return;
+        var destination = ItemVOTVdrive.getApproximateDestination(slot, level.getRandom());
+        if (!destination.equals(mapped)) return;
+        if (landingIssue(heightmap, x, z) != null) return;
+        ItemVOTVdrive.setCoordinates(slot, (destination.x >> 4 << 4) + x - 128,
+                (destination.z >> 4 << 4) + z - 128);
         setChanged();
+    }
+
+    /** The same five-by-five, three-cell border rule used by the landing screen. */
+    public static @Nullable String landingIssue(int[] map, int x, int z) {
+        if (x < 3 || x > 252 || z < 3 || z > 252) return "gui.stardar.landing.outside_bounds";
+        for (var ox = x - 2; ox <= x + 2; ox++) {
+            for (var oz = z - 2; oz <= z + 2; oz++) {
+                if (map[MAP_SIZE * oz + ox] != map[MAP_SIZE * z + x]) return "gui.stardar.landing.area_not_flat";
+            }
+        }
+        return null;
+    }
+
+    public void receiveHeightmap(int @Nullable [] heights) {
+        heightmap = heights;
+        updateHeightmap = true;
     }
 
     @Override
     public void receiveControl(CompoundTag data) {
         if (Tags.contains(data, "pid")) {
-            processDrive(Tags.getStringOr(data, "pid", ""), Tags.getIntOr(data, "ix", 0), Tags.getIntOr(data, "iz", 0));
+            var body = DriveBody.byName(Tags.getStringOr(data, "pid", ""));
+            if (body != null) setTarget(Ids.keyId(body.level()), Tags.contains(data, "ix") && Tags.contains(data, "iz"));
         }
 
         if (Tags.contains(data, "px") && Tags.contains(data, "pz")) {
@@ -289,15 +303,7 @@ public class TileEntityMachineStardar extends TileEntityMachineBase implements M
 
         buf.writeBoolean(radarMode);
         buf.writeBoolean(!getItem(0).isEmpty());
-        buf.writeBoolean(updateHeightmap);
-        if (updateHeightmap) {
-            if (heightmap != null) {
-                buf.writeInt(heightmap.length);
-                for (int h : heightmap) buf.writeByte(h);
-            } else {
-                buf.writeInt(0);
-            }
-        }
+
     }
 
     @Override
@@ -308,17 +314,6 @@ public class TileEntityMachineStardar extends TileEntityMachineBase implements M
 
         radarMode = buf.readBoolean();
         clientHasDrive = buf.readBoolean();
-        if (buf.readBoolean()) {
-            updateHeightmap = true;
-            int count = buf.readInt();
-            if (count > 0) {
-                int[] map = new int[count];
-                for (int i = 0; i < count; i++) map[i] = buf.readUnsignedByte();
-                heightmap = map;
-            } else {
-                heightmap = null;
-            }
-        }
     }
 
     @Override
@@ -344,7 +339,6 @@ public class TileEntityMachineStardar extends TileEntityMachineBase implements M
 
     @Override
     public AbstractContainerMenu createMenu(int containerId, Inventory playerInventory, Player player) {
-        if (level != null && !level.isClientSide()) updateHeightmap = true; // new viewer, send them the heightmap just in case
         return new ContainerStardar(containerId, playerInventory, this);
     }
 

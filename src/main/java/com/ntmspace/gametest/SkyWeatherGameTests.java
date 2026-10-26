@@ -15,6 +15,7 @@ import com.ntmspace.weather.BodyWeather;
 import com.ntmspace.weather.DustStorm;
 import com.ntmspace.world.SolarSystem;
 import dev.golem.core.gametest.GameTests;
+import dev.golem.core.hook.Hook;
 import dev.golem.core.world.Weathers;
 import io.netty.buffer.Unpooled;
 import java.util.ArrayList;
@@ -31,8 +32,8 @@ import net.minecraft.util.RandomSource;
 /**
  * The server half of the bodies' weather and sky objects: Golem {@link Weathers} replacing vanilla's weather cycle for a
  * level (on the GameTest level itself, through a test provider), each body's weather as its {@link CBT_Weather} gives
- * it ({@link BodyWeather}: Eve forced to thunder ramps up, airless or waterless bodies stay dry, the overworld keeps
- * vanilla's), Duna's dust storm cycle (1.7 {@code WorldProviderDuna.updateWeather}) and its save, and the satellites and
+ * it ({@link BodyWeather}: Eve forced to thunder ramps up, airless or waterless bodies stay dry, Kerbin owns
+ * the overworld too), Duna's dust storm cycle (1.7 {@code WorldProviderDuna.updateWeather}) and its save, and the satellites and
  * stations the client draws ({@link SatelliteSky}). The GameTest server has no body levels, so the body half is checked
  * on the traits and the level half on the test level. Tests that change saved state put it back.
  */
@@ -48,7 +49,7 @@ public final class SkyWeatherGameTests {
     public static final GameTests.Function EVE = TESTS.function("sky_weather_eve_thunder_ramps", 200,
             () -> SkyWeatherGameTests::eve);
 
-    /** Bodies without a weather cycle (Mun, Duna, Ike, Moho, Minmus, Dres, Thatmo) are dry; the overworld is vanilla's. */
+    /** Bodies without a weather cycle (Mun, Duna, Ike, Moho, Minmus, Dres, Thatmo) are dry; Kerbin owns the overworld's cycle. */
     public static final GameTests.Function DRY = TESTS.function("sky_weather_dry_bodies", 20, () -> SkyWeatherGameTests::dry);
 
     /** Duna's storm cycle: the 1.7 durations and strengths, ticking, and the save's 1.7 key names. */
@@ -59,14 +60,16 @@ public final class SkyWeatherGameTests {
     public static final GameTests.Function OBJECTS = TESTS.function("sky_objects_satellites_stations", 20,
             () -> SkyWeatherGameTests::objects);
 
-    /** The level a test forces its weather on, and the weather (test provider, below every real one). */
+    /** The level a test forces its weather on, and the weather (test provider while this fixture is active). */
     private static volatile ServerLevel forcedLevel;
     private static volatile Weathers.State forced;
 
     private SkyWeatherGameTests() {}
 
     public static void init() {
-        Weathers.register(level -> level == forcedLevel ? forced : null);
+        var phase = "ntmspace:weather_fixture";
+        Weathers.PROVIDERS.addPhaseOrdering(phase, Hook.DEFAULT_PHASE);
+        Weathers.PROVIDERS.register(phase, level -> level == forcedLevel ? forced : null);
     }
 
     // ------------------------------------------------------------------------------------------------ weather
@@ -83,7 +86,7 @@ public final class SkyWeatherGameTests {
             // vanilla weighs the thunder by the rain
             if (Math.abs(thunder - 0.4F * 0.7F) > 1e-6) errors.add("thunder " + thunder + " (provided 0.4 x rain 0.7)");
             if (!level.isRaining()) errors.add("the level does not rain");
-            // dry again for a tick, then vanilla's cycle runs again
+            // dry again for a tick, then the real provider resumes
             forced = new Weathers.State(0.0F, 0.0F);
             helper.runAfterDelay(2, () -> {
                 if (level.getRainLevel(1.0F) != 0.0F) errors.add("rain did not stop: " + level.getRainLevel(1.0F));
@@ -137,8 +140,10 @@ public final class SkyWeatherGameTests {
             Weathers.State state = BodyWeather.weatherOfBody(body);
             if (state.rain() != 0 || state.thunder() != 0) errors.add(body + " weather " + state);
         }
-        if (BodyWeather.weather(helper.getLevel().getServer().overworld()) != null) {
-            errors.add("the overworld's weather must stay vanilla's");
+        var kerbin = CBT_Weather.ensureTrait("kerbin");
+        var state = BodyWeather.weather(helper.getLevel().getServer().overworld());
+        if (state == null || state.rain() != kerbin.rainStrength || state.thunder() != kerbin.thunderStrength) {
+            errors.add("Kerbin's level weather differs from its own saved cycle: " + state);
         }
         finish(helper, errors);
     }

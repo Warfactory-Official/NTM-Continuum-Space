@@ -1,5 +1,6 @@
 package com.ntmspace.trait;
 
+import com.ntmspace.world.SolarSystem;
 import com.mojang.serialization.Codec;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -97,6 +98,11 @@ public abstract class CelestialBodyTrait {
 
     /** 1.7 {@code update(isRemote, body)}: once per server tick (and client tick) for every trait of every body. */
     public void update(boolean remote, String body) {}
+
+    /** The same trait update for a caller that already resolved the body in the production body tree. */
+    public final void update(boolean remote, SolarSystem.Body body) {
+        update(remote, body.name);
+    }
 
     // ---------------------------------------------------------------------------------------------------------------
     // 1.7's two "simple" traits, declared on CelestialBodyTrait itself

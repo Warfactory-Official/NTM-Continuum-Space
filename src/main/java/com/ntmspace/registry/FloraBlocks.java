@@ -1,14 +1,16 @@
 package com.ntmspace.registry;
 
+import dev.golem.core.Ids;
+import net.minecraft.core.registries.BuiltInRegistries;
 import com.hbm.creativetabs.HbmTab;
 import com.hbm.registration.Presets;
 import com.ntmspace.NtmSpace;
 import com.ntmspace.block.flora.BlockRubberFarmland;
 import com.ntmspace.block.flora.BlockSpaceCrop;
+import com.ntmspace.block.flora.BlockSpaceLeaves;
 import com.ntmspace.block.flora.BlockSpaceSapling;
 import com.ntmspace.block.flora.CropKind;
 import com.ntmspace.block.flora.ItemSpaceSeedFood;
-import com.ntmspace.block.flora.TypedBlockItem;
 import com.ntmspace.block.terrain.BlockGeysirChloric;
 import com.ntmspace.block.terrain.BlockGeysirElectric;
 import com.ntmspace.block.terrain.BlockRubberTall;
@@ -26,6 +28,7 @@ import dev.golem.core.registry.Registrar;
 import dev.golem.core.registry.RegistryObject;
 import dev.golem.core.world.CompatConsumables;
 import dev.golem.core.world.CompatItem;
+import java.util.ArrayList;
 import java.util.EnumMap;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -106,8 +109,11 @@ public final class FloraBlocks {
             .loot(Loot.only("ntmspace:rubber_silt")).tag(BlockTag.SHOVEL);
     public static final RegistryObject<BlockItem> RUBBER_FARMLAND_ITEM = REG.blockItem(RUBBER_FARMLAND).tab(HbmTab.BLOCKS);
 
-    /** 1.7 {@code BlockCrop}s: hardness 0, grass sound, no item of their own (the seed foods plant them). */
+    /** 1.7 {@code BlockCrop}s: hardness 0, grass sound; each crop has its own block item like upstream. */
     private static final Map<CropKind, RegistryObject<BlockSpaceCrop>> CROPS = new EnumMap<>(CropKind.class);
+
+    /** Every crop's block item, in 1.7 order (the vanilla Natural tab lists them after its own crops). */
+    public static final List<RegistryObject<BlockItem>> CROP_ITEMS = new ArrayList<>(5);
 
     public static final RegistryObject<BlockSpaceCrop> CROP_STRAWBERRY = crop(CropKind.STRAWBERRY);
     public static final RegistryObject<BlockSpaceCrop> CROP_MINT = crop(CropKind.MINT);
@@ -117,22 +123,34 @@ public final class FloraBlocks {
 
     // ---------------------------------------------------------------- saplings
 
-    /** 1.7: {@code BlockNTSapling} block name {@code sapling}: vinyl and PVC ("Vinyl Sapling", "Plastic Sapling"), blocks tab. */
-    public static final RegistryObject<BlockSpaceSapling> SAPLING = REG.block("sapling", BlockSpaceSapling::new,
+    /**
+     * 1.7 {@code BlockNTSapling} block name {@code sapling}, split per type the way upstream splits it: the vinyl
+     * sapling ("Vinyl Sapling", {@code sapling_vinyl}) and the PVC one ("Plastic Sapling", {@code sapling_pvc}),
+     * blocks tab. Each split keeps its own type (placing, drops and pick-block are always its own).
+     */
+    public static final RegistryObject<BlockSpaceSapling> SAPLING_VINYL = REG.block("sapling_vinyl",
+                    p -> new BlockSpaceSapling(p, PlantType.Sapling.VINYL, () -> saplingItem("sapling_vinyl")),
                     p -> p.strength(0.0F).sound(SoundType.GRASS).noOcclusion().noCollision().randomTicks())
-            .model(d -> {
-                Models.Group group = Models.group();
-                for (PlantType.Sapling type : PlantType.Sapling.values()) {
-                    group = group.and("_" + type.getSerializedName(),
-                            Models.renderType(CUTOUT, Models.cross("ntmspace:blocks/sapling_" + type.getSerializedName())));
-                }
-                return d.models(group).states(Variants.select("type", "vinyl", "_vinyl", "pvc", "_pvc"))
-                        .item(Models.generated("ntmspace:blocks/sapling_vinyl"));
-            })
+            .model(d -> d.models(Models.group().and("_vinyl",
+                            Models.renderType(CUTOUT, Models.cross("ntmspace:blocks/sapling_vinyl"))))
+                    .states(Variants.select("type", "vinyl", "_vinyl"))
+                    .item(Models.generated("ntmspace:blocks/sapling_vinyl")))
             .loot(Loot.nothing());
-    public static final List<RegistryObject<TypedBlockItem>> SAPLING_ITEMS = TypedFamilies.items(REG, SAPLING, "sapling",
-            PlantType.Sapling.values(), type -> "block.ntmspace.sapling_" + type, false,
-            type -> d -> d.models(Models.generated("ntmspace:blocks/sapling_" + type)), HbmTab.BLOCKS);
+    public static final RegistryObject<BlockItem> SAPLING_VINYL_ITEM = REG.blockItem(SAPLING_VINYL).tab(HbmTab.BLOCKS);
+    public static final RegistryObject<BlockSpaceSapling> SAPLING_PVC = REG.block("sapling_pvc",
+                    p -> new BlockSpaceSapling(p, PlantType.Sapling.PVC, () -> saplingItem("sapling_pvc")),
+                    p -> p.strength(0.0F).sound(SoundType.GRASS).noOcclusion().noCollision().randomTicks())
+            .model(d -> d.models(Models.group().and("_pvc",
+                            Models.renderType(CUTOUT, Models.cross("ntmspace:blocks/sapling_pvc"))))
+                    .states(Variants.select("type", "pvc", "_pvc"))
+                    .item(Models.generated("ntmspace:blocks/sapling_pvc")))
+            .loot(Loot.nothing());
+    public static final RegistryObject<BlockItem> SAPLING_PVC_ITEM = REG.blockItem(SAPLING_PVC).tab(HbmTab.BLOCKS);
+
+    /** A split sapling's item by id (its drop and pick-block; avoids the item's forward reference). */
+    private static Item saplingItem(String id) {
+        return BuiltInRegistries.ITEM.getValue(Ids.of(NtmSpace.MOD_ID, id));
+    }
 
     // ---------------------------------------------------------------- woods
 
@@ -201,6 +219,7 @@ public final class FloraBlocks {
         if (started) return;
         started = true;
         BlockVinylVine.shearDrops(LaytheTektoBlocks.VINYL_VINE);
+        BlockSpaceLeaves.watchLogRemovals();
     }
 
     /**
@@ -219,7 +238,7 @@ public final class FloraBlocks {
         for (String coke : new String[] {"powder_coke_coal", "powder_coke_lignite", "powder_coke_petroleum"}) {
             t.put("ntmspace:" + coke, 200 * 16);
         }
-        for (String log : new String[] {"pvc_log", "vinyl_log", "lattice_log", "bf_log", "primed_log", "eu_log"}) {
+        for (String log : new String[] {"pvc_log", "vinyl_log", "lattice_log", "bf_log", "primed_log", "eu_log", "laythe_root"}) {
             t.put("ntmspace:" + log, 300);
         }
         return java.util.Collections.unmodifiableMap(t);
@@ -265,16 +284,15 @@ public final class FloraBlocks {
 
     private static RegistryObject<ItemSpaceSeedFood> seed(String id, String texture, int nutrition, float saturation,
                                                           CropKind crop, ItemTag tag) {
-        Registrar.Handle<ItemSpaceSeedFood> item = REG.item(id, p -> new ItemSpaceSeedFood(p, () -> CROPS.get(crop).get()),
+        Registrar.Handle<ItemSpaceSeedFood> item = REG.item(id, p -> new ItemSpaceSeedFood(p, CROPS.get(crop).get(), id),
                         p -> CompatConsumables.food(p, nutrition, saturation, List.of()))
                 .transform(Presets.sprite("ntmspace:items/" + texture));
         if (tag != null) item.tag(tag);
         return item.tab(HbmTab.CONSUMABLES);
     }
 
-    /** A {@code BlockCrop}: eight cross models over the 1.7 stage textures, by age. */
-    private static RegistryObject<BlockSpaceCrop> crop(CropKind kind) {
-        RegistryObject<BlockSpaceCrop> crop = REG.block(kind.id(), p -> new BlockSpaceCrop(p, kind),
+    /** A {@code BlockCrop}: eight cross models over the 1.7 stage textures, by age; its own block item. */
+    private static RegistryObject<BlockSpaceCrop> crop(CropKind kind) {        RegistryObject<BlockSpaceCrop> crop = REG.block(kind.id(), p -> new BlockSpaceCrop(p, kind),
                         p -> p.strength(0.0F).sound(SoundType.GRASS).noOcclusion().noCollision().randomTicks())
                 .model(d -> {
                     Models.Group group = Models.group();
@@ -286,6 +304,9 @@ public final class FloraBlocks {
                 })
                 .loot(Loot.nothing()).tag(BlockTag.of("minecraft:maintains_farmland"));
         CROPS.put(kind, crop);
+        // 1.7 ModBlocks:1912-1919/3222-3226: each crop's block item lives in vanilla Decorations
+        // (Natural on 26.1, see SpaceCreativeOrder), not the HBM blocks tab.
+        CROP_ITEMS.add(REG.blockItem(crop));
         return crop;
     }
 

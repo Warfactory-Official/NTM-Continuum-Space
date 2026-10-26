@@ -1,5 +1,9 @@
 package com.ntmspace.block.station;
 
+import com.ntmspace.registry.StationBlocks;
+import com.hbm.capability.ICapabilityBlock;
+import com.hbm.capability.MachineCaps;
+
 import com.hbm.api.fluidmk2.IFluidConnectorBlockMK2;
 import com.hbm.blocks.multiblock.BlockMultiblockMachine;
 import com.hbm.blocks.multiblock.MultiblockMaskTable;
@@ -22,6 +26,8 @@ import net.minecraft.network.chat.Component;
 import net.minecraft.world.InteractionResult;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.item.context.BlockPlaceContext;
+import org.jspecify.annotations.Nullable;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.block.state.BlockState;
@@ -40,9 +46,15 @@ import net.minecraft.world.phys.BlockHitResult;
  * the port's slots); then a held craft item is docked ({@link StationDock#SPAWNERS}). Clicks on the rim are ignored so
  * blocks can be placed against it.
  */
-public class BlockOrbitalStation extends BlockMultiblockMachine implements IFluidConnectorBlockMK2, ILookOverlay, BlockSealable {
+public class BlockOrbitalStation extends BlockMultiblockMachine implements IFluidConnectorBlockMK2, ILookOverlay, BlockSealable, ICapabilityBlock {
 
     private final boolean core;
+
+    @Override
+    public MachineCaps caps() {
+        return MachineCaps.of(StationBlocks.ORBITAL_STATION_BE).fluidIn().itemsAtCells()
+                .fluidFaces(TileEntityOrbitalStation.class, (be, side) -> be.needsFuel);
+    }
 
     public BlockOrbitalStation(Properties properties, boolean core) {
         super(properties);
@@ -54,6 +66,11 @@ public class BlockOrbitalStation extends BlockMultiblockMachine implements IFlui
         return core;
     }
 
+    /** Core cells are the same block as their unbreakable owner, so every part has the same removal rule. */
+    public static boolean refusesRemoval(Level level, BlockPos pos, BlockState state) {
+        return state.getBlock() instanceof BlockOrbitalStation station && station.isCore();
+    }
+
     @Override
     protected BlockEntity createCoreBlockEntity(BlockPos pos, BlockState state) {
         return new TileEntityOrbitalStation(pos, state);
@@ -61,6 +78,11 @@ public class BlockOrbitalStation extends BlockMultiblockMachine implements IFlui
 
     @Override public int[] getDimensions() { return new int[] {1, 0, 2, 2, 2, 2}; }
     @Override public int getOffset() { return 2; }
+
+    @Override
+    public @Nullable BlockState getStateForPlacement(BlockPlaceContext context) {
+        return core ? null : super.getStateForPlacement(context);
+    }
 
     /** 1.7 {@code canPlaceBlockAt}: no extra main ports by hand (use the dedicated sub-ports!). */
     @Override

@@ -13,6 +13,7 @@ public final class SpaceMobRenderers {
     private SpaceMobRenderers() {}
 
     public static void init() {
+        MobWeaponRenderers.init();
         ClientRegistrations.renderers(r -> {
             r.entity(SpaceMobs.SIEGE_UFO.get(), RenderSiegeUFO::new);
             // 1.7 RenderCreeperUniversal(creeper_flesh.png, vanilla's creeper_armor.png): the vanilla charged overlay

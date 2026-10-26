@@ -28,13 +28,17 @@ val probe = sourceSets.create("probe") {
     runtimeClasspath += sourceSets["main"].output + sourceSets["main"].runtimeClasspath
 }
 
+// The opt-in imported suite shares the real mod and has no native probe content.
+val importedTests = sourceSets.findByName("upstreamTests")
+val devRunSource = importedTests ?: probe
+
 legacyForge {
     version = prop("deps.forge")
     runs {
         configureEach {
-            systemProperty("forge.enabledGameTestNamespaces", "$modId,ntmprobe")
+            systemProperty("forge.enabledGameTestNamespaces", if (importedTests == null) "$modId,ntmprobe" else modId)
             ideName = "NTM: Space Forge ${name.replaceFirstChar { it.uppercase() }} ($mcVersion)"
-            sourceSet = probe
+            sourceSet = devRunSource
         }
         register("client") {
             client()
@@ -53,8 +57,11 @@ legacyForge {
         }
     }
     mods {
-        register(modId) { sourceSet(sourceSets["main"]) }
-        register("ntmprobe") { sourceSet(probe) }
+        register(modId) {
+            sourceSet(sourceSets["main"])
+            if (importedTests != null) sourceSet(importedTests)
+        }
+        if (importedTests == null) register("ntmprobe") { sourceSet(probe) }
     }
 }
 

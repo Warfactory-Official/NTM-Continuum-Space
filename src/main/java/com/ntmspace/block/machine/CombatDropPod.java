@@ -1,9 +1,12 @@
 package com.ntmspace.block.machine;
 
+import com.ntmspace.data.SpaceData;
 import com.ntmspace.tileentity.machine.storage.TileEntityCombatDropPod;
 import dev.golem.core.registry.TickingBlock;
 import dev.golem.core.world.CompatBlock;
 import net.minecraft.core.BlockPos;
+import net.minecraft.server.level.ServerLevel;
+import net.minecraft.util.RandomSource;
 import net.minecraft.world.level.block.RenderShape;
 import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.block.state.BlockState;
@@ -23,6 +26,11 @@ public class CombatDropPod extends CompatBlock implements TickingBlock {
     @Override
     public @Nullable BlockEntity newBlockEntity(BlockPos pos, BlockState state) {
         return new TileEntityCombatDropPod(pos, state);
+    }
+
+    @Override
+    public void tick(BlockState state, ServerLevel level, BlockPos pos, RandomSource random) {
+        if (SpaceData.COMBAT_POD_DESPAWN.get()) level.removeBlock(pos, false);
     }
 
     @Override

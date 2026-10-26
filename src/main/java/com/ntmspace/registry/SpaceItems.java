@@ -1,13 +1,16 @@
 package com.ntmspace.registry;
 
+import dev.golem.core.world.Compat;
 import com.hbm.creativetabs.HbmTab;
 import com.hbm.inventory.material.MaterialShapes;
 import com.hbm.items.ModAutogenItems;
 import com.hbm.items.special.ItemCustomLore;
+import com.hbm.items.special.MaterialShapeItem;
 import com.hbm.registration.Presets;
 import com.ntmspace.NtmSpace;
 import com.ntmspace.inventory.material.SpaceAlloyMaterials;
 import com.ntmspace.inventory.material.SpaceOreMaterials;
+import com.ntmspace.item.ItemMineralClump;
 import com.ntmspace.item.SpaceDrinkItem;
 import dev.golem.core.dejson.Tags;
 import dev.golem.core.registry.BlockTag;
@@ -32,8 +35,9 @@ import net.minecraft.world.level.block.Block;
  * actinides, its parts, foods and drinks, the three {@code item_expensive} types and the coke powders (one item per
  * 1.7 metadata, HBM's split), the mineral fragments, and the nickel and osmiridium storage blocks. Ids are the 1.7
  * unlocalized names; textures are hbm-space's ({@code ntmspace:items/<texture>}); 1.7 ore-dictionary names are the
- * {@code c:} tags HBM spells for its own materials ({@code ingotNickelPure} -> {@code c:ingots/nickel}, the material
- * name). {@code ItemCustomLore} items with no {@code .desc} key are plain items with their 1.7 rarity.
+ * {@code c:} tags HBM spells for its own materials ({@code ingotNickelPure} -> {@code c:ingots/nickel_pure},
+ * the material name; the generic nickel tags are other mods' nickel, which Space's pentlandite chunk joins).
+ * {@code ItemCustomLore} items with no {@code .desc} key are plain items with their 1.7 rarity.
  *
  * <p>Materials are {@link SpaceAlloyMaterials} / {@link SpaceOreMaterials}; the autogen plates of stainless steel and
  * iridium and zinc's fine wire are registered here through HBM's {@link ModAutogenItems#registerAutogen}.
@@ -48,10 +52,10 @@ public final class SpaceItems {
         SpaceAlloyMaterials.register();
     }
 
-    public static final RegistryObject<Item> INGOT_NICKEL = plain("ingot_nickel", "ingot_nickel", HbmTab.MATERIALS, null, "c:ingots/nickel");
-    public static final RegistryObject<Item> NUGGET_NICKEL = plain("nugget_nickel", "nugget_nickel", HbmTab.MATERIALS, null, "c:nuggets/nickel");
-    public static final RegistryObject<Item> POWDER_NICKEL = plain("powder_nickel", "powder_nickel", HbmTab.MATERIALS, null, "c:dusts/nickel");
-    public static final RegistryObject<Item> PLATE_NICKEL = plain("plate_nickel", "plate_nickel", HbmTab.MATERIALS, null, "c:plates/nickel");
+    public static final RegistryObject<Item> INGOT_NICKEL = plain("ingot_nickel", "ingot_nickel", HbmTab.MATERIALS, null, "c:ingots/nickel_pure");
+    public static final RegistryObject<Item> NUGGET_NICKEL = plain("nugget_nickel", "nugget_nickel", HbmTab.MATERIALS, null, "c:nuggets/nickel_pure");
+    public static final RegistryObject<Item> POWDER_NICKEL = plain("powder_nickel", "powder_nickel", HbmTab.MATERIALS, null, "c:dusts/nickel_pure");
+    public static final RegistryObject<Item> PLATE_NICKEL = plain("plate_nickel", "plate_nickel", HbmTab.MATERIALS, null, "c:plates/nickel_pure");
     public static final RegistryObject<Item> CRYSTAL_NICKEL = plain("crystal_nickel", "crystal_nickel", HbmTab.MATERIALS, null, "c:crystals/nickel");
     public static final RegistryObject<Item> NUGGET_ZINC = plain("nugget_zinc", "nugget_zinc", HbmTab.MATERIALS, null, "c:nuggets/zinc");
     public static final RegistryObject<Item> POWDER_ZINC = plain("powder_zinc", "powder_zinc", HbmTab.MATERIALS, null, "c:dusts/zinc");
@@ -112,8 +116,8 @@ public final class SpaceItems {
     public static final RegistryObject<Item> BILLET_CN989 = plain("billet_cn989", "billet_cn989", HbmTab.MATERIALS, Rarity.EPIC, "c:billets/cn989");
     public static final RegistryObject<Item> POWDER_CN989 = plain("powder_cn989", "powder_cn989", HbmTab.MATERIALS, Rarity.EPIC, "c:dusts/cn989");
     public static final RegistryObject<Item> PLATE_CN989 = plain("plate_cn989", "plate_cn989", HbmTab.MATERIALS, Rarity.EPIC, "c:plates/cn989");
-    public static final RegistryObject<Item> INGOT_AUSTRALIUM_GREATER = plain("ingot_australium_greater", "ingot_australium_greater", HbmTab.MATERIALS, Rarity.UNCOMMON, "c:ingots/australium_greater");
-    public static final RegistryObject<Item> INGOT_AUSTRALIUM_LESSER = plain("ingot_australium_lesser", "ingot_australium_lesser", HbmTab.MATERIALS, Rarity.UNCOMMON, "c:ingots/australium_lesser");
+    public static final RegistryObject<Item> INGOT_AUSTRALIUM_GREATER = plain("ingot_australium_greater", "ingot_australium_greater", HbmTab.MATERIALS, Rarity.UNCOMMON, "c:ingots/australium_greater", "c:ingots/ayerite");
+    public static final RegistryObject<Item> INGOT_AUSTRALIUM_LESSER = plain("ingot_australium_lesser", "ingot_australium_lesser", HbmTab.MATERIALS, Rarity.UNCOMMON, "c:ingots/australium_lesser", "c:ingots/tasmanite");
     public static final RegistryObject<Item> BILLET_RED_COPPER = plain("billet_red_copper", "billet_red_copper", HbmTab.MATERIALS, null, "c:billets/red_copper");
     public static final RegistryObject<Item> NUGGET_LANTHANIUM = plain("nugget_lanthanium", "nugget_lanthanium", HbmTab.MATERIALS, null, "c:nuggets/lanthanium");
     public static final RegistryObject<Item> INGOT_MAGMA = plain("ingot_magma", "ingot_magma", HbmTab.MATERIALS, null, "c:ingots/rich_magma");
@@ -142,7 +146,7 @@ public final class SpaceItems {
     public static final RegistryObject<Item> FLESH_BURGER = food("flesh_burger", "blood_burger", 7, 1.0F, HbmTab.MATERIALS, List::of);
     public static final RegistryObject<Item> FLESH_WAFER = food("flesh_wafer", "blood_wafer", 5, 0.6F, HbmTab.MATERIALS, List::of);
     public static final RegistryObject<Item> GRILLED_FLESH = food("grilled_flesh", "blood_patty", 6, 0.8F, HbmTab.MATERIALS, List::of);
-    public static final RegistryObject<Item> CHOCOLATE_MINT_BILLET = food("chocolate_mint_billet", "chocolate_mint_billet", 5, 5F, HbmTab.CONSUMABLES, List::of);
+    public static final RegistryObject<Item> CHOCOLATE_MINT_BILLET = food("chocolate_mint_billet", "chocolate_mint_billet", 5, 5F, HbmTab.CONSUMABLES, List::of, "minecraft:wolf_food");
     public static final RegistryObject<Item> MIN_CREAM = food("min_cream", "ice_cream_min", 10, 1.0F, HbmTab.CONSUMABLES, List::of);
     public static final RegistryObject<Item> S_CREAM = food("s_cream", "ice_cream_s", 8, 1.0F, HbmTab.CONSUMABLES, () -> List.of(Effects.instance(MobEffects.REGENERATION, 20 * 20, 2)), "c:foods/strawberry_ice_cream");
     public static final RegistryObject<SpaceDrinkItem> GLASS_SMILK = drink("glass_smilk", "glass_smilk", SpaceDrinkItem.Kind.STRAWBERRY_MILKSHAKE, GLASS_EMPTY, null, "c:foods/strawberry_milkshake");
@@ -159,30 +163,30 @@ public final class SpaceItems {
             "item_expensive.astro", HbmTab.MATERIALS, null);
 
     /** 1.7 {@code powder_coke = ItemEnumMulti(EnumCokeType.class, true, true)}: {@code COALCOKE/PETCOKE/LIGCOKE.dust()}. */
-    public static final RegistryObject<Item> POWDER_COKE_COAL = plain("powder_coke_coal", "powder_coke.coal",
+    public static final RegistryObject<Item> POWDER_COKE_COAL = lore("powder_coke_coal", "powder_coke.coal",
             HbmTab.MATERIALS, null, "c:dusts/coal_coke");
-    public static final RegistryObject<Item> POWDER_COKE_LIGNITE = plain("powder_coke_lignite", "powder_coke.lignite",
+    public static final RegistryObject<Item> POWDER_COKE_LIGNITE = lore("powder_coke_lignite", "powder_coke.lignite",
             HbmTab.MATERIALS, null, "c:dusts/lignite_coke");
-    public static final RegistryObject<Item> POWDER_COKE_PETROLEUM = plain("powder_coke_petroleum", "powder_coke.petroleum",
+    public static final RegistryObject<Item> POWDER_COKE_PETROLEUM = lore("powder_coke_petroleum", "powder_coke.petroleum",
             HbmTab.MATERIALS, null, "c:dusts/pet_coke");
 
     /**
      * 1.7 {@code mineral_fragment = ItemMineralOre}, six metas named {@code clump_<type>} (the acid a mineral dust was
      * crystallised with). The coloured tooltip line is lang {@code .desc.0}.
      */
-    public static final RegistryObject<Item> MINERAL_FRAGMENT_PEROXIDE = lore("mineral_fragment_peroxide", "clump_peroxide");
-    public static final RegistryObject<Item> MINERAL_FRAGMENT_NITRIC = lore("mineral_fragment_nitric", "clump_nitric");
-    public static final RegistryObject<Item> MINERAL_FRAGMENT_SULFURIC = lore("mineral_fragment_sulfuric", "clump_sulfuric");
-    public static final RegistryObject<Item> MINERAL_FRAGMENT_SOLVENT = lore("mineral_fragment_solvent", "clump_solvent");
-    public static final RegistryObject<Item> MINERAL_FRAGMENT_HYDROCHLORIC = lore("mineral_fragment_hydrochloric", "clump_hydrochloric");
-    public static final RegistryObject<Item> MINERAL_FRAGMENT_SCHRABIDIC = lore("mineral_fragment_schrabidic", "clump_schrabidic");
+    public static final RegistryObject<ItemMineralClump> MINERAL_FRAGMENT_PEROXIDE = clump("mineral_fragment_peroxide", "clump_peroxide", ItemMineralClump.Clump.PEROXIDE);
+    public static final RegistryObject<ItemMineralClump> MINERAL_FRAGMENT_NITRIC = clump("mineral_fragment_nitric", "clump_nitric", ItemMineralClump.Clump.NITRIC);
+    public static final RegistryObject<ItemMineralClump> MINERAL_FRAGMENT_SULFURIC = clump("mineral_fragment_sulfuric", "clump_sulfuric", ItemMineralClump.Clump.SULFURIC);
+    public static final RegistryObject<ItemMineralClump> MINERAL_FRAGMENT_SOLVENT = clump("mineral_fragment_solvent", "clump_solvent", ItemMineralClump.Clump.SOLVENT);
+    public static final RegistryObject<ItemMineralClump> MINERAL_FRAGMENT_HYDROCHLORIC = clump("mineral_fragment_hydrochloric", "clump_hydrochloric", ItemMineralClump.Clump.HYDROCHLORIC);
+    public static final RegistryObject<ItemMineralClump> MINERAL_FRAGMENT_SCHRABIDIC = clump("mineral_fragment_schrabidic", "clump_schrabidic", ItemMineralClump.Clump.SCHRABIDIC);
 
     // ---------------------------------------------------------------- blocks
 
     /** 1.7 {@code BlockBeaconable(Material.iron)}, hardness 5, resistance 10, metal sound, blocks tab. */
-    public static final RegistryObject<Block> BLOCK_NICKEL = storage("block_nickel", "c:storage_blocks/nickel");
+    public static final RegistryObject<Block> BLOCK_NICKEL = storage("block_nickel", "c:storage_blocks/nickel_pure");
     public static final RegistryObject<BlockItem> BLOCK_NICKEL_ITEM = REG.blockItem(BLOCK_NICKEL)
-            .tag(ItemTag.of("c:storage_blocks/nickel")).tab(HbmTab.BLOCKS);
+            .tag(ItemTag.of("c:storage_blocks/nickel_pure")).tab(HbmTab.BLOCKS);
     public static final RegistryObject<Block> BLOCK_OSMIRIDIUM = storage("block_osmiridium", "c:storage_blocks/osmiridium");
     public static final RegistryObject<BlockItem> BLOCK_OSMIRIDIUM_ITEM = REG.blockItem(BLOCK_OSMIRIDIUM)
             .tag(ItemTag.of("c:storage_blocks/osmiridium")).tab(HbmTab.BLOCKS);
@@ -193,11 +197,33 @@ public final class SpaceItems {
         ModAutogenItems.registerAutogen(ITEMS, SpaceAlloyMaterials.STAINLESS, MaterialShapes.CASTPLATE, MaterialShapes.WELDEDPLATE);
         ModAutogenItems.registerAutogen(ITEMS, SpaceAlloyMaterials.IRIDIUM, MaterialShapes.CASTPLATE, MaterialShapes.WELDEDPLATE);
         ModAutogenItems.registerAutogen(ITEMS, SpaceOreMaterials.ZINC, MaterialShapes.WIRE);
+        SpaceAlloyMaterials.registerBaseShapes();
     }
 
     private SpaceItems() {}
 
     public static void init() {}
+
+    /** Source ore-dictionary names for the live neutron-producing material shapes. */
+    private static void declareNeutronMaterialTags() {
+        for (var names : new String[][] {
+                {"pu_mix", "plutonium_rg"}, {"pu240", "plutonium_240"},
+                {"cm243", "curium_243"}, {"cm244", "curium_244"},
+                {"cm245", "curium_245"}, {"cm246", "curium_246"},
+                {"cm_mix", "curium_rg"}, {"cm_fuel", "curium_fuel"},
+                {"cf252", "californium_252"}, {"es253", "einsteinium_253"}
+        }) {
+            var nativeName = names[0];
+            var sourceName = names[1];
+            for (var shape : new String[] {"nuggets", "ingots"}) {
+                Tags.item("c", shape + "/" + sourceName, "#c:" + shape + "/" + nativeName);
+            }
+            Tags.item("hbm", "billets/" + sourceName, "#c:billets/" + nativeName);
+            if (nativeName.equals("pu_mix") || nativeName.equals("pu240")) {
+                Tags.item("c", "storage_blocks/" + sourceName, "#c:storage_blocks/" + nativeName);
+            }
+        }
+    }
 
     private static boolean declared;
 
@@ -211,12 +237,72 @@ public final class SpaceItems {
         if (declared) return;
         declared = true;
         SpaceAlloyMaterials.register();
+        declareNeutronMaterialTags();
         Tags.of("item", "c", "dusts/any_coke").values("#c:dusts/coal_coke", "#c:dusts/lignite_coke", "#c:dusts/pet_coke").register();
         Tags.of("item", "c", "dusts/any_coal_coke").values("#c:dusts/any_coke", "#c:dusts/coal").register();
+        // 1.7's namespaced group tag for the black-dye rows (the crystallizer tests address it, not c:).
+        Tags.of("item", NtmSpace.MOD_ID, "dusts/any_coal_coke").values("#c:dusts/any_coal_coke").register();
         Tags.of("item", "c", "gems/any_coal_coke").values("#c:cokes", "#c:gems/coal").register();
         Tags.member("item", "c", "foods/cheese", "hbm:cheese");
         Tags.member("item", "c", "ingots/zinc", "ntmspace:ingot_zinc");
         Tags.member("item", "c", "crystals/zinc", "ntmspace:crystal_zinc");
+        // 1.7 full material names (upstream DictFrames): our short ids keep their tags above and join these.
+        Tags.member("item", "c", "ingots/curium_242", "ntmspace:ingot_cm242");
+        Tags.member("item", "c", "nuggets/curium_242", "ntmspace:nugget_cm242");
+        Tags.member("item", "c", "billets/curium_242", "ntmspace:billet_cm242");
+        Tags.member("item", "c", "ingots/curium_243", "ntmspace:ingot_cm243");
+        Tags.member("item", "c", "nuggets/curium_243", "ntmspace:nugget_cm243");
+        Tags.member("item", "c", "billets/curium_243", "ntmspace:billet_cm243");
+        Tags.member("item", "c", "ingots/curium_244", "ntmspace:ingot_cm244");
+        Tags.member("item", "c", "nuggets/curium_244", "ntmspace:nugget_cm244");
+        Tags.member("item", "c", "billets/curium_244", "ntmspace:billet_cm244");
+        Tags.member("item", "c", "ingots/curium_245", "ntmspace:ingot_cm245");
+        Tags.member("item", "c", "nuggets/curium_245", "ntmspace:nugget_cm245");
+        Tags.member("item", "c", "billets/curium_245", "ntmspace:billet_cm245");
+        Tags.member("item", "c", "ingots/curium_246", "ntmspace:ingot_cm246");
+        Tags.member("item", "c", "nuggets/curium_246", "ntmspace:nugget_cm246");
+        Tags.member("item", "c", "billets/curium_246", "ntmspace:billet_cm246");
+        Tags.member("item", "c", "ingots/curium_247", "ntmspace:ingot_cm247");
+        Tags.member("item", "c", "nuggets/curium_247", "ntmspace:nugget_cm247");
+        Tags.member("item", "c", "billets/curium_247", "ntmspace:billet_cm247");
+        Tags.member("item", "c", "ingots/curium_rg", "ntmspace:ingot_cm_mix");
+        Tags.member("item", "c", "nuggets/curium_rg", "ntmspace:nugget_cm_mix");
+        Tags.member("item", "c", "billets/curium_rg", "ntmspace:billet_cm_mix");
+        Tags.member("item", "c", "ingots/curium_fuel", "ntmspace:ingot_cm_fuel");
+        Tags.member("item", "c", "nuggets/curium_fuel", "ntmspace:nugget_cm_fuel");
+        Tags.member("item", "c", "billets/curium_fuel", "ntmspace:billet_cm_fuel");
+        Tags.member("item", "c", "ingots/berkelium_247", "ntmspace:ingot_bk247");
+        Tags.member("item", "c", "nuggets/berkelium_247", "ntmspace:nugget_bk247");
+        Tags.member("item", "c", "billets/berkelium_247", "ntmspace:billet_bk247");
+        Tags.member("item", "c", "ingots/californium_251", "ntmspace:ingot_cf251");
+        Tags.member("item", "c", "nuggets/californium_251", "ntmspace:nugget_cf251");
+        Tags.member("item", "c", "billets/californium_251", "ntmspace:billet_cf251");
+        Tags.member("item", "c", "ingots/californium_252", "ntmspace:ingot_cf252");
+        Tags.member("item", "c", "nuggets/californium_252", "ntmspace:nugget_cf252");
+        Tags.member("item", "c", "billets/californium_252", "ntmspace:billet_cf252");
+        Tags.member("item", "c", "ingots/einsteinium_253", "ntmspace:ingot_es253");
+        Tags.member("item", "c", "nuggets/einsteinium_253", "ntmspace:nugget_es253");
+        Tags.member("item", "c", "billets/einsteinium_253", "ntmspace:billet_es253");
+        Tags.member("item", "c", "ingots/einsteinium_255", "ntmspace:ingot_es255");
+        Tags.member("item", "c", "ingots/chinesium_989", "ntmspace:ingot_cn989");
+        Tags.member("item", "c", "nuggets/chinesium_989", "ntmspace:nugget_cn989");
+        Tags.member("item", "c", "billets/chinesium_989", "ntmspace:billet_cn989");
+        Tags.member("item", "c", "dusts/chinesium_989", "ntmspace:powder_cn989");
+        // (menthol keeps its short tags only: full name == short name.)
+        Tags.member("item", "c", "ingots/gallium_arsenide", "ntmspace:ingot_gaas");
+        Tags.member("item", "c", "nuggets/gallium_arsenide", "ntmspace:nugget_gaas");
+        Tags.member("item", "c", "billets/gallium_arsenide", "ntmspace:billet_gaas");
+        Tags.member("item", "c", "ingots/stainless_steel", "ntmspace:ingot_stainless");
+        Tags.member("item", "c", "plates/stainless_steel", "ntmspace:plate_stainless");
+        Tags.member("item", "c", "plates/chinesium_989", "ntmspace:plate_cn989");
+        Tags.member("item", "c", "billets/ayerite", "hbm:billet_australium_greater");
+        Tags.member("item", "c", "nuggets/ayerite", "hbm:nugget_australium_greater");
+        Tags.member("item", "c", "billets/tasmanite", "hbm:billet_australium_lesser");
+        Tags.member("item", "c", "nuggets/tasmanite", "hbm:nugget_australium_lesser");
+        Tags.member("item", "c", "ingots/semtex", "hbm:ingot_semtex");
+        Tags.member("item", "c", "storage_blocks/semtex", "hbm:block_semtex");
+        Tags.member("item", "c", "dusts/glowstone", "minecraft:glowstone_dust");
+        // (nickel shapes declare their nickel_pure tags at registration above.)
         // the autogen shapes' 1.7 ore names (plateCastStainlessSteel ...): HBM's own JSON names them as material+shape,
         // but rows that spell them as tags (and other mods) must find the items too
         for (String mat : new String[] {"stainless", "iridium"}) {
@@ -224,6 +310,8 @@ public final class SpaceItems {
             Tags.member("item", "c", "plates_welded/" + mat, "ntmspace:plate_welded_" + mat);
         }
         Tags.member("item", "c", "wires/zinc", "ntmspace:wire_fine_zinc");
+        // 1.7 plateNickel: the RTG pellet rows take the generic plate tag, which carries our plate.
+        Tags.member("item", "c", "plates/nickel", "ntmspace:plate_nickel");
         // hbm-space OreDictManager: the planets' stones, cobbles and sands join KEY_STONE / KEY_COBBLESTONE / KEY_SAND
         for (String stone : new String[] {"duna_rock", "ike_stone", "moho_stone", "minmus_smooth"}) {
             Tags.member("item", "c", "stones", "ntmspace:" + stone);
@@ -254,14 +342,28 @@ public final class SpaceItems {
     // ---------------------------------------------------------------- helpers
 
     private static RegistryObject<Item> plain(String id, String texture, HbmTab tab, Rarity rarity, String... tags) {
-        Registrar.Handle<Item> item = REG.<Item>item(id, ItemCustomLore::new, p -> rarity == null ? p : p.rarity(rarity))
+        Registrar.Handle<Item> item = REG.<Item>item(id, p -> MaterialShapeItem.fromTags(p, tags), p -> rarity == null ? p : p.rarity(rarity))
                 .transform(Presets.sprite("ntmspace:items/" + texture));
         for (String tag : tags) item.tag(ItemTag.of(tag));
         return tab == null ? item : item.tab(tab);
     }
 
-    private static RegistryObject<Item> lore(String id, String texture) {
-        return plain(id, texture, HbmTab.MATERIALS, null);
+    /**
+     * A lore item with tags but no material shape. 1.7's enum-multi splits (one registration covering several
+     * variants) stay out of the named-shape roster, like upstream's plain-{@code Item} families; only 1.7's named
+     * {@code ModItems} entries take a shape.
+     */
+    private static RegistryObject<Item> lore(String id, String texture, HbmTab tab, Rarity rarity, String... tags) {
+        Registrar.Handle<Item> item = REG.<Item>item(id, ItemCustomLore::new,
+                        p -> rarity == null ? p : p.rarity(rarity))
+                .transform(Presets.sprite("ntmspace:items/" + texture));
+        for (String tag : tags) item.tag(ItemTag.of(tag));
+        return tab == null ? item : item.tab(tab);
+    }
+
+    private static RegistryObject<ItemMineralClump> clump(String id, String texture, ItemMineralClump.Clump clump) {
+        return REG.<ItemMineralClump>item(id, properties -> new ItemMineralClump(properties, clump), properties -> properties)
+                .transform(Presets.sprite("ntmspace:items/" + texture)).tab(HbmTab.MATERIALS);
     }
 
     /** 1.7 {@code ItemLemon(hunger, saturation, wolf)}; tooltips from lang {@code .desc.N} (flesh_burger's "juicy!."). */
@@ -276,7 +378,9 @@ public final class SpaceItems {
 
     private static RegistryObject<SpaceDrinkItem> drink(String id, String texture, SpaceDrinkItem.Kind kind,
                                                         Supplier<? extends Item> container, HbmTab tab, String... tags) {
-        Registrar.Handle<SpaceDrinkItem> item = REG.item(id, p -> new SpaceDrinkItem(p, kind, container))
+        Registrar.Handle<SpaceDrinkItem> item = REG.item(id,
+                        p -> new SpaceDrinkItem(Compat.craftingRemainder(p, container.get()), kind,
+                                container))
                 .transform(Presets.sprite("ntmspace:items/" + texture));
         for (String tag : tags) item.tag(ItemTag.of(tag));
         return tab == null ? item : item.tab(tab);

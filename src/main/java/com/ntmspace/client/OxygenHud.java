@@ -1,8 +1,8 @@
 package com.ntmspace.client;
 
+import net.minecraft.world.entity.LivingEntity;
 import com.ntmspace.breathing.Breathing;
 import com.ntmspace.breathing.ItemModOxy;
-import com.ntmspace.breathing.OxygenSync;
 import dev.golem.core.client.Hud;
 import dev.golem.core.client.VanillaHud;
 import dev.golem.core.gui.GuiDraw;
@@ -23,7 +23,25 @@ public final class OxygenHud {
     private OxygenHud() {}
 
     public static void init() {
+        VanillaHud.hideAir(() -> {
+            var player = Minecraft.getInstance().player;
+            return player != null && !player.isCreative() && !player.isSpectator() && replacesAir(player);
+        });
         Hud.addLast(com.ntmspace.NtmSpace.MOD_ID, "oxygen", OxygenHud::render);
+    }
+
+    /** The air row sits above additional mount-health rows in vanilla's right status column. */
+    public static int vanillaAirTop(Player player, int guiHeight) {
+        int hearts = 0;
+        if (player.getVehicle() instanceof LivingEntity vehicle && vehicle.showVehicleHealth()) {
+            hearts = Math.min((int) (vehicle.getMaxHealth() + 0.5F) / 2, 30);
+        }
+        int rows = (int) Math.ceil(hearts / 10.0);
+        return guiHeight - 49 - Math.max(0, rows - 1) * 10;
+    }
+
+    public static boolean replacesAir(Player player) {
+        return Breathing.getOxy(player) < Breathing.FULL_BREATH || !Breathing.getOxygenTank(player).isEmpty();
     }
 
     private static void render(GuiGraphicsExtractor graphics) {
@@ -33,10 +51,10 @@ public final class OxygenHud {
 
         int width = mc.getWindow().getGuiScaledWidth();
         int height = mc.getWindow().getGuiScaledHeight();
-        int rightHeight = 49; // GuiIngameForge.right_height after the food row
+        int rightHeight = height - vanillaAirTop(player, height);
 
         // If we're suffocating for a reason other than water, render the HUD bubbles
-        int air = OxygenSync.clientOxygen;
+        int air = Breathing.getOxy(player);
         if (air < 100) {
             int left = width / 2 + 91;
             int top = height - rightHeight;

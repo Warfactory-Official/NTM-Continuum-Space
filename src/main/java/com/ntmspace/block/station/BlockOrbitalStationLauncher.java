@@ -1,12 +1,14 @@
 package com.ntmspace.block.station;
 
 import com.hbm.blocks.multiblock.MultiblockSurface;
+import com.hbm.capability.MachineCaps;
 import com.hbm.interfaces.ILookOverlay;
 import com.hbm.inventory.fluid.Fluids;
 import com.hbm.inventory.fluid.tank.FluidTankNTM;
 import com.hbm.items.ModFuelItems;
 import com.hbm.util.BobMathUtil;
 import com.ntmspace.orbit.Orbit;
+import com.ntmspace.registry.StationLauncherBlocks;
 import com.ntmspace.tileentity.station.TileEntityOrbitalStationLauncher;
 import java.util.ArrayList;
 import java.util.List;
@@ -34,6 +36,12 @@ public class BlockOrbitalStationLauncher extends BlockOrbitalStation {
 
     public BlockOrbitalStationLauncher(Properties properties) {
         super(properties, false);
+    }
+
+    /** The launcher owns its fuel tanks; only its subscriptions require an assembled rocket. */
+    @Override
+    public MachineCaps caps() {
+        return MachineCaps.of(StationLauncherBlocks.ORBITAL_STATION_LAUNCHER_BE).fluidIn().itemsAtCells();
     }
 
     @Override

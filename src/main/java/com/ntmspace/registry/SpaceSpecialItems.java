@@ -1,5 +1,9 @@
 package com.ntmspace.registry;
 
+import com.hbm.items.ModRBMKItems;
+import dev.golem.core.dejson.Equipment;
+import dev.golem.core.world.ArmorSlot;
+import dev.golem.core.world.Armors;
 import com.hbm.creativetabs.HbmTab;
 import com.hbm.inventory.fluid.Fluids;
 import com.hbm.items.ModItems;
@@ -97,7 +101,7 @@ public final class SpaceSpecialItems {
     private static EnumWavelengths xray() {
         EnumWavelengths.setStrength(EnumWavelengths.GAMMA, 5D);
         EnumWavelengths.setStrength(EnumWavelengths.DRX, 6D);
-        return EnumWavelengths.register(NS + ":xray", 4D, "wavelengths.name.xray", "wavelengths.waveRange.xray",
+        return EnumWavelengths.register("XRAY", 4D, "wavelengths.name.xray", "wavelengths.waveRange.xray",
                 0xF8E6A7, 0xF8E6A7, ChatFormatting.GOLD, entity -> {});
     }
 
@@ -105,7 +109,7 @@ public final class SpaceSpecialItems {
 
     /** hbm-space {@code HbmPotion.run} ("GOD WATCHES YOU"). */
     // On the effect register itself, not REG.register(Registries.MOB_EFFECT, ...): that reads Registries in this class's
-    // static initialiser, which 1.20.1 cannot do in Dejson's plain JVM (AGENTS.md section 8).
+    // static initialiser, which 1.20.1 cannot do in Dejson's plain JVM.
     public static final RegistryObject<MobEffect> RUN = EFFECTS.register("run", () -> new EffectRun());
     /** hbm-space {@code hbm:player.oil}. */
     public static final RegistryObject<SoundEvent> PLAYER_OIL = REG.sound("player.oil");
@@ -119,7 +123,8 @@ public final class SpaceSpecialItems {
     public static final RegistryObject<ItemModFlippers> FLIPPERS = REG.item("flippers", ItemModFlippers::new, p -> p.stacksTo(1))
             .transform(Presets.sprite()).tab(HbmTab.CONSUMABLES);
     public static final RegistryObject<ItemModHeavyBoots> HEAVY_BOOTS = REG.item("heavy_boots", ItemModHeavyBoots::new,
-            p -> p.stacksTo(1)).transform(Presets.sprite()).tab(HbmTab.CONSUMABLES);
+            p -> Armors.equippable(p.stacksTo(1), ArmorSlot.BOOTS,
+                    "ntmspace:heavy_boots")).transform(Presets.sprite()).tab(HbmTab.CONSUMABLES);
     public static final RegistryObject<ItemModV1> V1 = REG.item("v1", ItemModV1::new, p -> p.stacksTo(1))
             .transform(Presets.sprite()).tab(HbmTab.CONSUMABLES);
     /** 1.7 {@code ItemModInsert(9999, 0.7F, 0.9F, 0.4F, 1F).withCorrosionProtection()}. */
@@ -234,14 +239,20 @@ public final class SpaceSpecialItems {
         return REG.item("rbmk_fuel_" + type, (Item.Properties p) -> {
             ItemRBMKRod rod = new ItemRBMKRod(p.stacksTo(1), name);
             configure.accept(rod);
-            rod.pellet = () -> pellet.get(); // 1.7 ItemRBMKRod(pellet): the recycling pellet
+            // The pellet link resolves post-flush through ModRBMKItems.PELLETS (see init), like HBM's own rods.
             return rod;
         }).transform(Presets.sprite()).tab(HbmTab.CONTROL);
     }
 
     private SpaceSpecialItems() {}
 
-    public static void init() {}
+    public static void init() {
+        // Join HBM's rod-to-pellet linkage so Hazards.init() resolves our recycling pellets to their items.
+        ModRBMKItems.PELLETS.put(RBMK_FUEL_BK247, RBMK_PELLET_BK247);
+        ModRBMKItems.PELLETS.put(RBMK_FUEL_LECM, RBMK_PELLET_LECM);
+        ModRBMKItems.PELLETS.put(RBMK_FUEL_MECM, RBMK_PELLET_MECM);
+        ModRBMKItems.PELLETS.put(RBMK_FUEL_HECM, RBMK_PELLET_HECM);
+    }
 
     private static boolean declared;
 
@@ -249,6 +260,9 @@ public final class SpaceSpecialItems {
     public static void declare() {
         if (declared) return;
         declared = true;
+
+        Equipment.of(NS, "heavy_boots")
+                .layer(Equipment.HUMANOID, NS + ":heavy_boots").register();
 
         // RBMK pellets: 1.7 ItemRBMKPellet drew the pellet with the enrichment overlay e0..e4 and the xenon overlay
         // (meta 5..9); HBM's model_state property is that 1.7 metadata, spelled as HBM's own pellets
@@ -266,10 +280,10 @@ public final class SpaceSpecialItems {
             Dejson.item(NS, pellet).definition(select.fallback(ItemModels.model(NS + ":item/" + pellet + "_e0"))).register();
         }
 
-        // the records' songs (1.7 ItemModRecord.getRecordResource), lengths of the Ogg streams
-        JukeboxSongs.declare(NS, "gs", NS + ":music.record_god_speed", "item.ntmspace.record_gs.desc", 353.15F, 15);
-        JukeboxSongs.declare(NS, "gp", NS + ":music.record_goop", "item.ntmspace.record_gp.desc", 240.79F, 15);
-        JukeboxSongs.declare(NS, "el", NS + ":music.record_ethereal", "item.ntmspace.record_el.desc", 197.74F, 15);
+        // the records' songs (1.7 ItemModRecord.getRecordResource), lengths off the shipped oggs
+        JukeboxSongs.declare(NS, "gs", NS + ":music.record_god_speed", "jukebox_song.ntmspace.gs", 353.152F, 15);
+        JukeboxSongs.declare(NS, "gp", NS + ":music.record_goop", "jukebox_song.ntmspace.gp", 240.789F, 15);
+        JukeboxSongs.declare(NS, "el", NS + ":music.record_ethereal", "jukebox_song.ntmspace.el", 197.739F, 15);
         JukeboxSongs.discs(NS + ":record_gs", NS + ":record_gp", NS + ":record_el");
 
         // 1.7 ModDamageSource.run: setDamageIsAbsolute().setDamageBypassesArmor()

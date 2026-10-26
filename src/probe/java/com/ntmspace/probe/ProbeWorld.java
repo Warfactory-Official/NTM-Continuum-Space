@@ -1,5 +1,7 @@
 package com.ntmspace.probe;
 
+import com.ntmspace.world.SpaceDimensions;
+import dev.golem.core.world.TimeOfDay;
 import java.util.Map;
 import java.util.function.Supplier;
 import net.minecraft.resources.ResourceKey;
@@ -29,7 +31,7 @@ public final class ProbeWorld {
     public static void init() {
         LEVEL = dev.golem.core.world.Dimensions.dimension(ProbeEntry.MOD_ID, DIMENSION);
         // NTM: Space already gave the Mun its own clock: a second call for the same dimension does nothing (documented)
-        dev.golem.core.world.TimeOfDay.ownClock(com.ntmspace.world.SpaceDimensions.MUN);
+        TimeOfDay.autoClock(SpaceDimensions.MUN);
         dev.golem.core.world.TimeOfDay.ownClock(LEVEL);
         dev.golem.core.world.WorldTypes.declare(ProbeEntry.MOD_ID, WORLD_TYPE);
         // idempotent installer of every mod's Dejson biome features (NTM: Space calls it too)

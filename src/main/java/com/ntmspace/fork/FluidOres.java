@@ -1,5 +1,8 @@
 package com.ntmspace.fork;
 
+import com.hbm.items.tool.ItemSurveyScanner;
+import com.ntmspace.registry.BodyOreBlocks;
+import net.minecraft.ChatFormatting;
 import com.hbm.api.data.DepositDataMaps;
 import com.hbm.inventory.fluid.FluidType;
 import com.hbm.inventory.fluid.Fluids;
@@ -22,8 +25,8 @@ import org.jspecify.annotations.Nullable;
 
 /**
  * hbm-space's fluid ores outside the drills ({@code BlockOreFluid}): what a mining laser does with a mined deposit and
- * what its nullifier destroys ({@code TileEntityMachineMiningLaser.suckDrops}, through HBM's {@code PICKUP} hook,
- * ADDON-API-INVENTORY H-69). A deposit is any block with an HBM fluid deposit ({@code hbm:fluid_deposit} or
+ * what its nullifier destroys ({@code TileEntityMachineMiningLaser.suckDrops}, through HBM's {@code PICKUP} hook).
+ * A deposit is any block with an HBM fluid deposit ({@code hbm:fluid_deposit} or
  * {@code hbm:fluid_deposit_states}); its reserve type follows the deposit's primary fluid (gas, brine, else oil).
  */
 public final class FluidOres {
@@ -113,5 +116,14 @@ public final class FluidOres {
         if (started) return;
         started = true;
         TileEntityMachineMiningLaser.PICKUP.register(FluidOres::pickUp);
+        DepositDataMaps.RESERVES.register(SpaceReserve::bind);
+        ItemSurveyScanner.alias(BodyOreBlocks.ORE_OIL::get,
+                ItemSurveyScanner.Deposit.OIL);
+        ItemSurveyScanner.alias(ForkContent.ORE_BEDROCK_OIL::get,
+                ItemSurveyScanner.Deposit.BEDROCK_OIL);
+        ItemSurveyScanner.addLine("chat.hbmspace.surveyScanner.foundGas", ChatFormatting.WHITE,
+                List.of(BodyOreBlocks.ORE_GAS::get));
+        ItemSurveyScanner.addLine("chat.hbmspace.surveyScanner.foundBrine", ChatFormatting.WHITE,
+                List.of(BodyOreBlocks.ORE_BRINE::get));
     }
 }

@@ -32,7 +32,7 @@ public class ItemFlaskNitan extends CompatItem {
         if (!(entity instanceof Player player)) return stack;
         if (!player.getAbilities().instabuild) stack.shrink(1);
         if (level.isClientSide()) return stack;
-        Nitan.setCount(player, Nitan.count(player) + 1);
+        Nitan.addNitanDose(player);
         Effects.addRegistered(player, ForkContent.NITAN_EFFECT.get(), 60 * 20 * 3, 0);
         Effects.add(player, Effects.resistance(), 60 * 20 * 3, 3);
         return stack;

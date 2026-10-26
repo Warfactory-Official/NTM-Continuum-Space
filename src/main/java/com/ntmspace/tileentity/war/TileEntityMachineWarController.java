@@ -42,6 +42,9 @@ import org.jspecify.annotations.Nullable;
  */
 public class TileEntityMachineWarController extends TileEntityMachineBase implements MenuProvider, IControlReceiver {
 
+    public static final int SLOT_DRIVE = 1;
+    public static final int SLOT_CHIP = 2;
+
     public int id;
 
     /** Client view of the satellite on {@link #id} (see the class comment). */
@@ -92,12 +95,12 @@ public class TileEntityMachineWarController extends TileEntityMachineBase implem
     @Override
     public void receiveControl(CompoundTag data) {
         if (data.contains("xcoord") && data.contains("zcoord")) {
-            updateDriveCoords(Tags.getIntOr(data, "xcoord", 0), Tags.getIntOr(data, "zcoord", 0));
+            setTarget(Tags.getIntOr(data, "xcoord", 0), Tags.getIntOr(data, "zcoord", 0));
         }
     }
 
-    private void updateDriveCoords(int x, int z) {
-        ItemStack drive = getItem(1);
+    public void setTarget(int x, int z) {
+        ItemStack drive = getItem(SLOT_DRIVE);
         if (drive.isEmpty() || !(drive.getItem() instanceof ItemVOTVdrive)) return;
         ItemVOTVdrive.setCoordinates(drive, x, z);
         setChanged();

@@ -26,7 +26,12 @@ import net.minecraft.world.InteractionResult;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.entity.BlockEntity;
+import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.state.BlockState;
+import net.minecraft.world.level.block.state.StateDefinition;
+import net.minecraft.world.level.block.state.properties.BooleanProperty;
+import net.minecraft.world.phys.AABB;
+import org.jspecify.annotations.Nullable;
 import net.minecraft.world.phys.BlockHitResult;
 
 /**
@@ -38,8 +43,36 @@ import net.minecraft.world.phys.BlockHitResult;
  */
 public class LaunchPadRocket extends BlockMultiblockMachine implements ILookOverlay, IEnergyConnectorBlock, IFluidConnectorBlockMK2 {
 
+    public static final BooleanProperty LADDER = BooleanProperty.create("ladder");
+    private static final AABB[] LADDER_BOXES = new AABB[4];
+
+    static {
+        for (var facing : Direction.Plane.HORIZONTAL) {
+            var rot = ForgeDirection.getOrientation(facing).getRotation(ForgeDirection.UP);
+            LADDER_BOXES[facing.get2DDataValue()] = new AABB(0.25, 0, 0.25, 0.75, 1, 0.75)
+                    .move(-rot.offsetX * 0.5, 0, -rot.offsetZ * 0.5);
+        }
+    }
+
     public LaunchPadRocket(Properties properties) {
         super(properties);
+        registerDefaultState(defaultBlockState().setValue(LADDER, false));
+    }
+
+    @Override
+    protected void createBlockStateDefinition(StateDefinition.Builder<Block, BlockState> builder) {
+        super.createBlockStateDefinition(builder);
+        builder.add(LADDER);
+    }
+
+    @Override
+    protected BlockState cellStateFor(int localX, int localY, int localZ, Direction facing, int shapeId) {
+        return super.cellStateFor(localX, localY, localZ, facing, shapeId)
+                .setValue(LADDER, localZ == -5 && localX == (localY >= 3 ? 2 : 6));
+    }
+
+    public @Nullable AABB climbBox(BlockState state) {
+        return state.getValue(LADDER) ? LADDER_BOXES[state.getValue(FACING).get2DDataValue()] : null;
     }
 
     @Override
@@ -116,7 +149,10 @@ public class LaunchPadRocket extends BlockMultiblockMachine implements ILookOver
         if (!(level instanceof ServerLevel server)) return;
         BlockPos pos = at.immutable();
         Direction facing = level.getBlockState(core).getValue(FACING);
-        withoutTeardown(() -> level.setBlock(pos, defaultBlockState().setValue(FACING, facing).setValue(CELL, Boolean.TRUE), 3));
+        int dx = pos.getX() - core.getX(), dy = pos.getY() - core.getY(), dz = pos.getZ() - core.getZ();
+        var state = cellStateFor(MultiblockMaskTable.localX(dx, dy, dz, facing), dy,
+                MultiblockMaskTable.localZ(dx, dy, dz, facing), facing, 0);
+        withoutTeardown(() -> level.setBlock(pos, state, 3));
         if (isCellOf(level.getBlockState(pos))) MultiblockCoreIndex.put(server, pos, core);
     }
 

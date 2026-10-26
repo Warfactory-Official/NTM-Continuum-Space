@@ -22,6 +22,7 @@ public final class SpaceConfig {
      * activation system ({@code com.ntmspace.fork.neutron.NeutronActivation}) is off unless this is set to false.
      */
     public static boolean disableNeutron = true;
+    public static boolean showOreLocations = true;
 
     private static boolean loaded;
 
@@ -41,6 +42,8 @@ public final class SpaceConfig {
         // hbm-space RadiationConfig: CATEGORY_HAZ, the same "14_hazard" category as HBM's hazard switches
         disableNeutron = CommonConfig.createConfigBool(config, CommonConfig.CATEGORY_HAZARD, "HAZ_01_disableNeutrons",
                 "When turned off, all neutron radiation hazards are disabled", true);
+        showOreLocations = CommonConfig.createConfigBool(config, CommonConfig.CATEGORY_GENERAL, "1.93_showOreLocations",
+                "Should ores indicate which planets they can be found on.", true);
         config.save();
     }
 }

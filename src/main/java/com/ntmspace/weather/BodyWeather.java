@@ -1,5 +1,15 @@
 package com.ntmspace.weather;
 
+import com.mojang.brigadier.exceptions.CommandSyntaxException;
+import com.mojang.brigadier.exceptions.SimpleCommandExceptionType;
+import com.ntmspace.orbit.OrbitalStation;
+import com.ntmspace.world.CelestialBodies;
+import dev.golem.core.world.TimeOfDay;
+import java.util.Locale;
+import net.minecraft.resources.ResourceKey;
+import net.minecraft.server.MinecraftServer;
+import net.minecraft.util.Mth;
+import net.minecraft.world.level.Level;
 import com.mojang.brigadier.CommandDispatcher;
 import com.mojang.brigadier.arguments.IntegerArgumentType;
 import com.ntmspace.NtmSpace;
@@ -26,14 +36,10 @@ import org.jetbrains.annotations.Nullable;
  * {@link Weathers}, so the client's rain, the sky darkening, lightning (vanilla's, where a biome rains: 1.7
  * {@code canDoLightning} = the weather cycle) and every other reader of the level's weather follow it.
  *
- * <p>Differences:
- * <ul>
- *   <li>Kerbin is the overworld and keeps vanilla's weather and {@code /weather}. In 1.7 the overworld provider was a
- *       {@code WorldProviderCelestial} too and {@code /weather} was redirected to the planet's trait
- *       ({@code ModEventHandler.handlePlanetaryWeatherCommand}); the port leaves vanilla's overworld alone and offers
- *       that redirect for the bodies as {@code /ntmspace weather clear|rain|thunder [seconds]}.</li>
- *   <li>Thatmo's level reads Kerbin's weather, as in 1.7, where its dimension resolved to Kerbin ({@link SpaceSkies#body}).</li>
- * </ul>
+ * <p>Kerbin owns the overworld's cycle too. The regular {@code /weather} command changes the body's trait, and
+ * sleeping through clears that cycle immediately. An orbital command controls the station's orbited body while
+ * the orbit stays dry; other non-celestial levels keep vanilla's weather and commands. Thatmo reads Kerbin's cycle,
+ * as in 1.7 ({@link SpaceSkies#body}).
  */
 public final class BodyWeather {
 
@@ -43,14 +49,16 @@ public final class BodyWeather {
 
     public static void init() {
         Weathers.register(BodyWeather::weather);
+        Weathers.SLEPT_THROUGH.register(BodyWeather::sleptThrough);
+        Weathers.COMMANDS.register(BodyWeather::command);
         CompatCommands.server(BodyWeather::registerCommand);
     }
 
-    /** The weather of {@code level}, or null for a level vanilla's weather keeps (the overworld, any other mod's). */
+    /** The weather of {@code level}, or null where no celestial body supplies it. */
     public static @Nullable Weathers.State weather(ServerLevel level) {
         if (Orbit.inOrbit(level)) return new Weathers.State(0.0F, 0.0F);
         SolarSystem.Body body = SpaceSkies.body(level);
-        if (body == null || SpaceSkies.isKerbin(level)) return null;
+        if (body == null) return null;
         return weatherOfBody(body.name);
     }
 
@@ -60,6 +68,39 @@ public final class BodyWeather {
         CBT_Weather weather = CelestialTraits.getTrait(body, CBT_Weather.class, false);
         if (weather == null) return new Weathers.State(0.0F, 0.0F);
         return new Weathers.State(weather.rainStrength, weather.thunderStrength);
+    }
+
+    /** 1.7 resetRainAndThunder: clear the body, then reset only its own advancing clock to local morning. */
+    private static void sleptThrough(ServerLevel level) {
+        var body = SpaceSkies.body(level);
+        if (body == null) return;
+        var weather = CBT_Weather.ensureTrait(body.name);
+        if (weather != null) {
+            weather.forceClear(COMMAND_RANDOM, COMMAND_RANDOM.nextInt(168000) + 12000);
+            CelestialTraits.markChanged();
+        }
+        if (TimeOfDay.hasOwnClock(level) && TimeOfDay.advancing(level)) {
+            TimeOfDay.set(level, 0);
+        }
+        Weathers.advance(level);
+    }
+
+    /** The regular /weather command uses ticks; the namespaced command below continues accepting seconds. */
+    public static @Nullable Integer command(CommandSourceStack source, Weathers.Mode mode, int duration)
+            throws CommandSyntaxException {
+        var level = source.getLevel();
+        var body = commandBody(source);
+        if (body == null) return null;
+        var weather = CBT_Weather.ensureTrait(body.name);
+        if (weather == null || !CBT_Weather.supportsWeather(body.name, false)) {
+            throw new SimpleCommandExceptionType(
+                    Component.translatable("commands.hbmspace.weather.no_cycle")).create();
+        }
+        var ticks = duration < 0 ? (300 + level.getRandom().nextInt(600)) * 20 : duration;
+        var name = mode.name().toLowerCase(Locale.ROOT);
+        apply(weather, name, ticks);
+        source.sendSuccess(() -> Component.translatable("commands.weather.set." + name), true);
+        return ticks;
     }
 
     // ---------------------------------------------------------------------------------------------------------------
@@ -137,22 +178,41 @@ public final class BodyWeather {
 
     /** {@code handlePlanetaryWeatherCommand}: force the body's weather for {@code duration} ticks. */
     private static int set(CommandSourceStack source, String mode, int duration) {
-        ServerLevel level = source.getLevel();
-        SolarSystem.Body body = SpaceSkies.body(level);
-        String name = body == null || Orbit.inOrbit(level) ? null : body.name;
+        var body = commandBody(source);
+        String name = body == null ? null : body.name;
         CBT_Weather weather = name == null ? null : CBT_Weather.ensureTrait(name);
         if (weather == null || !CBT_Weather.supportsWeather(name, false)) {
             source.sendFailure(Component.literal("This celestial body has no weather cycle."));
             return 0;
         }
+        apply(weather, mode, duration);
+        source.sendSuccess(() -> Component.translatable("commands.weather.set." + mode), true);
+        return report(source);
+    }
+
+    private static @Nullable SolarSystem.Body commandBody(CommandSourceStack source) {
+        var pos = source.getPosition();
+        return commandBody(source.getServer(), source.getLevel().dimension(), pos.x, pos.z);
+    }
+
+    /** A station's command reaches its actual orbited body; the orbit level's own visual weather remains dry. */
+    public static @Nullable SolarSystem.Body commandBody(MinecraftServer server,
+            ResourceKey<Level> dimension, double x, double z) {
+        if (dimension.equals(Orbit.ORBIT)) {
+            return OrbitalStation.getStationFromPosition(server,
+                    Mth.floor(x), Mth.floor(z)).orbiting;
+        }
+        var body = CelestialBodies.of(dimension);
+        return body == null ? null : SolarSystem.body(body.name());
+    }
+
+    private static void apply(CBT_Weather weather, String mode, int duration) {
         switch (mode) {
             case "clear" -> weather.forceClear(COMMAND_RANDOM, duration);
             case "rain" -> weather.forceRain(COMMAND_RANDOM, duration);
             default -> weather.forceThunder(duration);
         }
         CelestialTraits.markChanged();
-        source.sendSuccess(() -> Component.translatable("commands.weather.set." + mode), true);
-        return report(source);
     }
 
     private static int report(CommandSourceStack source) {

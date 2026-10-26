@@ -165,16 +165,9 @@ public abstract class TileEntityTransporterBase extends TileEntityMachineBase
 
                 linkedTransporter.tanks[o].setTankType(tanks[i].getTankType());
 
-                int sourceFillLevel = tanks[i].getFill();
-                int targetFillLevel = linkedTransporter.tanks[o].getFill();
-
-                int spaceAvailable = linkedTransporter.tanks[o].getMaxFill() - targetFillLevel;
-                int amountToSend = Math.min(sourceFillLevel, spaceAvailable);
-
-                if (amountToSend > 0) {
-                    linkedTransporter.tanks[o].setFill(targetFillLevel + amountToSend);
-                    tanks[i].setFill(sourceFillLevel - amountToSend);
-                    sentFluid += amountToSend;
+                var moved = tanks[i].transferTo(linkedTransporter.tanks[o], tanks[i].getFill());
+                if (moved > 0) {
+                    sentFluid += moved;
                     isDirty = true;
                 }
             }
@@ -194,7 +187,7 @@ public abstract class TileEntityTransporterBase extends TileEntityMachineBase
     private void setType(FluidTankNTM tank, int slot) {
         ItemStack id = inventory.getStackInSlot(slot);
         if (id.isEmpty() || !(id.getItem() instanceof IItemFluidId identifier)) return;
-        tank.setTankType(identifier.getType(null, 0, 0, 0, id));
+        tank.setTankTypeByIdentifier(identifier.getType(null, 0, 0, 0, id));
     }
 
     /**
@@ -230,15 +223,15 @@ public abstract class TileEntityTransporterBase extends TileEntityMachineBase
      * item a tick from the inventory at {@link #getInsertPos}, the extractor pushes one into the one at {@link #getExtractPos}.
      */
     private void updateConnections() {
-        if (cachedPorts == null) cachedPorts = MachinePorts.ports(getBlockState(), worldPosition, getConPos());
+        if (cachedPorts == null) cachedPorts = MachinePorts.ports(level, getBlockState(), worldPosition, getConPos());
         setupFluidPorts(cachedPorts);
         updatePortFIFO();
         if (fuelPorts == null) {
-            PortDef fuel = PortDef.combine(MachinePorts.ports(getBlockState(), worldPosition, getTankPos()));
+            PortDef fuel = PortDef.combine(MachinePorts.ports(level, getBlockState(), worldPosition, getTankPos()));
             fuelPorts = TilePort.oneToMany(fuelReceiver, tanks.length - outputTankMax, fuel);
         }
         for (int i = 0; i < fuelPorts.length; i++) {
-            fuelPorts[i].setupType(FluidNetProvider.of(tanks[outputTankMax + i].getTankType()));
+            fuelPorts[i].setupFluids(tanks[outputTankMax + i], level);
             fuelPorts[i].update(level);
             fuelPorts[i].checkSubscribe(level);
         }
@@ -327,21 +320,7 @@ public abstract class TileEntityTransporterBase extends TileEntityMachineBase
 
     // splitting is commutative, order don't matter
     private static void splitFill(FluidTankNTM in, FluidTankNTM out) {
-        if (in.getTankType() == out.getTankType()) {
-            int fill = in.getFill() + out.getFill();
-
-            float iFill = in.getMaxFill();
-            float oFill = out.getMaxFill();
-            float total = iFill + oFill;
-            float iFrac = iFill / total;
-            float oFrac = oFill / total;
-
-            in.setFill(Mth.ceil(iFrac * (float) fill));
-            out.setFill(Mth.floor((double) (oFrac * (float) fill)));
-
-            // cap filling (this will generate 1mB of fluid in rare cases)
-            if (out.getFill() == out.getMaxFill() - 1) out.setFill(out.getMaxFill());
-        }
+        in.balanceWith(out);
     }
 
     @Override

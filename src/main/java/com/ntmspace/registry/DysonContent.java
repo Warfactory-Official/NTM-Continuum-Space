@@ -29,7 +29,7 @@ import net.minecraft.world.level.block.entity.BlockEntityType;
 /**
  * hbm-space's Dyson swarm: the Dyson Spinlauncher ({@code dyson_launcher}), the Dyson Receiver, the three converters
  * (heat {@code dyson_converter_tu}, power {@code dyson_converter_he}, the anatmogenesis terraformer) - all
- * {@code BlockDummyable}s of hardness 10 and resistance 20 on the machine tab - and the swarm member item
+ * {@code BlockDummyable}s of hardness 10 and legacy resistance 20 (modern resistance 12) on the machine tab - and the swarm member item
  * ({@code swarm_member}, parts tab). The members themselves live in the star's {@code CBT_Dyson} trait; the relay
  * satellite is {@code satellite/SpaceSatellites}'. None of these machines has a GUI in 1.7; they speak through their
  * look overlays. Sounds: hbm-space's {@code misc.spinshot}, {@code misc.spincharge} and {@code block.dysonBeam}
@@ -44,20 +44,20 @@ public final class DysonContent {
     private static final Registrar REG = Registrar.of(BLOCKS, ITEMS, BLOCK_ENTITIES, SOUNDS);
 
     public static final RegistryObject<MachineDysonLauncher> DYSON_LAUNCHER = REG.<MachineDysonLauncher>block(
-                    "dyson_launcher", MachineDysonLauncher::new, p -> SpaceMachines.machine(p, 10.0F, 20.0F))
+                    "dyson_launcher", MachineDysonLauncher::new, p -> SpaceMachines.machine(p, 10.0F, 12.0F))
             .transform(SpaceMachines.FOLDED).loot(Loot.self()).tag(BlockTag.PICKAXE);
     public static final RegistryObject<MachineDysonReceiver> DYSON_RECEIVER = REG.<MachineDysonReceiver>block(
-                    "dyson_receiver", MachineDysonReceiver::new, p -> SpaceMachines.machine(p, 10.0F, 20.0F))
+                    "dyson_receiver", MachineDysonReceiver::new, p -> SpaceMachines.machine(p, 10.0F, 12.0F))
             .transform(SpaceMachines.FOLDED).loot(Loot.self()).tag(BlockTag.PICKAXE);
     public static final RegistryObject<MachineDysonConverterTU> DYSON_CONVERTER_TU = REG.<MachineDysonConverterTU>block(
-                    "dyson_converter_tu", MachineDysonConverterTU::new, p -> SpaceMachines.machine(p, 10.0F, 20.0F))
+                    "dyson_converter_tu", MachineDysonConverterTU::new, p -> SpaceMachines.machine(p, 10.0F, 12.0F))
             .transform(SpaceMachines.FOLDED).loot(Loot.self()).tag(BlockTag.PICKAXE);
     public static final RegistryObject<MachineDysonConverterHE> DYSON_CONVERTER_HE = REG.<MachineDysonConverterHE>block(
-                    "dyson_converter_he", MachineDysonConverterHE::new, p -> SpaceMachines.machine(p, 10.0F, 20.0F))
+                    "dyson_converter_he", MachineDysonConverterHE::new, p -> SpaceMachines.machine(p, 10.0F, 12.0F))
             .transform(SpaceMachines.FOLDED).loot(Loot.self()).tag(BlockTag.PICKAXE);
     public static final RegistryObject<MachineDysonConverterAnatmogenesis> DYSON_CONVERTER_ANATMOGENESIS =
             REG.<MachineDysonConverterAnatmogenesis>block("dyson_converter_anatmogenesis",
-                            MachineDysonConverterAnatmogenesis::new, p -> SpaceMachines.machine(p, 10.0F, 20.0F))
+                            MachineDysonConverterAnatmogenesis::new, p -> SpaceMachines.machine(p, 10.0F, 12.0F))
                     .transform(SpaceMachines.FOLDED).loot(Loot.self()).tag(BlockTag.PICKAXE);
 
     /** The launcher and the receiver are 1.7 {@code ITooltipProvider}s ({@code addStandardInfo}). */

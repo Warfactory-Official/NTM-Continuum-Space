@@ -24,6 +24,7 @@ import net.minecraft.sounds.SoundSource;
 import net.minecraft.world.level.EmptyBlockGetter;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.Block;
+import net.minecraft.world.level.block.AbstractFurnaceBlock;
 import net.minecraft.world.level.block.BonemealableBlock;
 import net.minecraft.world.level.block.FenceBlock;
 import net.minecraft.world.level.block.state.BlockState;
@@ -94,6 +95,7 @@ public class AtmosphereBlob implements Runnable {
         if (block instanceof FenceBlock) return false;
         if (block instanceof BlockSealable sealable) return sealable.isSealed(level, pos); // custom semi-sealables
         if (block instanceof BlockDoorGeneric door) return !door.hasExtra(state); // 1.7: !getBlocksMovement = closed
+        if (block instanceof AbstractFurnaceBlock) return false; // burners breathe the room, including smoker and blast furnace
         if (state.is(Sealing.UNSEALABLE)) return false; // 1.7 IBlockSealable blocks answering false (furnaces, diesel)
         if (block instanceof BlockMultiblockCore || block instanceof BlockMultiblockCell) return false; // machines have gaps
 

@@ -35,6 +35,7 @@ import org.jetbrains.annotations.Nullable;
 public class TileEntityAtmosphericCompressor extends TileEntityMachineBase implements IEnergyReceiverMK2, IFluidStandardSenderMK2 {
 
     public static final long MAX_POWER = 1_000_000;
+    public static final int RATE = 200;
     /** 1.7 {@code consumption}: an unused field (the step uses 200 and {@code max / 50}); kept for the record. */
     int consumption = 200;
 
@@ -90,10 +91,10 @@ public class TileEntityAtmosphericCompressor extends TileEntityMachineBase imple
             tank.setTankType(Fluids.NONE);
         }
 
-        if (hasPower() && tank.getTankType() != Fluids.NONE && tank.getFill() + 200 <= tank.getMaxFill()) {
-            tank.setFill(tank.getFill() + 200);
+        if (hasPower() && tank.getTankType() != Fluids.NONE && tank.getFill() + RATE <= tank.getMaxFill()) {
+            tank.setFill(tank.getFill() + RATE);
             power -= getMaxPower() / 50;
-            CelestialTraits.capture(level, tank.getTankType(), 200);
+            CelestialTraits.capture(level, tank.getTankType(), RATE);
         }
 
         setChanged();
@@ -147,7 +148,7 @@ public class TileEntityAtmosphericCompressor extends TileEntityMachineBase imple
 
     /** The 1.7 connection points as ports. */
     public PortDef[] getPorts() {
-        if (cachedPorts == null) cachedPorts = MachinePorts.ports(getBlockState(), worldPosition, getConPos());
+        if (cachedPorts == null) cachedPorts = MachinePorts.ports(level, getBlockState(), worldPosition, getConPos());
         return cachedPorts;
     }
 

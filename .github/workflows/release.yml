@@ -51,6 +51,7 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 330
     env:
+      ORG_GRADLE_PROJECT_hbmProjectDir: ../new-hbm
       MODRINTH_TOKEN: ${{ secrets.MODRINTH_TOKEN }}
       CURSEFORGE_TOKEN: ${{ secrets.CURSEFORGE_TOKEN }}
       # ModDevGradle builds Minecraft through its binary pipeline whenever CI=true (GitHub always sets it).
@@ -58,7 +59,7 @@ jobs:
       # with the local recompile pipeline (same as prerelease.yml).
       CI: "false"
     steps:
-      # settings.gradle.kts includes ../Golem-Core and ../new-hbm as composite builds: check all three out side by side.
+      # Override the HBM composite path to match this job's checkout directory.
       - uses: actions/checkout@v4
         with:
           path: new-hbm-space

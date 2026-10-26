@@ -305,7 +305,7 @@ public class GUIMachineStardar extends CompatContainerScreen<ContainerStardar> {
 
         Minecraft mc = Minecraft.getInstance();
         double dayTicks = mc.level != null ? (double) mc.level.getGameTime() + (double) partialTicks : 0D;
-        double worldTicks = dayTicks * (double) SolarSystem.TIME_MULTIPLIER;
+        double worldTicks = dayTicks * (double) SolarSystem.CLIENT_TIME_MULTIPLIER;
         float centerU = MAP_TEX_W * 0.5F;
         float centerV = MAP_TEX_H * 0.5F;
         float systemOrbitScale = getOrbitScalePxPerKm(root);
@@ -1529,7 +1529,7 @@ public class GUIMachineStardar extends CompatContainerScreen<ContainerStardar> {
     static float getBodyRotationPhase(Body body, double dayTicks) {
         if (body == null) return 0F;
 
-        double period = body.getRotationalPeriod();
+        double period = body.getClientRotationalPeriod();
         if (period <= 0D || Double.isNaN(period) || Double.isInfinite(period)) return 0F;
 
         return (float) ((dayTicks % period) / period);
@@ -1642,15 +1642,8 @@ public class GUIMachineStardar extends CompatContainerScreen<ContainerStardar> {
 
     /** The 1.7 landing rule on a 256 x 256 height map; the translated reason, or null. */
     public static @Nullable String landingProblem(int[] heightmap, int x, int z) {
-        if (x < 3 || x > 252 || z < 3 || z > 252) return I18n.get("gui.stardar.landing.outside_bounds");
-
-        for (int ox = x - 2; ox <= x + 2; ox++) {
-            for (int oz = z - 2; oz <= z + 2; oz++) {
-                if (heightmap[256 * oz + ox] != heightmap[256 * z + x]) return I18n.get("gui.stardar.landing.area_not_flat");
-            }
-        }
-
-        return null;
+        var issue = TileEntityMachineStardar.landingIssue(heightmap, x, z);
+        return issue == null ? null : I18n.get(issue);
     }
 
     private int altitude(int x, int z) {

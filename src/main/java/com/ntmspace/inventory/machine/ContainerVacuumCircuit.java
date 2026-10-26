@@ -64,39 +64,18 @@ public class ContainerVacuumCircuit extends AbstractContainerMenu {
         return machine.stillValid(player);
     }
 
-    /**
-     * 1.7 {@code transferStackInSlot}. Kept: from the player, a stack that is neither a battery nor an upgrade is offered
-     * to the wafer slots if it is a wafer and to the board slots if it is a board, and the method then always answers
-     * "nothing moved", so a shift-click moves at most one merge.
-     */
+    /** Batteries, upgrades, wafers and boards enter their own machine slots; outputs enter the player inventory. */
     @Override
     public ItemStack quickMoveStack(Player player, int index) {
-        ItemStack result = ItemStack.EMPTY;
-        Slot slot = slots.get(index);
-        if (slot != null && slot.hasItem()) {
-            ItemStack stack = slot.getItem();
-            result = stack.copy();
-            if (index <= 7) {
-                if (!moveItemStackTo(stack, 8, slots.size(), true)) return ItemStack.EMPTY;
-            } else if (Library.isBattery(result)) {
-                if (!moveItemStackTo(stack, 5, 6, false)) return ItemStack.EMPTY;
-            } else if (Library.isMachineUpgrade(result)) {
-                if (!moveItemStackTo(stack, 6, 8, false)) return ItemStack.EMPTY;
-            } else {
-                if (VacuumCircuitRecipes.INSTANCE.isWafer(stack) && !moveItemStackTo(stack, 0, 2, false)) {
-                    slot.setChanged();
-                    return ItemStack.EMPTY;
-                }
-                if (VacuumCircuitRecipes.INSTANCE.isPcb(stack) && !moveItemStackTo(stack, 2, 4, false)) {
-                    slot.setChanged();
-                    return ItemStack.EMPTY;
-                }
-                slot.setChanged();
-                return ItemStack.EMPTY;
-            }
-            if (stack.isEmpty()) slot.setByPlayer(ItemStack.EMPTY);
-            else slot.setChanged();
-        }
-        return result;
+        return MachineMenus.quickMove(player, slots.get(index), stack -> {
+            if (index < TileEntityMachineVacuumCircuit.SLOT_COUNT)
+                return moveItemStackTo(stack, TileEntityMachineVacuumCircuit.SLOT_COUNT, slots.size(), true);
+            if (Library.isBattery(stack)) return moveItemStackTo(stack, TileEntityMachineVacuumCircuit.SLOT_BATTERY,
+                    TileEntityMachineVacuumCircuit.SLOT_BATTERY + 1, false);
+            if (Library.isMachineUpgrade(stack)) return moveItemStackTo(stack, TileEntityMachineVacuumCircuit.SLOT_UPGRADE_START,
+                    TileEntityMachineVacuumCircuit.SLOT_UPGRADE_END + 1, false);
+            return VacuumCircuitRecipes.INSTANCE.isWafer(stack) && moveItemStackTo(stack, 0, 2, false)
+                    || VacuumCircuitRecipes.INSTANCE.isPcb(stack) && moveItemStackTo(stack, 2, 4, false);
+        });
     }
 }

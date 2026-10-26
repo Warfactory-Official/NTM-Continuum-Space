@@ -2,14 +2,16 @@ package com.ntmspace.entity.mob;
 
 import dev.golem.core.data.CompatWaterAnimal;
 import net.minecraft.server.level.ServerLevel;
-import net.minecraft.world.damagesource.DamageSource;
 import net.minecraft.world.entity.Entity;
+import dev.golem.core.data.DataIn;
+import dev.golem.core.data.DataOut;
+import dev.golem.core.data.SynchedData;
+import net.minecraft.network.syncher.EntityDataAccessor;
+import net.minecraft.network.syncher.EntityDataSerializers;
+import net.minecraft.network.syncher.SynchedEntityData;
 import net.minecraft.world.entity.EntityType;
-import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.ai.attributes.AttributeSupplier;
 import net.minecraft.world.entity.player.Player;
-import net.minecraft.world.item.ItemStack;
-import net.minecraft.world.item.Items;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.phys.Vec3;
 import org.jspecify.annotations.Nullable;
@@ -20,7 +22,7 @@ import org.jspecify.annotations.Nullable;
  * now and then, a glance at a player within 8 blocks, and a jump while in water 80% of the time. It walks on the sea
  * floor because it answers "not in water" while it updates; its strafe and forward inputs are swapped and the strafe
  * flips direction every 20..99 ticks ("crab walk"). With 1.7's zero inputs the crab therefore only turns and sinks;
- * both oddities are ported as written. One crab in eight is clay-infused (skin rolled per client, as 1.7 did).
+ * both oddities are ported as written. One crab in eight is clay-infused; its skin is chosen once on the server, saved and synchronized.
  */
 public class EntityScuttlecrab extends CompatWaterAnimal implements IEntityEnumMulti {
 
@@ -29,7 +31,9 @@ public class EntityScuttlecrab extends CompatWaterAnimal implements IEntityEnumM
         CLAYINFUSED,
     }
 
-    public final Scuttlecrab type;
+    private static final Scuttlecrab[] VARIANTS = Scuttlecrab.values();
+    private static final EntityDataAccessor<Byte> VARIANT =
+            SynchedEntityData.defineId(EntityScuttlecrab.class, EntityDataSerializers.BYTE);
 
     /** Walk on the seafloor: the water check answers false while the living update runs. */
     private boolean seafloorWalking = false;
@@ -45,7 +49,7 @@ public class EntityScuttlecrab extends CompatWaterAnimal implements IEntityEnumM
 
     public EntityScuttlecrab(EntityType<? extends EntityScuttlecrab> type, Level level) {
         super(type, level);
-        this.type = level.getRandom().nextInt(8) == 0 ? Scuttlecrab.CLAYINFUSED : Scuttlecrab.TROPICAL;
+        if (!level.isClientSide()) entityData.set(VARIANT, (byte) (level.getRandom().nextInt(8) == 0 ? 1 : 0));
     }
 
     public static AttributeSupplier.Builder createAttributes() {
@@ -53,8 +57,26 @@ public class EntityScuttlecrab extends CompatWaterAnimal implements IEntityEnumM
     }
 
     @Override
-    public Enum<?> getEnum() {
-        return this.type;
+    public Scuttlecrab getEnum() {
+        return VARIANTS[entityData.get(VARIANT)];
+    }
+
+    @Override
+    protected void defineData(SynchedData data) {
+        super.defineData(data);
+        data.define(VARIANT, (byte) 0);
+    }
+
+    @Override
+    protected void loadData(DataIn input) {
+        super.loadData(input);
+        MobVariants.load(entityData, VARIANT, VARIANTS, input);
+    }
+
+    @Override
+    protected void saveData(DataOut output) {
+        super.saveData(output);
+        MobVariants.save(entityData, VARIANT, output);
     }
 
     /** 1.7 {@code EntityWaterMob.allowLeashing()} was false. */
@@ -67,6 +89,12 @@ public class EntityScuttlecrab extends CompatWaterAnimal implements IEntityEnumM
     public boolean isInWater() {
         if (this.seafloorWalking) return false;
         return super.isInWater();
+    }
+
+    @Override
+    public boolean isAffectedByFluids() {
+        // Forge-family fluid-type checks also select water travel independently of isInWater().
+        return (!seafloorWalking || !super.isInWater()) && super.isAffectedByFluids();
     }
 
     @Override
@@ -127,14 +155,4 @@ public class EntityScuttlecrab extends CompatWaterAnimal implements IEntityEnumM
         }
     }
 
-    /** 1.7 {@code getDropItem() = Items.clay_ball} through {@code EntityLiving.dropFewItems}: 0..2 plus 0..looting. */
-    @Override
-    protected void dropCustomDeathLoot(ServerLevel level, DamageSource source, boolean killedByPlayer) {
-        super.dropCustomDeathLoot(level, source, killedByPlayer);
-        int looting = source.getEntity() instanceof LivingEntity attacker
-                ? dev.golem.core.world.Compat.lootingLevel(level, attacker) : 0;
-        int j = this.random.nextInt(3);
-        if (looting > 0) j += this.random.nextInt(looting + 1);
-        for (int k = 0; k < j; ++k) spawnAtLocation(level, new ItemStack(Items.CLAY_BALL));
-    }
 }

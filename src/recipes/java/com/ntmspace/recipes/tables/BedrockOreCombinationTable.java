@@ -48,6 +48,6 @@ public final class BedrockOreCombinationTable extends RecipeSource<Row> {
     private void put(ComparableStack input, Pair output) {
         register(BuiltInRegistries.ITEM.getKey(input.item).getPath(), new Row(input,
                 Optional.ofNullable(output.item()).map(stack -> ItemSpec.of(stack).getOrThrow()),
-                Optional.ofNullable(output.fluid()), Integer.MAX_VALUE));
+                Optional.ofNullable(output.fluid()), orderAfterBase(Row::order)));
     }
 }

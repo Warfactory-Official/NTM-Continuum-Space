@@ -22,7 +22,7 @@ public class MapGenCrater extends MapGen17 {
     }
 
     private double depthFunc(double x, double rad, double depth) {
-        return -Math.pow(x, 4) / Math.pow(rad, 4) * depth + depth;
+        return CraterGeometry.depth(x, rad, depth, 4);
     }
 
     // This function is looped over from -this.range to +this.range on both XZ axes.
@@ -32,7 +32,7 @@ public class MapGenCrater extends MapGen17 {
                 && rand.nextInt(chancePerChunk) == Math.abs(offsetZ) % chancePerChunk) {
 
             double radius = rand.nextInt(maxSize - minSize) + minSize;
-            double depth = radius * 0.35D;
+            double depth = CraterGeometry.maximumDepth(radius);
 
             int xCoord = -offsetX + chunkX;
             int zCoord = -offsetZ + chunkZ;

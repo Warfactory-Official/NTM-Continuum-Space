@@ -5,19 +5,14 @@ import com.mojang.blaze3d.vertex.PoseStack;
 import com.ntmspace.entity.mob.EntityWarBehemoth;
 import net.minecraft.client.renderer.entity.EntityRendererProvider;
 import net.minecraft.resources.Identifier;
-import net.minecraft.util.Mth;
-import net.minecraft.world.entity.Entity;
-import net.minecraft.world.entity.LivingEntity;
 
 /**
  * hbm-space {@code RenderBehemoth} + {@code ModelBehemoth}: the war machine at 1.2x, its hull pitched by the entity's
- * raw pitch, six sheets (body, helmet, eye, hip, knee, leg) and two legs placed by a two-bone IK solve from a stepping
+ * tick-interpolated aim pitch, six sheets (body, helmet, eye, hip, knee, leg) and two legs placed by a two-bone IK solve from a stepping
  * foot target. No shadow ({@code shadowOpaque = 0}).
  *
- * <p>1.7's {@code setLivingAnimations} turned the behemoth towards its target per rendered frame: 10% of the way in
- * pitch ({@code rotationPitch}, which this draw then reads) and 10% in yaw on {@code newRotationYaw}, the client's
- * position-interpolation target. The pitch half is kept on the client entity in {@link #extractMore}; the yaw half
- * has no modern counterpart (the interpolation target is vanilla-private) and is left out.
+ * <p>The client entity eases its aim once per tick. Extraction reads that interpolated aim without changing entity
+ * rotation, so render frame rate and repeated frame preparation cannot change its next simulation step.
  */
 public class RenderBehemoth extends RenderObjMob<EntityWarBehemoth> {
 
@@ -33,19 +28,7 @@ public class RenderBehemoth extends RenderObjMob<EntityWarBehemoth> {
 
     @Override
     protected void extractMore(EntityWarBehemoth behemoth, State state, float partialTicks) {
-        Entity targetBase = behemoth.level().getEntity(behemoth.getTargetId());
-        if (targetBase instanceof LivingEntity) {
-            double dx = targetBase.getX() - behemoth.getX();
-            // 1.7: the target's eye height subtracted, the behemoth's added
-            double dy = (targetBase.getY() - targetBase.getEyeHeight()) - (behemoth.getY() + behemoth.getEyeHeight());
-            double dz = targetBase.getZ() - behemoth.getZ();
-
-            double horizontalDistance = Math.sqrt(dx * dx + dz * dz);
-            double targetPitch = Math.atan2(dy, horizontalDistance) * (-180 / Math.PI);
-            double deltaPitch = Mth.wrapDegrees(targetPitch - behemoth.getXRot());
-            behemoth.setXRot((float) (behemoth.getXRot() + deltaPitch * 0.1));
-        }
-        state.rawPitch = behemoth.getXRot();
+        state.rawPitch = behemoth.aimPitch(partialTicks);
     }
 
     @Override

@@ -1,5 +1,7 @@
 package com.ntmspace.item.special;
 
+import dev.golem.core.world.Skies;
+import net.minecraft.server.level.ServerLevel;
 import com.ntmspace.world.SolarSystem;
 import dev.golem.core.world.CompatItem;
 import dev.golem.core.world.CompatTooltipContext;
@@ -15,8 +17,7 @@ import net.minecraft.world.item.context.UseOnContext;
 
 /**
  * hbm-space {@code ItemWandTime}: right-click a block to double the celestial time multiplier (sneak: halve it, never
- * below 1). Like 1.7 it changes only the server's static {@link SolarSystem#TIME_MULTIPLIER}, which nothing syncs, so a
- * client renders the old sky ("Probably doesn't work on servers").
+ * below 1). The server publishes its authority to each client's separate celestial rendering rate.
  */
 public class ItemWandTime extends CompatItem {
 
@@ -29,7 +30,6 @@ public class ItemWandTime extends CompatItem {
                                          TooltipFlag flag) {
         tooltip.add(Component.literal("Creative-only item"));
         tooltip.add(Component.literal("\"Wibbly wobbly, timey-wimey... stuff\"").withStyle(ChatFormatting.ITALIC));
-        tooltip.add(Component.literal("Probably doesn't work on servers"));
     }
 
     @Override
@@ -40,9 +40,11 @@ public class ItemWandTime extends CompatItem {
         if (player.isShiftKeyDown()) {
             SolarSystem.TIME_MULTIPLIER /= 2;
             if (SolarSystem.TIME_MULTIPLIER < 1) SolarSystem.TIME_MULTIPLIER = 1;
-        } else {
+        } else if (SolarSystem.TIME_MULTIPLIER <= Long.MAX_VALUE / 2) {
             SolarSystem.TIME_MULTIPLIER *= 2;
         }
+        Skies.refreshAfterRateChange(
+                ((ServerLevel) context.getLevel()).getServer());
 
         player.sendSystemMessage(Component.literal("Celestial Time Multiplier set to: " + SolarSystem.TIME_MULTIPLIER));
         return InteractionResult.SUCCESS;

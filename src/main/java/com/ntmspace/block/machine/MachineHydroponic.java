@@ -24,8 +24,6 @@ import net.minecraft.world.level.LevelAccessor;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.block.state.BlockState;
-import net.minecraft.world.level.block.state.StateDefinition;
-import net.minecraft.world.level.block.state.properties.BooleanProperty;
 import net.minecraft.world.phys.AABB;
 import net.minecraft.world.phys.shapes.BooleanOp;
 import net.minecraft.world.phys.shapes.Shapes;
@@ -41,8 +39,8 @@ import org.jspecify.annotations.Nullable;
  *
  * <p><b>The lamps.</b> 1.7 swapped the two top cells above the outer plants between {@code hydrobay} and
  * {@code dummy_beam} ({@code BlockDummyableBeam}: light 15, light opacity 0, forwarding everything to the machine) while
- * the machine had at least 200 HE. The port keeps those cells as the machine's own cells and gives them the state
- * property {@link #LIT} with light 15: the tile flips it, the rest (use, overlay, teardown) is the cell's as before.
+ * the machine had at least 200 HE. The port swaps those cells to {@link HydroponicLampCell}: light 15, hardness 10,
+ * resistance 12. Shared-cell ownership keeps use, overlay and teardown attached to this core.
  *
  * <p><b>The soil.</b> 1.7 answered {@code canSustainPlant} yes on the core and the four blocks horizontally next to it,
  * so crops stayed on the machine's base ({@link #sustainsPlant}), and no plant anywhere else on it. That answer is
@@ -51,9 +49,6 @@ import org.jspecify.annotations.Nullable;
  */
 public class MachineHydroponic extends BlockMultiblockMachine implements IEnergyConnectorBlock, IFluidConnectorBlockMK2,
         ILookOverlay, WorldlyContainerHolder {
-
-    /** The lamp cells: 1.7 {@code dummy_beam} (light 15) when true. */
-    public static final BooleanProperty LIT = BooleanProperty.create("lit");
 
     /**
      * The nine 1.7 {@code fillSpace} calls: origin offset {along dir, along rot, up} from the core, then the box. 1.7's
@@ -91,14 +86,7 @@ public class MachineHydroponic extends BlockMultiblockMachine implements IEnergy
 
     public MachineHydroponic(Properties properties) {
         super(properties);
-        registerDefaultState(defaultBlockState().setValue(LIT, Boolean.FALSE));
         for (AABB box : BOUNDS) bounding.add(box);
-    }
-
-    @Override
-    protected void createBlockStateDefinition(StateDefinition.Builder<Block, BlockState> builder) {
-        super.createBlockStateDefinition(builder);
-        builder.add(LIT);
     }
 
     @Override

@@ -24,10 +24,8 @@ import org.jetbrains.annotations.Nullable;
  * interpolation), and as soon as the block one above its position is not air it plays the impact, places the
  * {@code combat_drop} block there and hands it the payload, the saved entity it carries and how many of it to release.
  *
- * <p>Odd 1.7 things kept on purpose: the landing test looks at {@code (int)(x - 0.5), (int)(y + 1), (int)(z - 0.5)} but
- * the block goes to {@code (int)x, (int)y + 1, (int)z} ({@code (int)} truncates toward zero, not floor, so the two
- * differ at negative coordinates); the client runs the same fall but never lands (the server removes it); and a pod
- * without a payload places the block and stays alive (1.7 returned before {@code setDead}), placing it again next tick.
+ * <p>The landing test and the placed block share the floored position, including at negative coordinates. The client
+ * runs the same fall and the server removes the falling entity after landing, including when its payload is empty.
  */
 public class EntityCombatDropPod extends CompatThrowableProjectile {
 
@@ -92,14 +90,14 @@ public class EntityCombatDropPod extends CompatThrowableProjectile {
 
         for (int i = 0; i < 4; i++) {
             double posX = getX(), posY = getY(), posZ = getZ();
+            var pos = BlockPos.containing(posX, posY + 1, posZ);
 
-            if (!level.getBlockState(new BlockPos((int) (posX - 0.5), (int) (posY + 1), (int) (posZ - 0.5))).isAir()
+            if (!level.getBlockState(pos).isAir()
                     && !level.isClientSide()) {
                 ExplosionLarge.spawnParticles(level, posX, posY + 1, posZ, 50);
                 level.playSound(null, posX, posY, posZ, DropPodContent.HATCH_IMPACT.get(), SoundSource.BLOCKS, 10.0F,
                         0.5F + this.random.nextFloat() * 0.5F);
 
-                BlockPos pos = new BlockPos((int) posX, (int) posY + 1, (int) posZ);
                 level.setBlockAndUpdate(pos, DropPodContent.COMBAT_DROP.get().defaultBlockState());
 
                 if (level.getBlockEntity(pos) instanceof TileEntityCombatDropPod capsule) {
@@ -107,8 +105,6 @@ public class EntityCombatDropPod extends CompatThrowableProjectile {
                         capsule.setPayload(this.entityType, this.amount, this.color);
                         BlockState state = level.getBlockState(pos);
                         level.sendBlockUpdated(pos, state, state, 3); // 1.7 markBlockForUpdate
-                    } else {
-                        return; // 1.7: no payload, no setDead
                     }
                 }
                 this.discard();

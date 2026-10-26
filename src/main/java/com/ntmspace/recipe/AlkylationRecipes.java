@@ -19,6 +19,9 @@ import org.jspecify.annotations.Nullable;
  */
 public final class AlkylationRecipes extends DataGenericRecipes<GenericRecipe> {
 
+    /** Authored default feed; individual datapack rows retain their own amounts. */
+    public static final int FEED = 100;
+
     public static final AlkylationRecipes INSTANCE = new AlkylationRecipes();
 
     /** One step: {@code input} mB of the primary and {@code secondary} make {@code outputs}, for {@code power} HE. */

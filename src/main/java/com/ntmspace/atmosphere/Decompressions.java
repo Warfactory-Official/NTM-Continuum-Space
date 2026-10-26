@@ -25,12 +25,41 @@ public final class Decompressions {
     /** 1.7 {@code EntityDepress.range}: push/pull range. */
     public static final double RANGE = 8;
 
-    private record Depress(ServerLevel level, double x, double y, double z, Direction dir, int[] ttl) {}
+    /** One leak pulse, shared by the active ticker and callers that advance a pulse themselves. */
+    public static final class Depress {
+        private final ServerLevel level;
+        private final Direction dir;
+        private double x, y, z;
+        private int ttl;
+
+        public Depress(ServerLevel level, Direction dir, int timeToLive) {
+            this.level = level;
+            this.dir = dir;
+            this.ttl = timeToLive;
+        }
+
+        public void setPos(double x, double y, double z) {
+            this.x = x;
+            this.y = y;
+            this.z = z;
+        }
+
+        public void tick() {
+            push(this);
+            ttl--;
+        }
+
+        public boolean isRemoved() {
+            return ttl <= 0;
+        }
+    }
 
     private static final List<Depress> ACTIVE = new ArrayList<>();
 
     static void add(ServerLevel level, double x, double y, double z, Direction dir, int timeToLive) {
-        ACTIVE.add(new Depress(level, x, y, z, dir, new int[] {timeToLive}));
+        var pulse = new Depress(level, dir, timeToLive);
+        pulse.setPos(x, y, z);
+        ACTIVE.add(pulse);
     }
 
     static void clear() {
@@ -41,15 +70,15 @@ public final class Decompressions {
         Iterator<Depress> iterator = ACTIVE.iterator();
         while (iterator.hasNext()) {
             Depress depress = iterator.next();
-            push(depress);
-            if (--depress.ttl()[0] <= 0) iterator.remove();
+            depress.tick();
+            if (depress.isRemoved()) iterator.remove();
         }
     }
 
     private static void push(Depress d) {
-        AABB box = new AABB(d.x() - RANGE, d.y() - RANGE, d.z() - RANGE, d.x() + RANGE, d.y() + RANGE, d.z() + RANGE);
-        for (Entity entity : d.level().getEntities((Entity) null, box, e -> true)) {
-            Vec3 vec = new Vec3(d.x() - entity.getX(), d.y() - entity.getY(), d.z() - entity.getZ());
+        AABB box = new AABB(d.x - RANGE, d.y - RANGE, d.z - RANGE, d.x + RANGE, d.y + RANGE, d.z + RANGE);
+        for (Entity entity : d.level.getEntities((Entity) null, box, e -> true)) {
+            Vec3 vec = new Vec3(d.x - entity.getX(), d.y - entity.getY(), d.z - entity.getZ());
 
             // check if the player is in a different pressurized room (other living entities update too rarely, 1.7)
             if (entity instanceof Player player && Breathing.hasGravity(player)) continue;
@@ -57,13 +86,13 @@ public final class Decompressions {
             double dist = vec.length();
             if (dist > RANGE) continue;
 
-            boolean succ = switch (d.dir()) {
-                case UP -> entity.getY() < d.y();
-                case DOWN -> entity.getY() > d.y();
-                case EAST -> entity.getX() < d.x();
-                case WEST -> entity.getX() > d.x();
-                case SOUTH -> entity.getZ() < d.z();
-                case NORTH -> entity.getZ() > d.z();
+            boolean succ = switch (d.dir) {
+                case UP -> entity.getY() < d.y;
+                case DOWN -> entity.getY() > d.y;
+                case EAST -> entity.getX() < d.x;
+                case WEST -> entity.getX() > d.x;
+                case SOUTH -> entity.getZ() < d.z;
+                case NORTH -> entity.getZ() > d.z;
             };
 
             vec = vec.normalize();

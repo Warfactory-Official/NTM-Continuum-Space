@@ -1,5 +1,6 @@
 package com.ntmspace.world;
 
+import dev.golem.core.world.Chunks;
 import net.minecraft.core.BlockPos;
 import net.minecraft.tags.BlockTags;
 import net.minecraft.world.level.WorldGenLevel;
@@ -21,12 +22,37 @@ final class World17 {
     private final WorldGenLevel level;
     private final int centreX;
     private final int centreZ;
+    private final int minY;
+    private final int maxY;
+    private final boolean legacyBounds;
+    private int writes;
     private final BlockPos.MutableBlockPos pos = new BlockPos.MutableBlockPos();
 
     World17(WorldGenLevel level, int chunkX, int chunkZ) {
+        this(level, chunkX, chunkZ, 0, 256, true);
+    }
+
+    private World17(WorldGenLevel level, int chunkX, int chunkZ, int minY, int maxY, boolean legacyBounds) {
         this.level = level;
         this.centreX = chunkX;
         this.centreZ = chunkZ;
+        this.minY = minY;
+        this.maxY = maxY;
+        this.legacyBounds = legacyBounds;
+    }
+
+    /** A sapling grows in the live world's height range; decoration keeps the authored 0..255 range. */
+    static World17 live(WorldGenLevel level, int chunkX, int chunkZ) {
+        var minY = Chunks.minY(level);
+        return new World17(level, chunkX, chunkZ, minY, minY + level.getHeight(), false);
+    }
+
+    int minY() {
+        return minY;
+    }
+
+    int maxY() {
+        return maxY;
     }
 
     /** The level this world writes to (hbm-space's populate code in {@code world.populate} wraps it its own way). */
@@ -36,7 +62,7 @@ final class World17 {
 
     /** 1.7 {@code blockExists}: inside the height range and the decorated area. */
     boolean exists(int x, int y, int z) {
-        return y >= 0 && y < 256 && Math.abs((x >> 4) - centreX) <= 1 && Math.abs((z >> 4) - centreZ) <= 1;
+        return y >= minY && y < maxY && Math.abs((x >> 4) - centreX) <= 1 && Math.abs((z >> 4) - centreZ) <= 1;
     }
 
     BlockState get(int x, int y, int z) {
@@ -54,8 +80,10 @@ final class World17 {
 
     /** 1.7 {@code setBlock(x, y, z, block, meta, 2)}. */
     void set(int x, int y, int z, BlockState state) {
-        if (exists(x, y, z)) level.setBlock(pos.set(x, y, z), state, 2);
+        if (exists(x, y, z) && level.setBlock(pos.set(x, y, z), state, 2)) writes++;
     }
+
+    int writes() { return writes; }
 
     /** Marks a block for its chunk's post-processing, which runs its shape update once the chunk is complete. */
     void postProcess(int x, int y, int z) {
@@ -67,7 +95,7 @@ final class World17 {
      * motion or holds a fluid (leaves and water count, plants and vines do not, as in 1.7).
      */
     int heightValue(int x, int z) {
-        for (int y = 255; y >= 0; y--) {
+        for (int y = maxY - 1; y >= minY; y--) {
             BlockState state = get(x, y, z);
             if (!state.isAir() && (state.blocksMotion() || !state.getFluidState().isEmpty())) return y + 1;
         }
@@ -76,7 +104,7 @@ final class World17 {
 
     /** 1.7 {@code getTopSolidOrLiquidBlock}: one above the highest block that blocks movement and is no leaves. */
     int topSolidOrLiquid(int x, int z) {
-        for (int y = 255; y > 0; y--) {
+        for (int y = maxY - 1; y >= minY + (legacyBounds ? 1 : 0); y--) {
             BlockState state = get(x, y, z);
             if (state.blocksMotion() && !state.is(BlockTags.LEAVES)
                     && !state.is(com.ntmspace.registry.LaytheTektoBlocks.RUBBER_LEAVES.get())

@@ -7,6 +7,8 @@ import com.hbm.lib.DirPos;
 import com.hbm.lib.ForgeDirection;
 import com.hbm.sound.AudioSystem;
 import com.hbm.sound.AudioWrapper;
+import com.hbm.sound.AudioLoop;
+import io.netty.buffer.ByteBuf;
 import com.hbm.tileentity.MachineCore;
 import com.hbm.tileentity.ModPowerGenBlockEntities;
 import com.hbm.tileentity.TilePort.PortDef;
@@ -40,7 +42,10 @@ import net.minecraft.world.level.block.state.BlockState;
  * <p>Substituted for HBM's {@code hbm:machine_lpw2} block entity type in {@code SpaceEntry.substitute}; the renderer is
  * HBM's {@code RenderLPW2}, which reads {@link #animationTime}.
  */
-public class TileEntityMachineLPW2Space extends TileEntityMachineLPW2 implements Propulsion, IFluidStandardReceiverMK2 {
+public class TileEntityMachineLPW2Space extends TileEntityMachineLPW2 implements Propulsion, IFluidStandardReceiverMK2, AudioLoop {
+
+    private static final int ENGINE_UNIT = 0;
+    private static final int PROPELLANT_UNIT = 1;
 
     public final FluidTankNTM[] tanks;
 
@@ -102,26 +107,12 @@ public class TileEntityMachineLPW2Space extends TileEntityMachineLPW2 implements
     public static void clientTick(Level level, BlockPos pos, BlockState state, TileEntityMachineLPW2Space te) {
         if (!Orbit.inOrbit(level)) return;
 
+        te.audioLoop(te.isOn && te.soundtime > 18, 1F);
         if (te.isOn) {
             te.speed += 0.05D;
             if (te.speed > 1) te.speed = 1;
 
             if (te.soundtime > 18) {
-                if (te.audio == null) {
-                    te.audio = te.createAudioLoop();
-                    if (te.audio != null) te.audio.startSound();
-                } else if (!te.audio.isPlaying()) {
-                    // 1.7 rebootAudio
-                    te.audio.stopSound();
-                    te.audio = te.createAudioLoop();
-                    if (te.audio != null) te.audio.startSound();
-                }
-
-                if (te.audio != null) {
-                    te.audio.updateVolume(te.getVolume(1F));
-                    te.audio.keepAlive();
-                }
-
                 ForgeDirection dir = MachineCore.facing(state).getRotation(ForgeDirection.UP);
                 // 1.7 effectNT "missileContrail", scale 3, out of the bell along the long axis
                 com.hbm.client.ClientEffects.spawnRocketFlame(level, pos.getX() + dir.offsetX * 8.5, pos.getY() + 4.5,
@@ -131,10 +122,6 @@ public class TileEntityMachineLPW2Space extends TileEntityMachineLPW2 implements
             te.speed -= 0.05D;
             if (te.speed < 0) te.speed = 0;
 
-            if (te.audio != null) {
-                te.audio.stopSound();
-                te.audio = null;
-            }
         }
 
         te.lastTime = te.time;
@@ -150,7 +137,7 @@ public class TileEntityMachineLPW2Space extends TileEntityMachineLPW2 implements
     private PortDef[] cachedPorts;
 
     public PortDef[] getPorts() {
-        if (cachedPorts == null) cachedPorts = MachinePorts.ports(getBlockState(), worldPosition, getConPos());
+        if (cachedPorts == null) cachedPorts = MachinePorts.ports(level, getBlockState(), worldPosition, getConPos());
         return cachedPorts;
     }
 
@@ -169,7 +156,9 @@ public class TileEntityMachineLPW2Space extends TileEntityMachineLPW2 implements
         };
     }
 
-    private AudioWrapper createAudioLoop() {
+    @Override public AudioWrapper getAudioLoop() { return audio; }
+    @Override public void setAudioLoop(AudioWrapper audio) { this.audio = audio; }
+    @Override public AudioWrapper createAudioLoop() {
         return AudioSystem.getLoopedSound(StationSounds.LPW_LOOP.get(), SoundSource.BLOCKS, worldPosition.getX(), worldPosition.getY(),
                 worldPosition.getZ(), 0.25F, 27.5F, 1.0F, 20);
     }
@@ -182,28 +171,45 @@ public class TileEntityMachineLPW2Space extends TileEntityMachineLPW2 implements
             unregisterPropulsion();
             hasRegistered = false;
         }
-        if (audio != null) {
-            audio.stopSound();
-            audio = null;
-        }
+        audioLoop(false, 1F);
     }
 
     @Override
     public void serialize(RegistryFriendlyByteBuf buf) {
         super.serialize(buf);
-        buf.writeBoolean(isOn);
-        buf.writeFloat(soundtime);
-        buf.writeInt(fuelCost);
-        for (FluidTankNTM tank : tanks) tank.serialize(buf);
+        writeSyncUnit(ENGINE_UNIT, buf);
+        writeSyncUnit(PROPELLANT_UNIT, buf);
     }
 
     @Override
     public void deserialize(RegistryFriendlyByteBuf buf) {
         super.deserialize(buf);
-        isOn = buf.readBoolean();
-        soundtime = buf.readFloat();
-        fuelCost = buf.readInt();
-        for (FluidTankNTM tank : tanks) tank.deserialize(buf);
+        readSyncUnit(ENGINE_UNIT, buf);
+        readSyncUnit(PROPELLANT_UNIT, buf);
+    }
+
+    @Override public long syncUnitMask() { return super.syncUnitMask() | (1L << ENGINE_UNIT) | (1L << PROPELLANT_UNIT); }
+    @Override public void writeSyncUnit(int unit, ByteBuf output) {
+        switch (unit) {
+            case ENGINE_UNIT -> {
+                output.writeBoolean(isOn);
+                output.writeFloat(soundtime);
+                output.writeInt(fuelCost);
+            }
+            case PROPELLANT_UNIT -> { for (var tank : tanks) tank.packetSerialize(output); }
+            default -> super.writeSyncUnit(unit, output);
+        }
+    }
+    @Override public void readSyncUnit(int unit, ByteBuf input) {
+        switch (unit) {
+            case ENGINE_UNIT -> {
+                isOn = input.readBoolean();
+                soundtime = input.readFloat();
+                fuelCost = input.readInt();
+            }
+            case PROPELLANT_UNIT -> { for (var tank : tanks) tank.packetDeserialize(input); }
+            default -> super.readSyncUnit(unit, input);
+        }
     }
 
     @Override

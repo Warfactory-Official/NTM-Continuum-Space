@@ -1,8 +1,12 @@
 package com.ntmspace.fork;
 
 import com.hbm.blocks.ModEnergyNetContent;
+import com.hbm.capability.ICapabilityBlock;
+import com.hbm.capability.MachineCaps;
+import com.hbm.api.energymk2.IBatteryItem;
 import com.hbm.interfaces.ILookOverlay;
 import com.hbm.items.block.EnergyNetBlockItem;
+import com.hbm.tileentity.machine.storage.CapacitorCharge;
 import com.hbm.lib.Library;
 import com.hbm.uninos.graph.LevelNodeGraph;
 import dev.golem.core.registry.TickingBlock;
@@ -36,12 +40,15 @@ import java.util.List;
  * hbm-space's {@code MachineCapacitor}, a working store there: power in on the face it was placed against, out the far
  * side through a straight run of {@code capacitor_bus}. The charge travels with the dropped item.
  */
-public class ComplexCapacitor extends CompatBlock implements TickingBlock, ILookOverlay {
+public class ComplexCapacitor extends CompatBlock implements TickingBlock, ILookOverlay, ICapabilityBlock {
 
     /** 1.7's metadata: the side of the clicked neighbour, i.e. this block's input face. */
     public static final EnumProperty<Direction> FACING = BlockStateProperties.FACING;
 
     public final long power;
+    private static final MachineCaps CAPS = MachineCaps.blockKeyed().powerIn().fe()
+            .faces(ComplexCapacitorEntity.class, (owner, side) -> side == owner.inputSide().toDirection());
+    @Override public MachineCaps caps() { return CAPS; }
 
     public ComplexCapacitor(Properties properties, long power) {
         super(properties);
@@ -100,7 +107,7 @@ public class ComplexCapacitor extends CompatBlock implements TickingBlock, ILook
         super.setPlacedBy(level, pos, state, placer, stack);
         if (level.isClientSide()) return;
         if (level.getBlockEntity(pos) instanceof ComplexCapacitorEntity capacitor) {
-            capacitor.setPower(Math.min(ModEnergyNetContent.CAPACITOR_POWER.getOr(stack, 0L), power));
+            ModEnergyNetContent.CAPACITOR_STATE.get(stack).ifPresent(capacitor::restore);
             capacitor.setChanged();
         }
     }
@@ -111,24 +118,27 @@ public class ComplexCapacitor extends CompatBlock implements TickingBlock, ILook
         // a player break removes the block entity before the drops roll, so the loot context carries it
         BlockEntity be = params.getOptionalParameter(LootContextParams.BLOCK_ENTITY);
         if (be == null) be = params.getLevel().getBlockEntity(BlockPos.containing(params.getParameter(LootContextParams.ORIGIN)));
-        if (be instanceof ComplexCapacitorEntity capacitor && capacitor.getPower() > 0) {
-            ModEnergyNetContent.CAPACITOR_POWER.set(stack, capacitor.getPower());
+        if (be instanceof ComplexCapacitorEntity capacitor && (capacitor.getPower() > 0 || capacitor.getMaxPower() != power)) {
+            ModEnergyNetContent.CAPACITOR_STATE.set(stack, new CapacitorCharge(capacitor.getPower(), capacitor.getMaxPower()));
         }
         return List.of(stack);
     }
 
     /** hbm-space's order: capacity, charge and discharge, the description, {@code extra}, then the stored charge. */
     public List<Component> tooltip(ItemStack stack, List<Component> extra) {
+        var carried = ModEnergyNetContent.CAPACITOR_STATE.get(stack);
+        var maximum = Math.min(carried.map(CapacitorCharge::maxPower).orElse(power), power);
+        if (maximum <= 0) throw new IllegalArgumentException("A complex capacitor needs positive capacity");
         List<Component> list = new ArrayList<>();
-        list.add(EnergyNetBlockItem.gold("Stores up to " + Library.getShortNumber(power) + "HE"));
-        list.add(EnergyNetBlockItem.gold("Charge speed: " + Library.getShortNumber(power / 200) + "HE"));
-        list.add(EnergyNetBlockItem.gold("Discharge speed: " + Library.getShortNumber(power / 600) + "HE"));
+        list.add(EnergyNetBlockItem.gold("Stores up to " + Library.getShortNumber(maximum) + "HE"));
+        list.add(EnergyNetBlockItem.gold("Charge speed: " + Library.getShortNumber(maximum / 100) + "HE"));
+        list.add(EnergyNetBlockItem.gold("Discharge speed: " + Library.getShortNumber(maximum / 300) + "HE"));
         list.add(Component.translatable("desc.capacitor.0").withStyle(ChatFormatting.YELLOW));
         list.add(Component.translatable("desc.capacitor.1").withStyle(ChatFormatting.YELLOW));
         list.addAll(extra);
-        Long stored = ModEnergyNetContent.CAPACITOR_POWER.get(stack).orElse(null);
+        var stored = carried.map(state -> IBatteryItem.clampCharge(state.power(), maximum)).orElse(null);
         if (stored != null) {
-            list.add(Component.literal(Library.getShortNumber(stored) + "/" + Library.getShortNumber(power) + "HE")
+            list.add(Component.literal(Library.getShortNumber(stored) + "/" + Library.getShortNumber(maximum) + "HE")
                     .withStyle(ChatFormatting.YELLOW));
         }
         return list;

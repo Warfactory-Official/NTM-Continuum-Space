@@ -55,7 +55,7 @@ public final class LaytheTektoThatmoGameTests {
     public static final GameTests.Function LAYTHE = TESTS.function("laythe_generator_primer", 600,
             () -> helper -> layered(helper, "laythe", LaytheChunkGenerator::new, LAYTHE_BASE, LAYTHE_BIOMES, false,
                     Set.of("minecraft:bedrock", "minecraft:stone", "minecraft:water", "minecraft:lava", "minecraft:obsidian",
-                            "minecraft:ice", "minecraft:snow_block", "minecraft:packed_ice", "minecraft:oak_log",
+                            "minecraft:ice", "minecraft:snow_block", "minecraft:packed_ice", "ntmspace:laythe_root",
                             "minecraft:grass_block", "ntmspace:laythe_silt", "hbm:ore_oil", "hbm:stone_cracked",
                             "hbm:oil_spill", "hbm:dirt_oily", "hbm:dirt_dead", "hbm:plant_dead")));
 

@@ -1,0 +1,8 @@
+{
+  "processors": [
+    {
+      "processor_type": "hbm:pedestal_stock",
+      "item": "ntmspace:divine_shard"
+    }
+  ]
+}

@@ -159,8 +159,8 @@ public final class RecipeChangeAssemblyGameTests {
             }
         }
         // a replacing row takes the position of HBM's row it replaces (orderOf in the addon's source), 1.7's line order
-        checkOrder(errors, table, "ass.entanglementkit", 45);
-        checkOrder(errors, table, "ass.electrolyzer", 95);
+        checkOrder(errors, table, "ass.entanglementkit", 45 * AssemblyMachineRecipes.ORDER_STRIDE);
+        checkOrder(errors, table, "ass.electrolyzer", 95 * AssemblyMachineRecipes.ORDER_STRIDE);
         for (String name : REMOVED) {
             if (table.getRecipe(name) != null) errors.add(name + " is still in the table");
         }

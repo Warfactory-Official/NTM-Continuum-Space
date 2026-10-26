@@ -141,6 +141,7 @@ public final class SatelliteSky {
         List<Sat> sats = new ArrayList<>();
         for (Map.Entry<Integer, Satellite> entry : SatelliteSavedData.get(level).sats.entrySet()) {
             Satellite sat = entry.getValue();
+            if (!SpaceSatellites.isSpace(sat.type())) continue;
             float interp = sat instanceof SatelliteRailgun railgun ? railgun.interp : 0.0F;
             sats.add(new Sat(entry.getKey(), sat.type().name(), SpaceSatellites.orbit(sat), interp));
         }

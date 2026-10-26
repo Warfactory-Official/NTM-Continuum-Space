@@ -102,7 +102,7 @@ public final class DriveProcessorGameTests {
             long took = helper.getTick() - start;
             helper.assertTrue(took >= 99 && took <= 101, "processing takes 100 ticks, took " + took);
             helper.assertTrue(!te.isProcessing && te.progress == 0, "processing stopped");
-            helper.assertTrue(te.status.contains("Done!"), "status Done!, got " + te.status);
+            helper.assertTrue(te.status == TileEntityMachineDriveProcessor.Status.DONE, "status Done!, got " + te.status);
             helper.assertTrue(te.hasDrive, "hasDrive for the renderer");
             helper.assertTrue(te.power >= te.maxPower * 0.75, "the creative battery keeps it charged");
             DriveData data = ItemVOTVdrive.data(stack);
@@ -168,7 +168,7 @@ public final class DriveProcessorGameTests {
         te.setItem(3, new ItemStack(ModEntityItems.battery_creative.get()));
         te.setItem(2, circuit(2));
         helper.runAfterDelay(3, () -> {
-            helper.assertTrue(te.status.contains("Low tier") && !te.isProcessing, "status Low tier, got " + te.status);
+            helper.assertTrue(te.status == TileEntityMachineDriveProcessor.Status.LOW_TIER && !te.isProcessing, "status Low tier, got " + te.status);
             helper.succeed();
         });
     }
@@ -188,7 +188,7 @@ public final class DriveProcessorGameTests {
         te.power = te.maxPower;
         te.setItem(1, ItemStack.EMPTY);
         te.receiveControl(control("clone", true));
-        helper.assertTrue(te.getItem(1).isEmpty() && te.status.contains("No target"), "no target: " + te.status);
+        helper.assertTrue(te.getItem(1).isEmpty() && te.status == TileEntityMachineDriveProcessor.Status.NO_TARGET, "no target: " + te.status);
         helper.assertTrue(!ItemVOTVdrive.wasCopied(te.getItem(0)), "the drive is not marked without a target");
 
         // a full drive is not a target either (1.7 asks for hard_drive)
@@ -205,7 +205,7 @@ public final class DriveProcessorGameTests {
         helper.assertTrue(ItemVOTVdrive.data(copy).equals(ItemVOTVdrive.data(original)) && ItemVOTVdrive.data(copy).x() == 5
                 && ItemVOTVdrive.data(copy).z() == 7 && ItemVOTVdrive.getProcessed(copy), "the copy carries the same data");
         helper.assertTrue(copy != original, "the copy is its own stack");
-        helper.assertTrue(te.status.contains("Drive cloned"), "status Drive cloned, got " + te.status);
+        helper.assertTrue(te.status == TileEntityMachineDriveProcessor.Status.CLONED, "status Drive cloned, got " + te.status);
         helper.succeed();
     }
 
@@ -217,7 +217,7 @@ public final class DriveProcessorGameTests {
         te.power = 1_800;
         te.isProcessing = true;
         te.progress = 42;
-        te.status = "Processing  ";
+        te.status = TileEntityMachineDriveProcessor.Status.PROCESSING;
 
         CompoundTag saved = BlockEntities.saveWithoutMetadata(te, helper.getLevel().registryAccess());
         String text = saved.toString();
@@ -228,7 +228,7 @@ public final class DriveProcessorGameTests {
 
         TileEntityMachineDriveProcessor copy = new TileEntityMachineDriveProcessor(te.getBlockPos(), te.getBlockState());
         GameTestHelpers.copyPersistentData(te, copy);
-        helper.assertTrue(copy.power == 1_800 && copy.isProcessing && copy.progress == 42 && copy.status.equals("Processing  "),
+        helper.assertTrue(copy.power == 1_800 && copy.isProcessing && copy.progress == 42 && copy.status == TileEntityMachineDriveProcessor.Status.PROCESSING,
                 "fields read back");
         helper.assertTrue(copy.getItem(0).getItem() == RocketItems.drive(DriveBody.DUNA)
                 && ItemVOTVdrive.data(copy.getItem(0)).x() == 33 && ItemVOTVdrive.data(copy.getItem(0)).z() == 44

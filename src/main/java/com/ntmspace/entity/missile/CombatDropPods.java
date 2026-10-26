@@ -78,8 +78,7 @@ public final class CombatDropPods {
         CompoundTag nbt = payload(level, glyph);
         if (nbt == null) return null;
         pod.setPayload(nbt, amount, 2);
-        level.addFreshEntity(pod);
-        return pod;
+        return level.addFreshEntity(pod) ? pod : null;
     }
 
     /** A new, unspawned {@code id} entity's save data with its registry id under {@code "id"} (1.7 payload form). */

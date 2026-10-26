@@ -32,8 +32,21 @@ import net.minecraft.world.phys.AABB;
  * 1 -> 2 input container, unload pairs 3/4, 5/6, 7/8 (9 and 10 unused, as in 1.7). It has no recipe table: the one
  * reaction is fixed in 1.7's code.
  */
-public class TileEntityMachineMilkReformer extends TileEntityMachineBase implements MenuProvider, IEnergyReceiverMK2, IFluidStandardTransceiverMK2 {
+public class TileEntityMachineMilkReformer extends TileEntityMachineBase implements MenuProvider, IEnergyReceiverMK2, IFluidStandardTransceiverMK2, NotBelowConnector {
 
+    public static final int INPUT = 100;
+    public static final int OUTPUT_ENRICHED = 50;
+    public static final int OUTPUT_CONDENSED = 35;
+    public static final int OUTPUT_CREAM = 15;
+    public static final long POWER_PER_BATCH = 10_000;
+
+    public static final int SLOT_BATTERY = 0;
+    public static final int SLOT_INPUT_IN = 1;
+    public static final int SLOT_INPUT_OUT = 2;
+    public static final int SLOT_OUTPUT_IN_START = 3;
+    public static final int SLOT_OUTPUT_OUT_START = 4;
+    /** The nine machine slots exposed by the menu. */
+    public static final int SLOT_COUNT = 9;
     public final FluidTankNTM[] tanks;
     public long power;
     public static final long maxPower = 1_000_000;
@@ -55,14 +68,14 @@ public class TileEntityMachineMilkReformer extends TileEntityMachineBase impleme
     public static void serverTick(Level level, BlockPos pos, BlockState state, TileEntityMachineMilkReformer te) {
         te.setupAllPorts(te.getPorts());
         te.updatePortPIFIFO();
-        te.power = Library.chargeTEFromItems(te.inventory, 0, te.power, maxPower);
-        MachineFluidContainerIO.load(te.tanks[0], te.inventory, 1, 2);
+        te.power = Library.chargeTEFromItems(te.inventory, SLOT_BATTERY, te.power, maxPower);
+        MachineFluidContainerIO.load(te.tanks[0], te.inventory, SLOT_INPUT_IN, SLOT_INPUT_OUT);
 
         te.refine();
 
-        MachineFluidContainerIO.unload(te.tanks[1], te.inventory, 3, 4);
-        MachineFluidContainerIO.unload(te.tanks[2], te.inventory, 5, 6);
-        MachineFluidContainerIO.unload(te.tanks[3], te.inventory, 7, 8);
+        for (var i = 1; i < te.tanks.length; i++)
+            MachineFluidContainerIO.unload(te.tanks[i], te.inventory,
+                    SLOT_OUTPUT_IN_START + (i - 1) * 2, SLOT_OUTPUT_OUT_START + (i - 1) * 2);
 
         te.networkPackNT();
     }
@@ -71,23 +84,23 @@ public class TileEntityMachineMilkReformer extends TileEntityMachineBase impleme
 
     /** 1.7 {@code refine}. */
     public void refine() {
-        if (power < 10_000) return;
-        if (tanks[0].getFill() < 100) return;
-        if (tanks[1].getFill() + 50 > tanks[1].getMaxFill()) return;
-        if (tanks[2].getFill() + 35 > tanks[2].getMaxFill()) return;
-        if (tanks[3].getFill() + 15 > tanks[3].getMaxFill()) return;
+        if (power < POWER_PER_BATCH) return;
+        if (tanks[0].getFill() < INPUT) return;
+        if (tanks[1].getFill() + OUTPUT_ENRICHED > tanks[1].getMaxFill()) return;
+        if (tanks[2].getFill() + OUTPUT_CONDENSED > tanks[2].getMaxFill()) return;
+        if (tanks[3].getFill() + OUTPUT_CREAM > tanks[3].getMaxFill()) return;
 
-        power -= 10_000;
-        tanks[0].setFill(tanks[0].getFill() - 100);
-        tanks[1].setFill(tanks[1].getFill() + 50);
-        tanks[2].setFill(tanks[2].getFill() + 35);
-        tanks[3].setFill(tanks[3].getFill() + 15);
+        power -= POWER_PER_BATCH;
+        tanks[0].setFill(tanks[0].getFill() - INPUT);
+        tanks[1].setFill(tanks[1].getFill() + OUTPUT_ENRICHED);
+        tanks[2].setFill(tanks[2].getFill() + OUTPUT_CONDENSED);
+        tanks[3].setFill(tanks[3].getFill() + OUTPUT_CREAM);
     }
 
     private PortDef[] cachedPorts;
 
     public PortDef[] getPorts() {
-        if (cachedPorts == null) cachedPorts = MachinePorts.ports(getBlockState(), worldPosition, conPos(worldPosition));
+        if (cachedPorts == null) cachedPorts = MachinePorts.ports(level, getBlockState(), worldPosition, conPos(worldPosition));
         return cachedPorts;
     }
 

@@ -1,5 +1,6 @@
 package com.ntmspace.registry;
 
+import com.ntmspace.block.terrain.BlockLaytheSilt;
 import com.hbm.blocks.generic.BlockFallingBase;
 import com.hbm.creativetabs.HbmTab;
 import com.hbm.registration.Presets;
@@ -29,6 +30,8 @@ import dev.golem.core.dejson.Variants;
 import dev.golem.core.registry.BlockTag;
 import dev.golem.core.registry.DeferredRegister;
 import dev.golem.core.registry.Loot;
+import dev.golem.core.registry.ItemTag;
+import net.minecraft.world.level.material.MapColor;
 import dev.golem.core.registry.Preset;
 import dev.golem.core.registry.Registrar;
 import dev.golem.core.registry.RegistryObject;
@@ -62,17 +65,26 @@ public final class LaytheTektoBlocks {
     // ---------------------------------------------------------------- Laythe terrain
 
     /** 1.7: {@code BlockFallingTint(Material.sand)}, hardness 0.5, sand sound ("Laythe Silt"; its tint is white at metadata 0). */
-    public static final RegistryObject<BlockFallingBase> LAYTHE_SILT = REG.block("laythe_silt", BlockFallingBase::new,
-                    p -> p.strength(0.5F).sound(SoundType.SAND))
-            .transform(Presets.cubeAll()).loot(Loot.self()).tag(BlockTag.SHOVEL);
+    public static final RegistryObject<BlockLaytheSilt> LAYTHE_SILT = REG.block("laythe_silt", BlockLaytheSilt::new,
+                    p -> p.mapColor(BlockLaytheSilt::mapColor).strength(0.5F).sound(SoundType.SAND))
+            .model(d -> d.models(Models.parented("hbm:block/tinted_cube_all", Slots.of("all", "ntmspace:blocks/laythe_silt")))
+                    .states(Variants.uniformRange("shade", 0, 2)).item(Models.blockItem("ntmspace:block/laythe_silt")))
+            .loot(Loot.self()).tag(BlockTag.SHOVEL).tag(PlanetTerrainBlocks.PUMP_GROUND);
     public static final RegistryObject<BlockItem> LAYTHE_SILT_ITEM = REG.blockItem(LAYTHE_SILT).tab(HbmTab.BLOCKS);
+
+    /** 1.7 BlockDecoCT(Material.wood): the connected wood of Laythe's roots. */
+    public static final RegistryObject<Block> LAYTHE_ROOT = REG.simpleBlock("laythe_root",
+                    p -> p.mapColor(MapColor.WOOD).strength(2.0F, 2.0F).sound(SoundType.STONE).ignitedByLava())
+            .transform(Presets.cubeAll()).loot(Loot.self()).tag(BlockTag.AXE);
+    public static final RegistryObject<BlockItem> LAYTHE_ROOT_ITEM = REG.blockItem(LAYTHE_ROOT)
+            .tag(ItemTag.of("minecraft:logs")).tab(HbmTab.BLOCKS);
 
     // ---------------------------------------------------------------- Tekto terrain
 
     /** 1.7: {@code BlockGeneric(Material.sand)}, hardness 1, resistance 1, gravel sound ("Tekto Silt"); a hoe tills it. */
     public static final RegistryObject<BlockRubberSilt> RUBBER_SILT = REG.block("rubber_silt",
                     p -> new BlockRubberSilt(p, FloraBlocks.RUBBER_FARMLAND), p -> p.strength(1.0F, 1.0F).sound(SoundType.GRAVEL))
-            .transform(Presets.cubeAll()).loot(Loot.self()).tag(BlockTag.SHOVEL);
+            .transform(Presets.cubeAll()).loot(Loot.self()).tag(BlockTag.SHOVEL).tag(PlanetTerrainBlocks.PUMP_GROUND);
     public static final RegistryObject<BlockItem> RUBBER_SILT_ITEM = REG.blockItem(RUBBER_SILT).tab(HbmTab.BLOCKS);
 
     /** 1.7: {@code RubberGrass(Material.grass)}, hardness 0.5, resistance 2.5, grass sound; drops itself; a hoe tills it. */
@@ -80,13 +92,13 @@ public final class LaytheTektoBlocks {
                     p -> new BlockRubberGrass(p, RUBBER_SILT, FloraBlocks.RUBBER_FARMLAND), p -> p.strength(0.5F, 2.5F).sound(SoundType.GRASS))
             .transform(Presets.cubeBottomTop("ntmspace:blocks/rubber_silt", "ntmspace:blocks/rubber_grass_side",
                     "ntmspace:blocks/rubber_grass_top"))
-            .loot(Loot.self()).tag(BlockTag.SHOVEL);
+            .loot(Loot.self()).tag(BlockTag.SHOVEL).tag(PlanetTerrainBlocks.PUMP_GROUND);
     public static final RegistryObject<BlockItem> RUBBER_GRASS_ITEM = REG.blockItem(RUBBER_GRASS).tab(HbmTab.BLOCKS);
 
     /** 1.7: {@code BlockFalling(Material.sand)}, hardness 1, resistance 1, sand sound, texture {@code sand_vinyl}. */
     public static final RegistryObject<BlockFallingBase> VINYL_SAND = REG.block("vinyl_sand", BlockFallingBase::new,
                     p -> p.strength(1.0F, 1.0F).sound(SoundType.SAND))
-            .transform(Presets.cubeAll("ntmspace:blocks/sand_vinyl")).loot(Loot.self()).tag(BlockTag.SHOVEL);
+            .transform(Presets.cubeAll("ntmspace:blocks/sand_vinyl")).loot(Loot.self()).tag(BlockTag.SHOVEL).tag(PlanetTerrainBlocks.PUMP_GROUND);
     public static final RegistryObject<BlockItem> VINYL_SAND_ITEM = REG.blockItem(VINYL_SAND).tab(HbmTab.BLOCKS);
 
     /** 1.7: {@code GenericFluidBlock(ccl_fluid, Material.water, "ccl", "ccl_flowing")}, resistance 500, Tekto's sea ("CCL"). */
@@ -221,7 +233,7 @@ public final class LaytheTektoBlocks {
 
     /** 1.7: {@code BlockRubberLeaves} ("Rubber Leaves"), hardness 0.5, resistance 2.5; drops rubber leaves and PVC saplings. */
     public static final RegistryObject<BlockSpaceLeaves> RUBBER_LEAVES = REG.block("rubber_leaves",
-                    p -> new BlockSpaceLeaves(p, FloraBlocks.LEAF_RUBBER, () -> TypedItems.item(FloraBlocks.SAPLING.get(), "pvc")),
+                    p -> new BlockSpaceLeaves(p, FloraBlocks.LEAF_RUBBER, () -> FloraBlocks.SAPLING_PVC_ITEM.get()),
                     LaytheTektoBlocks::leaves)
             .transform(Presets.shape(Models.renderType("minecraft:cutout_mipped", Models.cubeAll("ntmspace:blocks/rubber_leaves"))))
             .loot(Loot.nothing()).tag(BlockTag.HOE).tag(BlockTag.of("minecraft:leaves"));
@@ -229,7 +241,7 @@ public final class LaytheTektoBlocks {
 
     /** 1.7: {@code BlockRubberLeaves} ("Plastic Leaves"), hardness 0.5, resistance 2.5; drops plastic leaves and vinyl saplings. */
     public static final RegistryObject<BlockSpaceLeaves> PET_LEAVES = REG.block("pet_leaves",
-                    p -> new BlockSpaceLeaves(p, FloraBlocks.LEAF_PET, () -> TypedItems.item(FloraBlocks.SAPLING.get(), "vinyl")),
+                    p -> new BlockSpaceLeaves(p, FloraBlocks.LEAF_PET, () -> FloraBlocks.SAPLING_VINYL_ITEM.get()),
                     LaytheTektoBlocks::leaves)
             .transform(Presets.shape(Models.renderType("minecraft:cutout_mipped", Models.cubeAll("ntmspace:blocks/pet_leaves"))))
             .loot(Loot.nothing()).tag(BlockTag.HOE).tag(BlockTag.of("minecraft:leaves"));

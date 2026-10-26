@@ -27,10 +27,12 @@ public final class LiquefactionTable extends RecipeSource<Row> {
 
     @Override
     protected void registerDefaults() {
+        // 1.7's descriptive row ids (the tests address rows by them, not by input).
+        register("log", new Row(Either.right(item("ntmspace:laythe_root")), new FluidStack(100, Fluids.MUG)));
         remove("hbm:liquefaction/cobblestone");
-        put(tag("c:cobblestones"), new FluidStack(250, Fluids.LAVA));
+        register("cobblestone", new Row(Either.left(tag("c:cobblestones")), new FluidStack(250, Fluids.LAVA)));
         remove("hbm:liquefaction/stone");
-        put(tag("c:stones"), new FluidStack(250, Fluids.LAVA));
+        register("stone", new Row(Either.left(tag("c:stones")), new FluidStack(250, Fluids.LAVA)));
         remove("hbm:liquefaction/packed_ice");
         put(item("minecraft:packed_ice"), new FluidStack(2000, Fluids.WATER));
         put(item("ntmspace:dry_ice"), new FluidStack(1000, Fluids.CARBONDIOXIDE));

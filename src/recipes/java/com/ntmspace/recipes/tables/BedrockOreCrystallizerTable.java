@@ -95,7 +95,7 @@ public final class BedrockOreCrystallizerTable extends RecipeSource<Row> {
         AStack counted = recipe.itemAmount == 1 ? input : input.count(recipe.itemAmount);
         register(BuiltInRegistries.ITEM.getKey(input.item).getPath() + "_" + stack.type.getKey(),
                 new Row(counted, new FluidStack(stack.type, stack.fill), new ItemOutput(ItemOut.of(recipe.output)),
-                        recipe.duration, 0F, Optional.empty(), Integer.MAX_VALUE));
+                        recipe.duration, 0F, Optional.empty(), orderAfterBase(Row::order)));
     }
 
     /** hbm-space {@code CrystallizerRecipe}: an output, a duration and {@code setReq}. */

@@ -1,5 +1,9 @@
 package com.ntmspace.block.station;
 
+import com.hbm.tileentity.ModPowerGenBlockEntities;
+import com.hbm.capability.ICapabilityBlock;
+import com.hbm.capability.MachineCaps;
+
 import com.hbm.api.fluidmk2.IFluidConnectorBlockMK2;
 import com.hbm.blocks.ModPowerGenBlocks;
 import com.hbm.blocks.machine.MachineLPW2;
@@ -32,7 +36,13 @@ import net.minecraft.world.level.block.state.BlockState;
  * and a look overlay with the tanks, or a warning when it does not face prograde. Substituted for {@code hbm:machine_lpw2}
  * in {@code SpaceEntry.substitute} with HBM's own registration properties.
  */
-public class SpaceMachineLPW2 extends MachineLPW2 implements IFluidConnectorBlockMK2, ILookOverlay {
+public class SpaceMachineLPW2 extends MachineLPW2 implements IFluidConnectorBlockMK2, ILookOverlay, ICapabilityBlock {
+
+    @Override
+    public MachineCaps caps() {
+        return MachineCaps.of(ModPowerGenBlockEntities.LPW2).fluidIn()
+                .fluidFaces(TileEntityMachineLPW2Space.class, (be, side) -> Orbit.inOrbit(be.getLevel()));
+    }
 
     public SpaceMachineLPW2(Properties properties) {
         super(properties);

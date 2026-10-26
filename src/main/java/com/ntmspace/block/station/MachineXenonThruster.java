@@ -1,5 +1,9 @@
 package com.ntmspace.block.station;
 
+import com.ntmspace.registry.StationBlocks;
+import com.hbm.capability.ICapabilityBlock;
+import com.hbm.capability.MachineCaps;
+
 import com.hbm.api.energymk2.IEnergyConnectorBlock;
 import com.hbm.api.fluidmk2.IFluidConnectorBlockMK2;
 import com.hbm.blocks.multiblock.BlockMultiblockMachine;
@@ -26,9 +30,16 @@ import net.minecraft.world.level.block.state.BlockState;
  * one), the two side cells of the core row are power and fluid proxies, and the three blocks behind the core row take
  * power and xenon.
  */
-public class MachineXenonThruster extends BlockMultiblockMachine implements IEnergyConnectorBlock, IFluidConnectorBlockMK2, ILookOverlay {
+public class MachineXenonThruster extends BlockMultiblockMachine implements IEnergyConnectorBlock, IFluidConnectorBlockMK2, ILookOverlay, ICapabilityBlock {
 
     private static final int[] DIMS = {1, 1, 0, 1, 1, 1};
+
+    @Override
+    public MachineCaps caps() {
+        return MachineCaps.of(StationBlocks.XENON_THRUSTER_BE).powerIn().fluidIn().fe()
+                .faces(TileEntityXenonThruster.class, (be, side) -> Orbit.inOrbit(be.getLevel()))
+                .fluidFaces(TileEntityXenonThruster.class, (be, side) -> Orbit.inOrbit(be.getLevel()));
+    }
 
     public MachineXenonThruster(Properties properties) {
         super(properties);

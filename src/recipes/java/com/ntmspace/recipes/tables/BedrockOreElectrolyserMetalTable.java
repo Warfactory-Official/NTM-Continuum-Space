@@ -56,7 +56,7 @@ public final class BedrockOreElectrolyserMetalTable extends RecipeSource<Row> {
         for (Object[] product : products) {
             int amount = (Integer) product[1];
             if (moltenProducts.size() < 2 && product[0] instanceof BedrockOreOutput output) {
-                MaterialStack melt = toFluid(output, amount);
+                MaterialStack melt = BedrockOreType.molten(output, amount);
                 if (melt != null) {
                     moltenProducts.add(melt);
                     continue;
@@ -75,15 +75,6 @@ public final class BedrockOreElectrolyserMetalTable extends RecipeSource<Row> {
                 solidProducts.toArray(new ItemStack[0]));
     }
 
-    /** hbm-space {@code ItemBedrockOreNew.toFluid}: the molten material of a smeltable output, else nothing. */
-    private static @Nullable MaterialStack toFluid(BedrockOreOutput o, double amount) {
-        NTMMaterial mat = o.material();
-        if (mat != null && mat.smeltable == NTMMaterial.SmeltingBehavior.SMELTABLE) {
-            return new MaterialStack(mat, (int) Math.ceil(MaterialShapes.FRAGMENT.quantity * o.amount() * amount));
-        }
-        return null;
-    }
-
     /** hbm-space {@code recipes.put(input, recipe)}; the id is the input item's path. */
     private void put(ComparableStack input, ElectrolysisMetalRecipe recipe) {
         List<MaterialStack> molten = new ArrayList<>();
@@ -92,7 +83,7 @@ public final class BedrockOreElectrolyserMetalTable extends RecipeSource<Row> {
         List<ItemOut> byproducts = new ArrayList<>();
         for (ItemStack stack : recipe.byproduct) byproducts.add(ItemOut.of(stack));
         register(BuiltInRegistries.ITEM.getKey(input.item).getPath(),
-                new Row(input.item, molten, byproducts, recipe.duration, Integer.MAX_VALUE));
+                new Row(input.item, molten, byproducts, recipe.duration, orderAfterBase(Row::order)));
     }
 
     /** hbm-space {@code ElectrolysisMetalRecipe}'s constructor with a duration. */

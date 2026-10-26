@@ -1,18 +1,24 @@
 package com.ntmspace.world;
 
+import com.ntmspace.orbit.Orbit;
+import com.ntmspace.weather.DustStorm;
+import dev.golem.core.world.TimeOfDay;
+import com.hbm.handler.ImpactSky;
 import dev.golem.core.hook.Hook;
 import dev.golem.core.world.Skies;
 import java.util.List;
 import net.minecraft.core.BlockPos;
+import net.minecraft.server.level.ServerLevel;
 import net.minecraft.util.Mth;
 import net.minecraft.world.level.Level;
+import net.minecraft.world.phys.Vec3;
 
 /**
  * The time of day and the light on a celestial body, as hbm-space's {@code WorldProviderCelestial} gave them: the sun
  * follows the body's own solar day ({@link SolarSystem#solarAngle}; the Mun's lasts about 154,800 ticks), and the
  * daylight vanilla derives from the sun's angle (1.7 {@code getSunBrightnessFactor}, which also drives mob spawning) is
- * derived from that angle instead (Golem Core's {@link Skies.Modifier}). The colours, the sky light, the stars and the
- * sunsets are the client's ({@link com.ntmspace.client.CelestialSkyColors}).
+ * derived from that angle instead (Golem Core's {@link Skies.Modifier}). The same side-neutral {@link SpaceSkyColors} formulas
+ * supply the renderer and common level queries; camera and fog integration stay client-scoped.
  *
  * <p>Kerbin is the overworld, as in hbm-space ({@code WorldProviderEarth}): its sky is the solar system seen from Kerbin,
  * but its time of day stays vanilla's. hbm-space's Kerbin day ({@code getDayLength}: Kerbin's rotation corrected by its
@@ -23,8 +29,11 @@ import net.minecraft.world.level.Level;
  *
  * <p>Each body's level keeps its own time of day, as hbm-space's {@code CelestialBodyWorldSavedData} did (1.7
  * {@code WorldProviderCelestial.getWorldTime}, advanced by one each tick while the daylight cycle runs): Golem Core's
- * {@code TimeOfDay.ownClock}, saved per level and sent to its players; {@code /time set} on the overworld does not move it.
- * hbm-space also reset it to 0 when everyone on the body woke up ({@code resetRainAndThunder}); that is not ported.
+ * {@code TimeOfDay}: native per-body clocks and solar-day timelines on modern nodes, saved counters on older nodes.
+ * The same modern clock drives the native sun angle, gameplay daylight and rendered sky; overworld time commands
+ * leave the body clocks alone.
+ * hbm-space also reset it to 0 when everyone on the body woke up ({@code resetRainAndThunder}); BodyWeather clears
+ * the cycle and resets only a body's own advancing clock at that same moment.
  *
  * <p>NTM: Space's sky modifiers run in the phase {@link #PHASE}, before HBM's own (Tom's impact dust and fire, which
  * hbm-space applied last in the same formulas).
@@ -41,14 +50,78 @@ public final class SpaceSkies {
         Skies.MODIFIERS.register(PHASE, new Skies.Modifier() {
             @Override
             public boolean active(Level level) {
-                return body(level) != null && !isKerbin(level);
+                return body(level) != null;
             }
 
             @Override
             public float daylight(Level level, float daylight) {
+                if (isKerbin(level) || SolarSystem.timeMultiplier(level) == 1 || !TimeOfDay.isNative(level)) return daylight;
                 return SpaceSkies.daylight(level, 0.0F);
             }
+
+            @Override
+            public float sunAngle(Level level, float angle) {
+                if (isKerbin(level) || SolarSystem.timeMultiplier(level) == 1) return angle;
+                // The Time Wand changes astronomy against raw clock ticks, including its immediate phase jump.
+                return SolarSystem.solarAngle(body(level), TimeOfDay.get(level), 0.0F, SolarSystem.timeMultiplier(level)) * 360.0F;
+            }
+
+            @Override
+            public boolean brightOutside(Level level, boolean bright) {
+                if (!bright || !level.dimension().equals(SpaceDimensions.DUNA)) return bright;
+                var intensity = level instanceof ServerLevel server
+                        ? DustStorm.get(server).intensity
+                        : DustStorm.clientIntensity;
+                return !(intensity >= 0.2F);
+            }
+
+            @Override
+            public Vec3 skyColor(Level level, Vec3 value, Vec3 position, float partialTick) {
+                return SpaceSkyColors.skyColor(level, value, partialTick, position);
+            }
+
+            @Override
+            public Vec3 fogColor(Level level, Vec3 value, Vec3 position, float partialTick) {
+                return SpaceSkyColors.fogColor(level, angle(level, partialTick), position);
+            }
+
+            @Override
+            public Vec3 cloudColor(Level level, Vec3 value) {
+                return SpaceSkyColors.cloudColor(level, 0.0F);
+            }
+
+            @Override
+            public int cloudColor(Level level, int value) {
+                return SpaceSkyColors.cloudColor(level, value);
+            }
+
+            @Override
+            public float starBrightness(Level level, float value) {
+                return isKerbin(level) ? value : SpaceSkies.starBrightness(level, 0.0F);
+            }
+
+            @Override
+            public float skyLight(Level level, float brightness) {
+                return SpaceSkyColors.sunBrightness(level,
+                        isKerbin(level) ? brightness : sunBrightness(level, 0.0F), 0.0F);
+            }
+
+            @Override
+            public boolean rawSkyLightFactor(Level level) { return true; }
+
+            @Override
+            public float skyLightFactor(Level level, float factor) {
+                return SpaceSkyColors.sunBrightness(level, factor, 0.0F);
+            }
+
+            @Override
+            public float[] sunriseColor(Level level, float[] rgba) {
+                return isKerbin(level) ? rgba : null;
+            }
         });
+        // Space's provider replaces these four impact components; fog, stars and sunrise retain their existing hooks.
+        ImpactSky.OWNERS.register(level -> body(level) != null || Orbit.inOrbit(level)
+                ? ImpactSky.SKY_COLOR | ImpactSky.SKY_LIGHT | ImpactSky.DAYLIGHT | ImpactSky.CLOUD_COLOR : 0);
         // MunSky draws every body's sky, Kerbin's (the overworld) included, and hbm-space drew none of HBM's overworld
         // sky objects (lode star, digamma star, Bobmazon satellite, impact sky) there: HBM's layers stay off.
         com.hbm.api.environment.SkyOwnership.OWNERS.register(level -> body(level) != null);
@@ -56,7 +129,7 @@ public final class SpaceSkies {
         for (var dimension : java.util.List.of(SpaceDimensions.MUN, SpaceDimensions.MINMUS, SpaceDimensions.DUNA,
                 SpaceDimensions.IKE, SpaceDimensions.DRES, SpaceDimensions.EVE, SpaceDimensions.MOHO,
                 SpaceDimensions.LAYTHE, SpaceDimensions.TEKTO, SpaceDimensions.THATMO)) {
-            dev.golem.core.world.TimeOfDay.ownClock(dimension);
+            TimeOfDay.autoClock(dimension);
         }
     }
 
@@ -132,14 +205,15 @@ public final class SpaceSkies {
 
     /** The body's solar angle now: 0 at noon, 0.5 at midnight. Kerbin's is vanilla's (see the class comment). */
     public static float angle(Level level, float partialTicks) {
-        if (isKerbin(level)) return Skies.celestialAngle(level, BlockPos.ZERO);
-        return SolarSystem.solarAngle(body(level), dev.golem.core.world.TimeOfDay.get(level), partialTicks);
+        if (isKerbin(level) || TimeOfDay.isNative(level)) return Skies.celestialAngle(level, BlockPos.ZERO);
+        return SolarSystem.solarAngle(body(level), TimeOfDay.get(level), partialTicks, SolarSystem.timeMultiplier(level));
     }
 
     // ---------------------------------------------------------------------------------------- eclipses
 
     private static Level eclipseLevel;
     private static long eclipseTick = Long.MIN_VALUE;
+    private static long eclipseTimeMultiplier = Long.MIN_VALUE;
     private static double eclipseAmount;
 
     /**
@@ -156,15 +230,17 @@ public final class SpaceSkies {
     public static synchronized double eclipse(Level level) {
         long pinned = clientPinnedTicks;
         long tick = level.getGameTime();
-        if (level == eclipseLevel && tick == eclipseTick) return eclipseAmount;
+        long multiplier = SolarSystem.timeMultiplier(level);
+        if (level == eclipseLevel && tick == eclipseTick && multiplier == eclipseTimeMultiplier) return eclipseAmount;
         long orbitTick = level.isClientSide() && pinned != Long.MIN_VALUE ? pinned : tick;
         SolarSystem.Body body = body(level);
         if (body == null) return 0;
         float solarAngle = angle(level, 0.0F);
-        List<SolarSystem.AstroMetric> metrics = SolarSystem.calculateMetricsFromBody(orbitTick, body, solarAngle);
+        List<SolarSystem.AstroMetric> metrics = SolarSystem.calculateMetricsFromBody(orbitTick, body, solarAngle, multiplier);
         eclipseAmount = eclipseFactor(metrics, SolarSystem.calculateSunSize(body), SolarSystem.MAX_APPARENT_SIZE_SURFACE);
         eclipseLevel = level;
         eclipseTick = tick;
+        eclipseTimeMultiplier = multiplier;
         return eclipseAmount;
     }
 

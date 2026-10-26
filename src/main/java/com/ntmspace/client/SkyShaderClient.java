@@ -37,7 +37,7 @@ public final class SkyShaderClient {
         json.addProperty("body", body);
         json.addProperty("weather_custom", Precipitation.has(level));
         com.ntmspace.trait.CBT_Water water = CelestialTraits.getTrait(body, com.ntmspace.trait.CBT_Water.class, true);
-        float[] rain = water == null || water.fluid == null ? new float[] {1, 1, 1} : CelestialWeather.rainColor(water.fluid.getColor());
+        float[] rain = water == null || water.fluid == null ? new float[] {1, 1, 1} : CelestialWeather.rainColor(water.fluid.clientMetadata().getColor());
         com.google.gson.JsonArray rainJson = new com.google.gson.JsonArray();
         for (float c : rain) rainJson.add(c);
         json.add("rain_color", rainJson);

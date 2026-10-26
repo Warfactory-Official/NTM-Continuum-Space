@@ -43,12 +43,12 @@ public final class BedrockOreArcFurnaceTable extends RecipeSource<Row> {
             register(in(Grade.RAD_BYPRODUCT, type), new ArcFurnaceRecipe().solid(ModBedrockOreItems.make(Grade.RAD_ARC, type, 2)));
             register(in(Grade.RAD_ROASTED, type), new ArcFurnaceRecipe().solid(ModBedrockOreItems.make(Grade.RAD_ARC, type, 4)));
 
-            register(in(Grade.PRIMARY_FIRST, type), new ArcFurnaceRecipe().fluidNull(toFluid(type.primary1, 5)));
-            register(in(Grade.CRUMBS, type), new ArcFurnaceRecipe().fluidNull(toFluid(type.primary1, 1)));
+            register(in(Grade.PRIMARY_FIRST, type), new ArcFurnaceRecipe().fluidNull(BedrockOreType.molten(type.primary1, 5)));
+            register(in(Grade.CRUMBS, type), new ArcFurnaceRecipe().fluidNull(BedrockOreType.molten(type.primary1, 1)));
 
-            register(in(Grade.SULFURIC_WASHED, type), new ArcFurnaceRecipe().fluidNull(toFluid(type.byproductAcid1, 3)));
-            register(in(Grade.SOLVENT_WASHED, type), new ArcFurnaceRecipe().fluidNull(toFluid(type.byproductSolvent1, 3)));
-            register(in(Grade.RAD_WASHED, type), new ArcFurnaceRecipe().fluidNull(toFluid(type.byproductRad1, 3)));
+            register(in(Grade.SULFURIC_WASHED, type), new ArcFurnaceRecipe().fluidNull(BedrockOreType.molten(type.byproductAcid1, 3)));
+            register(in(Grade.SOLVENT_WASHED, type), new ArcFurnaceRecipe().fluidNull(BedrockOreType.molten(type.byproductSolvent1, 3)));
+            register(in(Grade.RAD_WASHED, type), new ArcFurnaceRecipe().fluidNull(BedrockOreType.molten(type.byproductRad1, 3)));
         }
     }
 
@@ -64,17 +64,7 @@ public final class BedrockOreArcFurnaceTable extends RecipeSource<Row> {
     private void register(ComparableStack input, ArcFurnaceRecipe recipe) {
         if (recipe.solidOutput == null && recipe.fluidOutput.isEmpty()) return;
         register(BuiltInRegistries.ITEM.getKey(input.item).getPath(), new Row(input,
-                Optional.ofNullable(recipe.solidOutput).map(ItemOut::of), recipe.fluidOutput, Integer.MAX_VALUE));
-    }
-
-    /** hbm-space {@code ItemBedrockOreNew.toFluid}: the molten material of a smeltable output, else nothing. */
-    private static @Nullable MaterialStack toFluid(@Nullable BedrockOreOutput o, double amount) {
-        if (o == null) return null;
-        NTMMaterial mat = o.material();
-        if (mat != null && mat.smeltable == NTMMaterial.SmeltingBehavior.SMELTABLE) {
-            return new MaterialStack(mat, (int) Math.ceil(MaterialShapes.FRAGMENT.quantity * o.amount() * amount));
-        }
-        return null;
+                Optional.ofNullable(recipe.solidOutput).map(ItemOut::of), recipe.fluidOutput, orderAfterBase(Row::order)));
     }
 
     /** hbm-space {@code ArcFurnaceRecipe}'s builder. */

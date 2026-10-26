@@ -49,6 +49,7 @@ public abstract class CelestialTerrain17 implements Legacy17World {
     private double[] secondOrderBuffer;
     private double[] thirdOrderBuffer;
     private double[] heightOrderBuffer;
+    private double densityScale;
 
     protected CelestialTerrain17(long seed) {
         this.seed = seed;
@@ -81,20 +82,74 @@ public abstract class CelestialTerrain17 implements Legacy17World {
     }
 
     /** 1.7 {@code provideChunk}'s part that builds the primer (biome bytes and skylight are the modern chunk's job). */
-    public Primer provide(int x, int z) {
+    public synchronized Primer provide(int x, int z) {
         rand.setSeed((long) x * 341873128712L + (long) z * 132897987541L);
         return getChunkPrimer(x, z);
     }
 
     protected Primer getChunkPrimer(int x, int z) {
-        Primer buffer = new Primer();
-        generateBlocks(x, z, buffer.blocks);
-        replaceBlocksForBiome(x, z, buffer.blocks, buffer.metas);
+        Primer buffer = noisePrimer(x, z);
+        surfacePass(x, z, buffer, null);
         return buffer;
     }
 
+    /** Applies this terrain's real surface stage to an external primer under one actual biome descriptor. */
+    public synchronized void surface(int chunkX, int chunkZ, Primer primer, Biome17 biome) {
+        rand.setSeed((long) chunkX * 341873128712L + (long) chunkZ * 132897987541L);
+        surfacePass(chunkX, chunkZ, primer, biome);
+    }
+
+    /** Body-specific shaping that belongs before biome block replacement (Duna's hills). */
+    protected void shapeSurface(int chunkX, int chunkZ, Block17[] blocks, Biome17 biome) {}
+
+    protected final void surfacePass(int chunkX, int chunkZ, Primer primer, Biome17 biome) {
+        shapeSurface(chunkX, chunkZ, primer.blocks, biome);
+        if (biome == null) replaceBlocksForBiome(chunkX, chunkZ, primer.blocks, primer.metas);
+        else replaceBlocksForBiome(chunkX, chunkZ, primer.blocks, primer.metas, biome);
+    }
+
+    /** Reinitializes a body's independent per-chunk surface random, where it has one. */
+    protected void prepareSurface(int chunkX, int chunkZ) {}
+
+    public final Block17 stoneBlock() { return stoneBlock; }
+    public final Block17 seaBlock() { return seaBlock; }
+    public final int seaLevel() { return seaLevel; }
+
+    /** The actual applied legacy stone-noise samples, indexed localX * 16 + localZ. */
+    public final double[] surfaceNoise(int chunkX, int chunkZ) {
+        return surfaceNoise(null, chunkX, chunkZ);
+    }
+
+    private double[] surfaceNoise(double[] output, int chunkX, int chunkZ) {
+        double scale = 0.03125D;
+        return perlin.generate(output, (double) (chunkX * 16), (double) (chunkZ * 16),
+                16, 16, scale * 2.0D, scale * 2.0D, 1.0D);
+    }
+
+    /** Actual density fill alone, before shaping, biome surfaces, caves and deposits. */
+    public synchronized Primer noise(int chunkX, int chunkZ) {
+        rand.setSeed((long) chunkX * 341873128712L + (long) chunkZ * 132897987541L);
+        return noisePrimer(chunkX, chunkZ);
+    }
+
+    protected final Primer noisePrimer(int chunkX, int chunkZ) {
+        var primer = new Primer();
+        generateBlocks(chunkX, chunkZ, primer.blocks);
+        return primer;
+    }
+
+    /** The real biome/depth-noise gradient's zero crossing at the chunk centre, in block coordinates. */
+    public synchronized double preliminarySurfaceHeight(int chunkX, int chunkZ) {
+        prepareGenerationBiomes(chunkX, chunkZ);
+        prepareHeightNoise(chunkX * 4, chunkZ * 4);
+        return densityCenter(chunkX * 4, chunkZ * 4, 2, 2, 12) * 8.0D;
+    }
+
+    protected void prepareGenerationBiomes(int chunkX, int chunkZ) {}
+
     // Fills in the chunk with stone, water, and air
     protected void generateBlocks(int x, int z, Block17[] blocks) {
+        prepareGenerationBiomes(x, z);
         generateNoiseField(x * 4, 0, z * 4);
 
         for (int k = 0; k < 4; ++k) {
@@ -167,67 +222,15 @@ public abstract class CelestialTerrain17 implements Legacy17World {
         firstOrderBuffer = firstOrder.generate(firstOrderBuffer, x, y, z, 5, 33, 5, firstOrderFreq[0], firstOrderFreq[1], firstOrderFreq[2]);
         secondOrderBuffer = secondOrder.generate(secondOrderBuffer, x, y, z, 5, 33, 5, secondOrderFreq[0], secondOrderFreq[1], secondOrderFreq[2]);
         thirdOrderBuffer = thirdOrder.generate(thirdOrderBuffer, x, y, z, 5, 33, 5, thirdOrderFreq[0], thirdOrderFreq[1], thirdOrderFreq[2]);
-        heightOrderBuffer = heightOrder.generate(heightOrderBuffer, x, z, 5, 5, heightOrderFreq[0], heightOrderFreq[1], heightOrderFreq[2]);
+        prepareHeightNoise(x, z);
 
         int l = 0;
         int i1 = 0;
 
         for (int j1 = 0; j1 < 5; ++j1) {
             for (int k1 = 0; k1 < 5; ++k1) {
-                float f = 0.0F;
-                float f1 = 0.0F;
-                float f2 = 0.0F;
-                byte b0 = 2;
-                // biomesForGeneration[j1 + 2 + (k1 + 2) * 10], a 10 x 10 cell window starting at (x - 2, z - 2)
-                Biome17 biomegenbase = generationBiome(x - 2 + j1 + 2, z - 2 + k1 + 2);
-
-                for (int l1 = -b0; l1 <= b0; ++l1) {
-                    for (int i2 = -b0; i2 <= b0; ++i2) {
-                        Biome17 biomegenbase1 = generationBiome(x - 2 + j1 + l1 + 2, z - 2 + k1 + i2 + 2);
-                        float f3 = biomegenbase1.rootHeight;
-                        float f4 = biomegenbase1.heightVariation;
-
-                        if (amplified && f3 > 0.0F) {
-                            f3 = 1.0F + f3 * 2.0F;
-                            f4 = 1.0F + f4 * 4.0F;
-                        }
-
-                        float f5 = parabolicField[l1 + 2 + (i2 + 2) * 5] / (f3 + 2.0F);
-
-                        if (biomegenbase1.rootHeight > biomegenbase.rootHeight) f5 /= 2.0F;
-
-                        f += f4 * f5;
-                        f1 += f3 * f5;
-                        f2 += f5;
-                    }
-                }
-
-                f /= f2;
-                f1 /= f2;
-                f = f * 0.9F + 0.1F;
-                f1 = (f1 * 4.0F - 1.0F) / 8.0F;
-                double d12 = heightOrderBuffer[i1] / 8000.0D;
-
-                if (d12 < 0.0D) d12 = -d12 * 0.3D;
-
-                d12 = d12 * 3.0D - 2.0D;
-
-                if (d12 < 0.0D) {
-                    d12 /= 2.0D;
-                    if (d12 < -1.0D) d12 = -1.0D;
-                    d12 /= 1.4D;
-                    d12 /= 2.0D;
-                } else {
-                    if (d12 > 1.0D) d12 = 1.0D;
-                    d12 /= 8.0D;
-                }
-
-                ++i1;
-                double d13 = (double) f1;
-                double d14 = (double) f;
-                d13 += d12 * 0.2D;
-                d13 = d13 * 8.5D / 8.0D;
-                double d5 = 8.5D + d13 * 4.0D;
+                double d5 = densityCenter(x, z, j1, k1, i1++);
+                double d14 = densityScale;
 
                 for (int j2 = 0; j2 < 33; ++j2) {
                     double d6 = ((double) j2 - d5) * 12.0D * 128.0D / 256.0D / d14;
@@ -250,16 +253,80 @@ public abstract class CelestialTerrain17 implements Legacy17World {
         }
     }
 
+    private void prepareHeightNoise(int x, int z) {
+        heightOrderBuffer = heightOrder.generate(heightOrderBuffer, x, z, 5, 5, heightOrderFreq[0], heightOrderFreq[1], heightOrderFreq[2]);
+    }
+
+    private double densityCenter(int x, int z, int j1, int k1, int columnIndex) {
+        float f = 0.0F;
+        float f1 = 0.0F;
+        float f2 = 0.0F;
+        byte b0 = 2;
+        // biomesForGeneration[j1 + 2 + (k1 + 2) * 10], a 10 x 10 cell window starting at (x - 2, z - 2)
+        Biome17 biomegenbase = generationBiome(x - 2 + j1 + 2, z - 2 + k1 + 2);
+
+        for (int l1 = -b0; l1 <= b0; ++l1) {
+            for (int i2 = -b0; i2 <= b0; ++i2) {
+                Biome17 biomegenbase1 = generationBiome(x - 2 + j1 + l1 + 2, z - 2 + k1 + i2 + 2);
+                float f3 = biomegenbase1.rootHeight;
+                float f4 = biomegenbase1.heightVariation;
+
+                if (amplified && f3 > 0.0F) {
+                    f3 = 1.0F + f3 * 2.0F;
+                    f4 = 1.0F + f4 * 4.0F;
+                }
+
+                float f5 = parabolicField[l1 + 2 + (i2 + 2) * 5] / (f3 + 2.0F);
+
+                if (biomegenbase1.rootHeight > biomegenbase.rootHeight) f5 /= 2.0F;
+
+                f += f4 * f5;
+                f1 += f3 * f5;
+                f2 += f5;
+            }
+        }
+
+        f /= f2;
+        f1 /= f2;
+        f = f * 0.9F + 0.1F;
+        f1 = (f1 * 4.0F - 1.0F) / 8.0F;
+        double d12 = heightOrderBuffer[columnIndex] / 8000.0D;
+
+        if (d12 < 0.0D) d12 = -d12 * 0.3D;
+
+        d12 = d12 * 3.0D - 2.0D;
+
+        if (d12 < 0.0D) {
+            d12 /= 2.0D;
+            if (d12 < -1.0D) d12 = -1.0D;
+            d12 /= 1.4D;
+            d12 /= 2.0D;
+        } else {
+            if (d12 > 1.0D) d12 = 1.0D;
+            d12 /= 8.0D;
+        }
+
+        double d13 = (double) f1;
+        densityScale = (double) f;
+        d13 += d12 * 0.2D;
+        d13 = d13 * 8.5D / 8.0D;
+        return 8.5D + d13 * 4.0D;
+    }
+
     protected void replaceBlocksForBiome(int x, int z, Block17[] blocks, byte[] metas) {
-        double d0 = 0.03125D;
-        stoneNoise = perlin.generate(stoneNoise, (double) (x * 16), (double) (z * 16), 16, 16, d0 * 2.0D, d0 * 2.0D, 1.0D);
+        replaceBlocksForBiome(x, z, blocks, metas, null);
+    }
+
+    private void replaceBlocksForBiome(int x, int z, Block17[] blocks, byte[] metas, Biome17 forcedBiome) {
+        prepareSurface(x, z);
+        stoneNoise = surfaceNoise(stoneNoise, x, z);
 
         for (int k = 0; k < 16; ++k) {
             for (int l = 0; l < 16; ++l) {
                 // 1.7: biomes[l + k * 16] of loadBlockGeneratorData (index x + z * 16), i.e. the biome of column
                 // (x * 16 + l, z * 16 + k), for the column (x * 16 + k, z * 16 + l): vanilla 1.7's transposition, kept.
                 // It only shows on bodies with more than one biome.
-                Biome17 biomegenbase = biomeAt(x * 16 + l, z * 16 + k);
+                Biome17 biomegenbase = forcedBiome != null ? forcedBiome : biomeAt(x * 16 + l, z * 16 + k);
                 biomegenbase.genTerrainBlocks(rand, blocks, metas, x * 16 + k, z * 16 + l, stoneNoise[l + k * 16]);
             }
         }

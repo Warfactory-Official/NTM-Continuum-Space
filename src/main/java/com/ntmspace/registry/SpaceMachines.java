@@ -1,5 +1,6 @@
 package com.ntmspace.registry;
 
+import com.hbm.registration.CarriedDrops;
 import com.hbm.creativetabs.HbmTab;
 import com.hbm.registration.Presets;
 import com.ntmspace.NtmSpace;
@@ -54,7 +55,7 @@ public final class SpaceMachines {
 
     public static final RegistryObject<MachineCryoDistill> MACHINE_CRYO_DISTILL = REG.<MachineCryoDistill>block(
                     "machine_cryo_distill", MachineCryoDistill::new, p -> machine(p, 5.0F, 10.0F))
-            .transform(FOLDED).loot(Loot.self()).tag(BlockTag.PICKAXE);
+            .transform(FOLDED).loot(CarriedDrops.ALWAYS).tag(BlockTag.PICKAXE);
     public static final RegistryObject<MachineAlkylation> MACHINE_ALKYLATION = REG.<MachineAlkylation>block(
                     "machine_alkylation", MachineAlkylation::new, p -> machine(p, 5.0F, 10.0F))
             .transform(FOLDED).loot(Loot.self()).tag(BlockTag.PICKAXE);

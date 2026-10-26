@@ -3,7 +3,7 @@ package com.ntmspace.entity.mob.siege;
 import com.hbm.entity.mob.EntityUFOBase;
 import com.hbm.entity.projectile.EntityBulletBeamBase;
 import com.hbm.interfaces.IRadiationImmune;
-import com.hbm.items.weapon.sedna.factory.XFactoryEnergy;
+import com.ntmspace.entity.mob.MobWeaponsSpace;
 import com.ntmspace.registry.SpaceMobs;
 import dev.golem.core.data.DataIn;
 import dev.golem.core.data.DataOut;
@@ -24,7 +24,6 @@ import net.minecraft.world.entity.SpawnGroupData;
 import net.minecraft.world.entity.ai.attributes.AttributeSupplier;
 import net.minecraft.world.entity.ai.attributes.Attributes;
 import net.minecraft.world.entity.player.Player;
-import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.ServerLevelAccessor;
 import net.minecraft.world.phys.Vec3;
@@ -92,6 +91,14 @@ public class EntitySiegeUFO extends EntityUFOBase implements IRadiationImmune {
         return tier != null ? tier : SiegeTier.CLAY;
     }
 
+    public void setLifetime(int ticks) {
+        this.lifetime = ticks;
+    }
+
+    public boolean isRetreating() {
+        return this.isRetreating;
+    }
+
     @Override
     public boolean hurtServer(ServerLevel level, DamageSource source, float damage) {
 
@@ -121,6 +128,9 @@ public class EntitySiegeUFO extends EntityUFOBase implements IRadiationImmune {
 
     @Override
     protected void customServerAiStep(ServerLevel level) {
+        // The base resets motion and selects a course before the retreat waypoint overrides it.
+        super.customServerAiStep(level);
+        if (isRemoved()) return;
 
         this.lifetime++;
         if (this.lifetime > MAX_LIFETIME) {
@@ -136,9 +146,6 @@ public class EntitySiegeUFO extends EntityUFOBase implements IRadiationImmune {
                 return;
             }
         }
-
-        super.customServerAiStep(level);
-        if (isRemoved()) return;
 
         if (this.courseChangeCooldown > 0) this.courseChangeCooldown--;
         if (this.scanCooldown > 0) this.scanCooldown--;
@@ -166,9 +173,8 @@ public class EntitySiegeUFO extends EntityUFOBase implements IRadiationImmune {
                 double spawnY = getY();
                 double spawnZ = getZ();
 
-                // 1.7 setKnockback(0) mutates HBM's shared emerald-overcharge config; hbm-space's side effect, as found
                 EntityBulletBeamBase bullet = new EntityBulletBeamBase(this,
-                        XFactoryEnergy.energy_emerald_overcharge.setKnockback(0), 8F);
+                        MobWeaponsSpace.EMERALD_OVERCHARGE_STILL, 8F);
                 bullet.setPos(spawnX, spawnY, spawnZ);
                 bullet.setRotationsFromVector(new Vec3(this.lastTargetX - spawnX, this.lastTargetY - spawnY,
                         this.lastTargetZ - spawnZ));
@@ -208,17 +214,10 @@ public class EntitySiegeUFO extends EntityUFOBase implements IRadiationImmune {
     protected void loadData(DataIn in) {
         super.loadData(in);
         SiegeTier tier = SiegeTier.byName(in.getStringOr("siegeTier", ""));
-        setTier(tier != null ? tier : SiegeTier.DEFAULT_BUFF);
+        // Base loading has already restored attributes and health; setTier would heal it to full.
+        this.entityData.set(TIER, (tier != null ? tier : SiegeTier.DEFAULT_BUFF).id);
         this.lifetime = in.getIntOr("lifetime", 0);
         this.isRetreating = in.getBooleanOr("isRetreating", false);
     }
 
-    /** 1.7 {@code dropFewItems}: every one of the tier's drops (the type has no loot table). */
-    @Override
-    protected void dropCustomDeathLoot(ServerLevel level, DamageSource source, boolean killedByPlayer) {
-        super.dropCustomDeathLoot(level, source, killedByPlayer);
-        for (ItemStack drop : getTier().dropItems()) {
-            spawnAtLocation(level, drop, 0F);
-        }
-    }
 }
