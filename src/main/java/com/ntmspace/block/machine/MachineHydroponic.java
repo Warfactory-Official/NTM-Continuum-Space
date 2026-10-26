@@ -4,7 +4,6 @@ import com.hbm.api.energymk2.IEnergyConnectorBlock;
 import com.hbm.api.fluidmk2.IFluidConnectorBlockMK2;
 import com.hbm.blocks.multiblock.BlockMultiblockMachine;
 import com.hbm.blocks.multiblock.MultiblockHandlerXR;
-import com.hbm.blocks.multiblock.MultiblockMaskTable;
 import com.hbm.blocks.multiblock.MultiblockSurface;
 import com.hbm.interfaces.ILookOverlay;
 import com.hbm.lib.ForgeDirection;
@@ -27,9 +26,6 @@ import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.block.state.StateDefinition;
 import net.minecraft.world.level.block.state.properties.BooleanProperty;
 import net.minecraft.world.phys.AABB;
-import net.minecraft.world.phys.shapes.BooleanOp;
-import net.minecraft.world.phys.shapes.Shapes;
-import net.minecraft.world.phys.shapes.VoxelShape;
 import org.jspecify.annotations.Nullable;
 
 /**
@@ -153,26 +149,6 @@ public class MachineHydroponic extends BlockMultiblockMachine implements IEnergy
     @Override
     public int[][] getAllDimensions() {
         return new int[][] {getDimensions(), {2, -1, 1, 1, 2, 2}};
-    }
-
-    /**
-     * 1.7 {@code BlockDummyable.getAABBRotationOffset} with {@code rot = dir.getRotation(UP)}: the bounding boxes turn with
-     * the machine (the port's default silhouette does not).
-     */
-    @Override
-    public @Nullable VoxelShape cellShape(int lx, int ly, int lz, Direction facing, boolean open, boolean forCollision) {
-        ForgeDirection rot = MachinePorts.rot(facing);
-        double dx = -MultiblockMaskTable.worldX(lx, ly, lz, facing) + 0.5, dz = -MultiblockMaskTable.worldZ(lx, ly, lz, facing) + 0.5;
-        VoxelShape shape = Shapes.empty();
-        for (AABB box : BOUNDS) shape = Shapes.joinUnoptimized(shape, Shapes.create(rotate17(box, rot).move(dx, -ly, dz)), BooleanOp.OR);
-        return shape.optimize();
-    }
-
-    static AABB rotate17(AABB box, ForgeDirection dir) {
-        if (dir == ForgeDirection.EAST) return new AABB(-box.maxZ, box.minY, box.minX, -box.minZ, box.maxY, box.maxX);
-        if (dir == ForgeDirection.SOUTH) return new AABB(-box.maxX, box.minY, -box.maxZ, -box.minX, box.maxY, -box.minZ);
-        if (dir == ForgeDirection.WEST) return new AABB(box.minZ, box.minY, -box.maxX, box.maxZ, box.maxY, -box.minX);
-        return box;
     }
 
     /** 1.7 {@code canSustainPlant}: yes next to the core ({@link #sustainsPlant}), no anywhere else on the machine. */
