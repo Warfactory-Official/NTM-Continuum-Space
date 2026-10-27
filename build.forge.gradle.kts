@@ -131,6 +131,8 @@ tasks.jar {
 tasks.compileJava {
     dependsOn(tasks.named("stonecutterGenerate"))
     options.release = javaVersion
+    options.isFork = true
+    options.forkOptions.memoryMaximumSize = "6g"
 }
 tasks.named<JavaCompile>("compileProbeJava") {
     dependsOn(tasks.named("stonecutterGenerate"))
