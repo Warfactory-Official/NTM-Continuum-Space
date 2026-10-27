@@ -31,6 +31,10 @@ val probe = sourceSets.create("probe") {
     runtimeClasspath += sourceSets["main"].output + sourceSets["main"].runtimeClasspath
 }
 
+// The opt-in imported suite shares the real mod and has no native probe content.
+val importedTests = sourceSets.findByName("upstreamTests")
+val devRunSource = importedTests ?: probe
+
 repositories {
     mavenCentral()
     maven("https://maven.blamejared.com") { name = "BlameJared" }
@@ -62,7 +66,8 @@ val devRuntime = if (obfuscated) "modLocalRuntime" else "localRuntime"
 
 // Loom's stale-remap guard for both composite builds this addon compiles against.
 extra["mc_version"] = mcVersion
-extra["golem.build.composite.roots"] = "../Golem-Core=dev/golem,../new-hbm=com/hbm"
+val hbmProjectDir = providers.gradleProperty("hbmProjectDir").orElse("../NTM-Continuum").get()
+extra["golem.build.composite.roots"] = "../Golem-Core=dev/golem,$hbmProjectDir=com/hbm"
 apply(from = rootProject.file("../Golem-Core/gradle/mod/composite-freshness.gradle.kts"))
 
 dependencies {
@@ -90,8 +95,11 @@ dependencies {
 loom {
     // Two mods in the dev runs: the addon and the probe, each its own classpath group.
     mods {
-        register(modId) { sourceSet(sourceSets["main"]) }
-        register("ntmprobe") { sourceSet(probe) }
+        register(modId) {
+            sourceSet(sourceSets["main"])
+            if (importedTests != null) sourceSet(importedTests)
+        }
+        if (importedTests == null) register("ntmprobe") { sourceSet(probe) }
     }
     runs {
         named("client") {
@@ -99,7 +107,7 @@ loom {
             configName = "NTM: Space Fabric Client ($mcVersion)"
             ideConfigGenerated(true)
             runDir = "runs/client"
-            source(probe)
+            source(devRunSource)
             propOrNull("quickPlayWorld")?.let { programArgs("--quickPlaySingleplayer", it) }
         }
         named("server") {
@@ -107,7 +115,7 @@ loom {
             configName = "NTM: Space Fabric Server ($mcVersion)"
             ideConfigGenerated(true)
             runDir = "runs/server"
-            source(probe)
+            source(devRunSource)
         }
         // Headless GameTests: every ntmspace:* and ntmprobe:* test, through Fabric API's runner.
         register("gametest") {
@@ -115,7 +123,7 @@ loom {
             configName = "NTM: Space Fabric GameTest ($mcVersion)"
             ideConfigGenerated(false)
             runDir = "runs/gametest"
-            source(probe)
+            source(devRunSource)
             vmArg("-Dfabric-api.gametest")
             vmArg("-Dfabric-api.gametest.report-file=${project.file("runs/gametest/report.xml").absolutePath}")
             vmArg("-Dntmprobe.doubleSubstitution=${providers.gradleProperty("probe.doubleSubstitution").orElse("false").get()}")
@@ -139,7 +147,6 @@ val modProps = mapOf(
     "minecraft_range" to prop("deps.minecraft_range"),
     "fabric_loader" to prop("deps.fabric_loader"),
     "java_version" to javaVersion.toString(),
-    "mixin_compatibility" to if (javaVersion <= 17) "JAVA_17" else "JAVA_21",
     "pack_format" to prop("pack_format"),
     "pack_format_entry" to packFormatEntry,
 )

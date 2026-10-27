@@ -136,8 +136,10 @@ public final class RocketItems {
 
     public static void init() {
         RocketFuels.init();
-        // hbm-space removed 1.7's setMaxStackSize(1) from the part constructor; warheads, fins and chips kept their own 1
-        ModCustomMissileItems.PART_PROPERTIES.register((id, properties) ->
-                id.startsWith("mp_fuselage") || id.startsWith("mp_thruster") ? properties.stacksTo(64) : properties);
+        // 1.7's copy() used a fresh uncapped constructor; only base warheads, fins and chips kept their explicit cap.
+        ModCustomMissileItems.PART_PROPERTIES.register((id, properties) -> switch (id) {
+            case "mp_warhead_15_nuclear_shark", "mp_warhead_15_nuclear_mimi" -> properties.stacksTo(64);
+            default -> id.startsWith("mp_fuselage") || id.startsWith("mp_thruster") ? properties.stacksTo(64) : properties;
+        });
     }
 }

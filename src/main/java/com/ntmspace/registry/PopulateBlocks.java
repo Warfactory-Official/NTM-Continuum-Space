@@ -9,6 +9,7 @@ import dev.golem.core.dejson.Models;
 import dev.golem.core.dejson.Variants;
 import dev.golem.core.registry.BlockTag;
 import dev.golem.core.registry.DeferredRegister;
+import dev.golem.core.registry.ItemTag;
 import dev.golem.core.registry.Loot;
 import dev.golem.core.registry.Registrar;
 import dev.golem.core.registry.RegistryObject;
@@ -54,7 +55,7 @@ public final class PopulateBlocks {
                     p -> p.strength(5.0F, 10.0F).sound(SoundType.STONE).requiresCorrectToolForDrops().noLootTable())
             .transform(Presets.cubeAll("ntmspace:blocks/stone_resource.conglomerate")).tag(BlockTag.PICKAXE);
     public static final RegistryObject<BlockItem> STONE_RESOURCE_CONGLOMERATE_ITEM = REG.blockItem(STONE_RESOURCE_CONGLOMERATE,
-            Compat::blockDescription).tab(HbmTab.RESOURCES);
+            Compat::blockDescription).tag(ItemTag.of("c:ores/conglomerate")).tab(HbmTab.RESOURCES);
 
     /** 1.7: {@code stalagmite} / {@code stalactite} metadata 2 ({@code EnumStalagmiteType.FLESH}): drops flesh. */
     public static final RegistryObject<BlockStalagmite> STALAGMITE_FLESH = spike("stalagmite_flesh", Direction.DOWN);

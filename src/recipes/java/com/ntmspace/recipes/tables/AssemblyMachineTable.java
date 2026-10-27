@@ -36,6 +36,7 @@ import com.hbm.items.ModItems;
 import com.hbm.items.machine.ItemBatteryPack.EnumBatteryPack;
 import com.ntmspace.fluid.SpaceFluids;
 import com.ntmspace.fork.ForkContent;
+import com.ntmspace.inventory.material.SpaceOreMaterials;
 import com.ntmspace.registry.AtmosphereMachines;
 import com.ntmspace.registry.DriveProcessorBlocks;
 import com.ntmspace.registry.DysonContent;
@@ -79,7 +80,7 @@ public final class AssemblyMachineTable extends GenericTableSource<GenericRecipe
     private static final String YES_528 = "enable_528";
 
     // hbm-space OreDictManager names HBM's OreDictManager has no alias for: their c: tags
-    private static final NTMMaterial NI = new NTMMaterial(-1, "nickel");
+    // hbm-space OreDictManager's NI: Space's pure-nickel material (nickel_pure tags).
     private static final NTMMaterial STAINLESS = new NTMMaterial(-1, "stainless");
     private static final NTMMaterial FIBER = new NTMMaterial(-1, "fiberglass");
     private static final NTMMaterial QUARTZ = new NTMMaterial(-1, "quartz");
@@ -99,12 +100,12 @@ public final class AssemblyMachineTable extends GenericTableSource<GenericRecipe
         remove("hbm:assembly_machine/lunarminer");
 
         this.register(new GenericRecipe("ass.platenickel").setup(60, 100).outputItems(new ItemStack(SpaceItems.PLATE_NICKEL.get(), 1))
-                .inputItems(NI.ingot())
+                .inputItems(SpaceOreMaterials.NICKEL.ingot())
                 .setPools(GenericRecipes.POOL_PREFIX_ALT + "plates")
                 .setGroup(autoPlate, this));
 
         this.register(new GenericRecipe("ass.platestainless").setup(60, 100).outputItems(new ItemStack(SpaceItems.PLATE_STAINLESS.get(), 1))
-                .inputItems(STAINLESS.ingot())
+                .inputItems(new TagStack(tag("c", "ingots/stainless_steel")))
                 .setPools(GenericRecipes.POOL_PREFIX_ALT + "plates")
                 .setGroup(autoPlate, this));
 
@@ -223,7 +224,7 @@ public final class AssemblyMachineTable extends GenericTableSource<GenericRecipe
                         fullBarrel(Fluids.KEROSENE, 1),
                         new ComparableStack(ModItems.thruster_small.get(), 1),
                         BSCCO.wireDense().count(64),
-                        new ComparableStack(ModBatteryItems.PACKS.get(EnumBatteryPack.BATTERY_LITHIUM).get(), 1)));
+                        new RecipeIngredients.Battery(ModBatteryItems.PACKS.get(EnumBatteryPack.BATTERY_LITHIUM).get(), 1)));
 
         this.register(new GenericRecipe("ass.magma").setup(400, 100).outputItems(new ItemStack(SpaceMachinesC.MACHINE_MAGMA.get().asItem(), 1))
                 .inputItems(
@@ -936,7 +937,28 @@ public final class AssemblyMachineTable extends GenericTableSource<GenericRecipe
                         ANY_PLASTIC.ingot()));
     }
 
-    /** Added rows carry no {@code order} (they follow HBM's); a changed row is given HBM's with {@link #replacing}. */
+    /**
+     * Space's authored additions occupy the gap after their NTM source anchor. Replacements retain the loaded
+     * base row's order; the insertion order here is the same authored sequence as SpaceDatagen's addon groups.
+     */
+    @Override
+    public void register(String id, GenericRecipe recipe) {
+        if (recipe.order != Integer.MAX_VALUE) {
+            super.register(id, recipe);
+            return;
+        }
+        var anchor = switch (id(recipe)) {
+            case "platenickel" -> "platetitanium";
+            case "platestainless" -> "platesteel";
+            case "exstainlessbeam", "exstainlessbeamalt", "exavionics", "exastro" -> "exgold";
+            case "gaschip", "hfchip", "molychip" -> "atomicclockalt";
+            case "nukeantimatter", "dysonmember", "satdysonrelay" -> "satlink";
+            default -> "nitra";
+        };
+        registerAfter("hbm:assembly_machine/" + anchor, id, recipe, AssemblyMachineRecipes.ORDER_STRIDE);
+    }
+
+    /** Registration above supplies orders relative to base anchors instead of using this source's own indices. */
     @Override
     protected boolean ordered() {
         return false;

@@ -245,7 +245,7 @@ public final class MachineGameTestsB {
         MachineGameTests.expectTank(errors, "power after a tick", (int) te.power, 1_975);
         for (BlockPos p : lamps) {
             BlockState lamp = level.getBlockState(p);
-            if (!lamp.getValue(MachineHydroponic.LIT) || lamp.getLightEmission() != 15) errors.add("lamp " + p + " not lit");
+            if (!lamp.is(SpaceMachinesB.HYDROBAY_LAMP.get()) || lamp.getLightEmission() != 15) errors.add("lamp " + p + " not lit");
         }
         for (BlockPos p : plants) if (!(level.getBlockState(p).getBlock() instanceof CropBlock)) errors.add("no wheat at " + p);
         if (!te.getItem(0).isEmpty()) errors.add("seeds left: " + te.getItem(0));
@@ -280,7 +280,7 @@ public final class MachineGameTestsB {
         te.power = 150;
         TileEntityHydroponic.serverTick(level, core, level.getBlockState(core), te);
         MachineGameTests.expectTank(errors, "power below the lamp threshold", (int) te.power, 125);
-        for (BlockPos p : lamps) if (level.getBlockState(p).getValue(MachineHydroponic.LIT)) errors.add("lamp " + p + " still lit");
+        for (BlockPos p : lamps) if (level.getBlockState(p).is(SpaceMachinesB.HYDROBAY_LAMP.get())) errors.add("lamp " + p + " still lit");
         MachineGameTests.expectTank(errors, "held stage", HydroponicPlants.stage(level.getBlockState(plants[1])), held);
         if (!level.getBlockState(lamps[0]).getValue(BlockMultiblockMachine.CELL)) errors.add("lamp no longer a cell");
         com.ntmspace.NtmSpace.LOG.info("hydrobay_step: CO2 {} mB, O2 {} mB, harvested wheat {}", te.tanks[0].getFill(), te.tanks[1].getFill(), wheat);

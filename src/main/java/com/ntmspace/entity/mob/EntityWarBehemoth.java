@@ -1,5 +1,6 @@
 package com.ntmspace.entity.mob;
 
+import dev.golem.core.world.EntityInterpolation;
 import com.hbm.sound.ModSounds;
 import com.ntmspace.entity.mob.ai.EntityAIBehemothGun;
 import com.ntmspace.entity.mob.ai.EntityAIStepTowardsTarget;
@@ -12,6 +13,7 @@ import net.minecraft.network.syncher.SynchedEntityData;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.sounds.SoundEvent;
 import net.minecraft.tags.DamageTypeTags;
+import net.minecraft.util.Mth;
 import net.minecraft.world.Difficulty;
 import net.minecraft.world.damagesource.DamageSource;
 import net.minecraft.world.damagesource.DamageTypes;
@@ -45,6 +47,9 @@ public class EntityWarBehemoth extends CompatMonster {
     /** 1.7 dataWatcher 19: the attack target's entity id (0 for none), for the aiming renderer. */
     private static final EntityDataAccessor<Integer> TARGET_ID =
             SynchedEntityData.defineId(EntityWarBehemoth.class, EntityDataSerializers.INT);
+
+    public float aimPitch;
+    public float aimPitchO;
 
     public EntityWarBehemoth(EntityType<? extends EntityWarBehemoth> type, Level level) {
         super(type, level);
@@ -134,11 +139,31 @@ public class EntityWarBehemoth extends CompatMonster {
         return ModSounds.ENTITY_CYBERCRAB.get();
     }
 
+    /** The client tick owns aiming; renderer extraction only interpolates the two saved angles. */
+    public float aimPitch(float partialTick) {
+        return Mth.lerp(partialTick, aimPitchO, aimPitch);
+    }
+
     /** 1.7 {@code onUpdate}: heavier gravity on the server, 0.1 a tick on top of vanilla's. */
     @Override
     public void tick() {
+        if (level().isClientSide() && level().getEntity(getTargetId()) instanceof LivingEntity target) {
+            double dx = target.getX() - getX();
+            double dz = target.getZ() - getZ();
+            double targetYaw = Math.atan2(dz, dx) * (180D / Math.PI) - 90D;
+            EntityInterpolation.pullYaw(this, targetYaw);
+        }
         super.tick();
-        if (!level().isClientSide()) {
+        if (level().isClientSide()) {
+            aimPitchO = aimPitch;
+            if (level().getEntity(getTargetId()) instanceof LivingEntity target) {
+                double dx = target.getX() - getX();
+                double dy = target.getEyeY() - getEyeY();
+                double dz = target.getZ() - getZ();
+                double pitch = Math.atan2(dy, Math.sqrt(dx * dx + dz * dz)) * -Mth.RAD_TO_DEG;
+                aimPitch += (float) (Mth.wrapDegrees(pitch - aimPitch) * 0.1D);
+            }
+        } else {
             Vec3 motion = getDeltaMovement();
             setDeltaMovement(motion.x, motion.y - 0.10D, motion.z);
         }

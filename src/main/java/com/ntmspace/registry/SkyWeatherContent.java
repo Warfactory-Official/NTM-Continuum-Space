@@ -21,6 +21,8 @@ public final class SkyWeatherContent {
     private static final Registrar REG = Registrar.of(SOUNDS);
 
     public static final RegistryObject<SoundEvent> MISC_RUMBLE = REG.sound("misc.rumble");
+    /** The authored six-track game/creative music pool used outside the overworld. */
+    public static final RegistryObject<SoundEvent> MUSIC_GAME_SPACE = REG.sound("music.game.space");
 
     private SkyWeatherContent() {}
 

@@ -39,9 +39,9 @@ import org.jetbrains.annotations.Nullable;
  * <p>Differences: 1.7 advanced the countdown only while Duna's dimension was loaded (players there or forced chunks);
  * the port advances it while players are on Duna, as modern levels never unload (a chunk loader no longer keeps the
  * storm going). 1.7 also ended the storm when everyone on Duna slept ({@code resetRainAndThunder}); not ported, as the
- * body's morning reset is not either ({@link com.ntmspace.world.SpaceSkies}). 1.7's {@code isDaytime()} answered false
- * during a storm of strength 0.2 or more (sleeping, mobs burning by day); modern code asks the sky darkening instead, so
- * a storm does not make it night - not ported. A fresh save starts with strength 1 and an expired countdown, which the
+ * body's morning reset is not either ({@link com.ntmspace.world.SpaceSkies}). Daytime queries answer false during a
+ * storm of strength 0.2 or more through {@link com.ntmspace.world.SpaceSkies}, independently of cached sky brightness.
+ * A fresh save starts with strength 1 and an expired countdown, which the
  * first tick turns into a long clear spell, as in 1.7.
  */
 public final class DustStorm extends CompatSavedData<DustStorm> {
@@ -53,6 +53,9 @@ public final class DustStorm extends CompatSavedData<DustStorm> {
     /** {@code dustStormIntensity}: 0 = clear, 0.25 .. 1 = a storm. */
     public float intensity = 1;
 
+    /** The strength last delivered to the client, before its visual easing. */
+    public static float clientIntensity;
+
     public DustStorm() {}
 
     private DustStorm(int timer, float intensity) {
@@ -62,6 +65,17 @@ public final class DustStorm extends CompatSavedData<DustStorm> {
 
     public static DustStorm get(ServerLevel duna) {
         return CompatSavedData.get(duna, ID, DustStorm::new, CODEC);
+    }
+
+    public static void acceptSync(float intensity) {
+        clientIntensity = intensity;
+    }
+
+    /** Delivers the current strength when a player arrives in Duna's level. */
+    public static void sync(ServerPlayer player, ServerLevel duna) {
+        if (duna.dimension().equals(SpaceDimensions.DUNA)) {
+            GolemNetwork.sendToPlayer(player, CODEC_PAYLOAD, new Payload(get(duna).intensity));
+        }
     }
 
     /** The 1.7 server half of {@code updateWeather}, one tick; {@code rand} is the level's random. */

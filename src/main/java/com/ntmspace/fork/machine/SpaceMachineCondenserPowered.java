@@ -1,5 +1,7 @@
 package com.ntmspace.fork.machine;
 
+import net.minecraft.world.level.block.Block;
+import net.minecraft.world.level.block.state.StateDefinition;
 import com.hbm.api.block.IToolable;
 import com.hbm.blocks.machine.MachineCondenserPowered;
 import com.hbm.blocks.machine.ModMachineBlocks;
@@ -33,7 +35,15 @@ public class SpaceMachineCondenserPowered extends MachineCondenserPowered implem
 
     public SpaceMachineCondenserPowered(Properties properties) {
         super(properties);
+        registerDefaultState(defaultBlockState().setValue(DamagedMachines.DAMAGED, false));
     }
+
+    @Override protected void createBlockStateDefinition(StateDefinition.Builder<Block, BlockState> builder) {
+        super.createBlockStateDefinition(builder);
+        builder.add(DamagedMachines.DAMAGED);
+    }
+
+    @Override public boolean dropFromExplosion(Explosion explosion) { return false; }
 
     /** Replaces {@code hbm:machine_condenser_powered}'s block and block entity type (HBM's id, renderer and handle stay). */
     public static void substitute() {

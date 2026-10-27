@@ -1,5 +1,6 @@
 package com.ntmspace.tileentity.station;
 
+import com.hbm.lib.ForgeDirection;
 import com.hbm.api.fluidmk2.IFluidStandardReceiverMK2;
 import com.hbm.inventory.fluid.FluidType;
 import com.hbm.inventory.fluid.tank.FluidTankNTM;
@@ -313,6 +314,13 @@ public class TileEntityOrbitalStation extends TileEntityMachineBase implements I
     @Override
     public FluidTankNTM[] getReceivingTanks() {
         return subscribed ? tanks : new FluidTankNTM[0];
+    }
+
+    /** The immediate face query follows the dock state; network storage remains subscription-gated above. */
+    @Override
+    public boolean exposesFluidContact(@Nullable FluidType type,
+                                       ForgeDirection dir, boolean receiving) {
+        return needsFuel && IFluidStandardReceiverMK2.super.exposesFluidContact(type, dir, receiving);
     }
 
     /** The station this port belongs to, once it ticked (server), or the synced one (client core). */

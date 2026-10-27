@@ -19,6 +19,9 @@ public final class AtmosphereRecipes extends DataGenericRecipes<GenericRecipe> {
 
     public static final AtmosphereRecipes INSTANCE = new AtmosphereRecipes();
 
+    /** The chemistry tick processes this many copies of each recipe at once. */
+    public static final int SCALE = 64;
+
     /** 1.7 {@code AtmosphereRecipe}: two inputs, one output (the map's key). */
     public record Reaction(FluidStack[] inputs, FluidStack output) {}
 

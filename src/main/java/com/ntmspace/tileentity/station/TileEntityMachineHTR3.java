@@ -37,7 +37,7 @@ import net.minecraft.world.phys.AABB;
  * thrust, four seconds to start and to stop. It works facing south (prograde) in orbit only. The bell sways with
  * {@link #time}, which runs while it burns.
  */
-public class TileEntityMachineHTR3 extends TileEntityMachineBase implements Propulsion, IFluidStandardReceiverMK2 {
+public class TileEntityMachineHTR3 extends TileEntityMachineBase implements Propulsion, IFluidStandardReceiverMK2, OrbitConnector {
 
     public final FluidTankNTM[] tanks;
 
@@ -143,7 +143,7 @@ public class TileEntityMachineHTR3 extends TileEntityMachineBase implements Prop
     private PortDef[] cachedPorts;
 
     public PortDef[] getPorts() {
-        if (cachedPorts == null) cachedPorts = MachinePorts.ports(getBlockState(), worldPosition, getConPos());
+        if (cachedPorts == null) cachedPorts = MachinePorts.ports(level, getBlockState(), worldPosition, getConPos());
         return cachedPorts;
     }
 

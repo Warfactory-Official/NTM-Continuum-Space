@@ -4,12 +4,13 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Random;
 import java.util.function.DoubleSupplier;
+import net.minecraft.world.level.Level;
 
 /**
  * The client half of hbm-space's {@code WorldProviderThatmo.updateWeather} while Thatmo has its battlefield trait
  * ({@code CBT_BATTLEFIELD}): the sky's state machine and its meteors, one tick per client tick. Side-neutral and
- * deterministic for a given {@link Random}, so GameTests can step it; {@code com.ntmspace.client.ThatmoSky} owns the
- * client's one instance (1.7 kept these as statics of the provider) and draws it.
+ * deterministic for a given {@link Random}, so GameTests can step it; {@code com.ntmspace.client.ThatmoSky} ticks and
+ * draws the common holder's client instance (1.7 kept these as statics of the provider).
  *
  * <ul>
  *   <li>{@code chargetime} counts up to 1001; then the railgun fires: {@code flashd} eases to 100 (the flash fades with
@@ -27,6 +28,15 @@ import java.util.function.DoubleSupplier;
  * All arithmetic is 1.7's, float and double where it was (a {@code float += 1.5} is a double add then a cast).
  */
 public final class ThatmoBattlefield {
+
+    /** Client visual state, advanced only by Thatmo's client sky tick. */
+    public static final ThatmoBattlefield CLIENT_SKY = new ThatmoBattlefield();
+
+    /** The railgun flash and shield glow brighten the client sky, never the server's environment queries. */
+    public static float lightAdd(Level level) {
+        return level.isClientSide() && level.dimension().equals(SpaceDimensions.THATMO)
+                ? CLIENT_SKY.flashAlpha() + CLIENT_SKY.shieldAlpha() : 0.0F;
+    }
 
     /** {@link #tick} result bit: play {@code misc.fireflash} (volume 10, pitch 1) at the player. */
     public static final int SOUND_FIREFLASH = 1;

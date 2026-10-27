@@ -44,6 +44,10 @@ public class CBT_Weather extends CelestialBodyTrait {
 
     private long lastUpdateTick = Long.MIN_VALUE;
 
+    public long lastUpdateTick() {
+        return lastUpdateTick;
+    }
+
     /** 1.7: no gas giant ({@code body.gas}; none of the port's bodies with weather is one), air above 0.5 atm, a water table. */
     public static boolean supportsWeather(String body, boolean client) {
         if (body == null) return false;

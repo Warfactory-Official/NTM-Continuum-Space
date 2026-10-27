@@ -214,7 +214,7 @@
     "category": "record",
     "sounds": [
       {
-        "name": "ntmspace:music/recordgodspeed",
+        "name": "ntmspace:music/record_god_speed",
         "stream": true
       }
     ]
@@ -223,7 +223,7 @@
     "category": "record",
     "sounds": [
       {
-        "name": "ntmspace:music/recordgoop",
+        "name": "ntmspace:music/record_goop",
         "stream": true
       }
     ]
@@ -232,7 +232,7 @@
     "category": "record",
     "sounds": [
       {
-        "name": "ntmspace:music/recordethereal",
+        "name": "ntmspace:music/record_ethereal",
         "stream": true
       }
     ]
@@ -315,6 +315,52 @@
       {
         "name": "ntmspace:entity/jetbomb2",
         "stream": false
+      }
+    ]
+  },
+  "step.morkite": {
+    "category": "player",
+    "sounds": [
+      {
+        "name": "ntmspace:mining/morkiteminingb_3",
+        "stream": false
+      },
+      {
+        "name": "ntmspace:mining/morkiteminingb_2",
+        "stream": false
+      },
+      {
+        "name": "ntmspace:mining/morkiteminingb_1",
+        "stream": false
+      }
+    ]
+  },
+  "music.game.space": {
+    "category": "music",
+    "sounds": [
+      {
+        "name": "ntmspace:music/space_break",
+        "stream": true
+      },
+      {
+        "name": "ntmspace:music/space_trill",
+        "stream": true
+      },
+      {
+        "name": "ntmspace:music/space_beat",
+        "stream": true
+      },
+      {
+        "name": "ntmspace:music/space_transcend",
+        "stream": true
+      },
+      {
+        "name": "ntmspace:music/space_calm",
+        "stream": true
+      },
+      {
+        "name": "ntmspace:music/space_koyaanis",
+        "stream": true
       }
     ]
   }

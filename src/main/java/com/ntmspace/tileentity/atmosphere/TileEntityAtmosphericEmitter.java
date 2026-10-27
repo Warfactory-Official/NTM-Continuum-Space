@@ -12,6 +12,7 @@ import com.hbm.lib.ForgeDirection;
 import com.hbm.sound.AudioSystem;
 import com.hbm.sound.AudioWrapper;
 import com.hbm.sound.ModSounds;
+import com.hbm.sound.WorldSounds;
 import com.hbm.tileentity.MachineCore;
 import com.hbm.tileentity.TileEntityLoadedBase;
 import com.hbm.tileentity.TilePort.PortDef;
@@ -44,6 +45,7 @@ public class TileEntityAtmosphericEmitter extends TileEntityLoadedBase implement
     public float fan = 0;
     public float prevFan = 0;
     private @Nullable AudioWrapper audio;
+    private boolean motorSoundActive;
 
     /** Client: the gas plume (HBM's cooling-tower particle in the gas's colour), set by the client start-up. */
     public static volatile @Nullable Consumer<TileEntityAtmosphericEmitter> CLIENT_PARTICLES;
@@ -71,6 +73,7 @@ public class TileEntityAtmosphericEmitter extends TileEntityLoadedBase implement
                 te.power -= toSpill * 10L;
             }
         }
+        te.motorSoundActive = WorldSounds.machineLoop(level, pos, te.isRunning(), te.motorSoundActive);
         // 1.7 did not mark the tile dirty here; the port saves what changed
         te.setChanged();
     }
@@ -128,7 +131,7 @@ public class TileEntityAtmosphericEmitter extends TileEntityLoadedBase implement
 
     /** The 1.7 connection points as ports. */
     public PortDef[] getPorts() {
-        if (cachedPorts == null) cachedPorts = MachinePorts.ports(getBlockState(), worldPosition, getConPos());
+        if (cachedPorts == null) cachedPorts = MachinePorts.ports(level, getBlockState(), worldPosition, getConPos());
         return cachedPorts;
     }
 

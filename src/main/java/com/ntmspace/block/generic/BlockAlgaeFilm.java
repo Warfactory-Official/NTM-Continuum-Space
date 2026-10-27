@@ -1,5 +1,9 @@
 package com.ntmspace.block.generic;
 
+import com.ntmspace.registry.LeftoverContent;
+import com.hbm.capability.ICapabilityBlock;
+import com.hbm.capability.MachineCaps;
+
 import com.hbm.interfaces.ILookOverlay;
 import com.hbm.util.BobMathUtil;
 import com.ntmspace.tileentity.machine.TileEntityAlgaeFilm;
@@ -31,9 +35,15 @@ import org.jspecify.annotations.Nullable;
  * overlay lists both tanks and, outside orbit, blinks "REQUIRES ZERO-G" ({@code atmosphere.noGravity}). The machine
  * itself is {@link TileEntityAlgaeFilm}.
  */
-public class BlockAlgaeFilm extends CompatBlock implements TickingBlock, ILookOverlay {
+public class BlockAlgaeFilm extends CompatBlock implements TickingBlock, ILookOverlay, ICapabilityBlock {
 
     public static final EnumProperty<Direction> FACING = BlockStateProperties.HORIZONTAL_FACING;
+
+    @Override
+    public MachineCaps caps() {
+        return MachineCaps.of(LeftoverContent.ALGAE_FILM_BE).fluidIn().fluidOut()
+                .fluidFaces(TileEntityAlgaeFilm.class, (be, side) -> side.getAxis() == be.getBlockState().getValue(FACING).getClockWise().getAxis());
+    }
 
     public BlockAlgaeFilm(Properties properties) {
         super(properties);

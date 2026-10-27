@@ -103,6 +103,11 @@ public class EntityTankbot extends CompatMonster implements IRadiationImmune {
         return false;
     }
 
+    @Override
+    public boolean shouldDropExperience() {
+        return false;
+    }
+
     /** 1.7 {@code renderDistanceWeight = 24}. */
     @Override
     public boolean shouldRenderAtSqrDistance(double distance) {
@@ -137,8 +142,7 @@ public class EntityTankbot extends CompatMonster implements IRadiationImmune {
                     this.random.nextGaussian(), 6.5F, 150D);
         }
         if (this.deathTime == -5 && level() instanceof ServerLevel server) {
-            // 1.7 newExplosion(flaming, not smoking): no block damage. Its fires only came from the block list a
-            // smoking blast fills; the modern non-griefing blast has none, so no fires either.
+            // The flaming blast ignites air over surviving solid surfaces while NONE keeps the floor intact.
             server.explode(this, getX(), getY(), getZ(), 5F, true, Level.ExplosionInteraction.NONE);
             ExplosionCreator.composeEffectSmall(server, getX(), getY(), getZ());
             discard();

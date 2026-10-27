@@ -1,9 +1,12 @@
 package com.ntmspace.breathing;
 
+import com.ntmspace.orbit.Orbit;
+import com.ntmspace.world.SpaceEnvironment;
 import com.hbm.api.environment.Environment;
 import com.hbm.handler.ArmorModHandler;
 import com.hbm.items.armor.ArmorDNT;
 import com.hbm.items.armor.ArmorFSB;
+import com.hbm.items.armor.ArmorFSBPowered;
 import com.hbm.lib.ModDamageSources;
 import com.ntmspace.NtmSpace;
 import com.ntmspace.atmosphere.AtmosphereHandler;
@@ -46,11 +49,16 @@ public final class Breathing {
 
     private Breathing() {}
 
+    public static final int FULL_BREATH = 100;
+    public static final EquipmentSlot[] ARMOR_SLOTS = {
+            EquipmentSlot.FEET, EquipmentSlot.LEGS, EquipmentSlot.CHEST, EquipmentSlot.HEAD};
+
     /** Per-entity breath: 1.7 {@code HbmLivingProps} oxygen, cached atmosphere and "has gravity" (= has an atmosphere). */
     public static final class State {
-        public int oxygen = 100;
+        public int oxygen = FULL_BREATH;
         @Nullable CBT_Atmosphere atmosphere;
         boolean gravity;
+        int tankTicks;
     }
 
     public static final EntityData<State> STATE = EntityData.of(NtmSpace.MOD_ID, "breath", LivingEntity.class, State::new,
@@ -89,8 +97,7 @@ public final class Breathing {
         State state = STATE.get(entity);
         if (entity instanceof ServerPlayer || entity.tickCount % 20 == 0) {
             CBT_Atmosphere atmosphere = AtmosphereHandler.getAtmosphere(entity);
-            state.atmosphere = atmosphere;
-            state.gravity = atmosphere != null;
+            setAtmosphere(entity, atmosphere);
             return atmosphere;
         }
         return state.atmosphere;
@@ -99,6 +106,41 @@ public final class Breathing {
     /** 1.7 {@code HbmLivingProps.hasGravity}: the entity was last in some air (the orbit uses it for station gravity). */
     public static boolean hasGravity(LivingEntity entity) {
         return STATE.get(entity).gravity;
+    }
+
+    public static @Nullable CBT_Atmosphere getAtmosphere(LivingEntity entity) {
+        return STATE.get(entity).atmosphere;
+    }
+
+    public static void setAtmosphere(LivingEntity entity, @Nullable CBT_Atmosphere atmosphere) {
+        var state = STATE.get(entity);
+        boolean changed = state.gravity != (atmosphere != null);
+        state.atmosphere = atmosphere;
+        state.gravity = atmosphere != null;
+        if (Orbit.inOrbit(entity.level())) SpaceEnvironment.measure(entity);
+        if (changed && entity instanceof ServerPlayer player) sync(player);
+    }
+
+    public static void setTankInUse(LivingEntity entity, boolean inUse) {
+        var state = STATE.get(entity);
+        boolean wasInUse = state.tankTicks > 20;
+        state.tankTicks = inUse ? Math.min(state.tankTicks + 1, 21) : 0;
+        if (wasInUse != (state.tankTicks > 20) && entity instanceof ServerPlayer player) sync(player);
+    }
+
+    public static boolean isTankInUse(LivingEntity entity) {
+        return STATE.get(entity).tankTicks > 20;
+    }
+
+    public static void sync(ServerPlayer player) {
+        OxygenSync.send(player, getOxy(player));
+    }
+
+    public static void acceptSync(Player player, int oxygen, boolean gravity, boolean tankInUse) {
+        var state = STATE.get(player);
+        state.oxygen = oxygen;
+        state.gravity = gravity;
+        state.tankTicks = tankInUse ? 21 : 0;
     }
 
     public static int getOxy(LivingEntity entity) {
@@ -138,7 +180,7 @@ public final class Breathing {
         if (!checkForOxy(entity, atmosphere)) {
             setOxy(entity, getOxy(entity) - 1);
         } else {
-            setOxy(entity, 100); // 5 seconds until vacuum damage
+            setOxy(entity, FULL_BREATH); // 5 seconds until vacuum damage
         }
     }
 
@@ -146,28 +188,42 @@ public final class Breathing {
     public static boolean checkForOxy(LivingEntity entity, @Nullable CBT_Atmosphere atmosphere) {
         if (!(entity instanceof Player player)) return AtmosphereHandler.canBreathe(atmosphere);
 
-        if (checkSpecialBreathing(player)) return true;
+        if (checkSpecialBreathing(player)) {
+            setTankInUse(player, false);
+            return true;
+        }
 
         ItemStack helmet = player.getItemBySlot(EquipmentSlot.HEAD);
         ItemStack tank = getOxygenTank(player);
-        if (tank.isEmpty()) return AtmosphereHandler.canBreathe(atmosphere);
+        if (tank.isEmpty()) {
+            setTankInUse(player, false);
+            return AtmosphereHandler.canBreathe(atmosphere);
+        }
 
         // If we have an oxygen tank, block drowning
-        boolean isInWater = entity.getAirSupply() < 300;
+        boolean isInWater = entity.getAirSupply() < entity.getMaxAirSupply();
         boolean canBreatheTank = ((ItemModOxy) tank.getItem()).attemptBreathing(entity, tank, atmosphere, isInWater);
         // 1.7 changed the tank inside the helmet's saved mods directly (a shared NBT tag); the port writes it back
         ArmorModHandler.applyMod(helmet, tank);
 
-        if (isInWater && canBreatheTank) entity.setAirSupply(300);
+        if (isInWater && canBreatheTank) entity.setAirSupply(entity.getMaxAirSupply());
         return canBreatheTank;
+    }
+
+    public static boolean canSeal(ItemStack stack) {
+        return stack.is(Sealing.SEALED_ARMOR);
+    }
+
+    public static boolean isCorrosionProtection(ItemStack stack) {
+        return stack.is(Sealing.CORROSION_PROTECTION);
     }
 
     /** 1.7 {@code getOxygenTank}: every armour piece sealed and a PLSS in the helmet, else empty. */
     public static ItemStack getOxygenTank(Player player) {
         // Check that all the armor pieces are sealed
-        for (EquipmentSlot slot : new EquipmentSlot[] {EquipmentSlot.FEET, EquipmentSlot.LEGS, EquipmentSlot.CHEST, EquipmentSlot.HEAD}) {
+        for (EquipmentSlot slot : ARMOR_SLOTS) {
             ItemStack stack = player.getItemBySlot(slot);
-            if (stack.isEmpty() || !stack.is(Sealing.SEALED_ARMOR)) return ItemStack.EMPTY;
+            if (!canSeal(stack)) return ItemStack.EMPTY;
         }
         // Check for a non-empty oxygen tank
         ItemStack helmet = player.getItemBySlot(EquipmentSlot.HEAD);
@@ -182,7 +238,7 @@ public final class Breathing {
     /** 1.7: creative mode, or a full DNT suit. The port counts spectators as creative (1.7 had none). */
     private static boolean checkSpecialBreathing(Player player) {
         if (player.isCreative() || player.isSpectator()) return true;
-        for (EquipmentSlot slot : new EquipmentSlot[] {EquipmentSlot.FEET, EquipmentSlot.LEGS, EquipmentSlot.CHEST, EquipmentSlot.HEAD}) {
+        for (EquipmentSlot slot : ARMOR_SLOTS) {
             if (!(player.getItemBySlot(slot).getItem() instanceof ArmorDNT)) return false;
         }
         return true;
@@ -192,7 +248,7 @@ public final class Breathing {
     // ---------------------------------------------------------------------------------------------------------------
     // Corrosive atmospheres melt your suit, without appropriate protection (1.7 handleCorrosion)
 
-    private static void handleCorrosion(LivingEntity entity, @Nullable CBT_Atmosphere atmosphere) {
+    public static void handleCorrosion(LivingEntity entity, @Nullable CBT_Atmosphere atmosphere) {
         if (entity.level().isClientSide()) return;
         // 1.7: glyphids and cyber crabs; the port names the same mobs by type id
         String id = String.valueOf(net.minecraft.core.registries.BuiltInRegistries.ENTITY_TYPE.getKey(entity.getType()));
@@ -217,12 +273,18 @@ public final class Breathing {
 
         boolean isSealed = true; // safe, for now...
         RandomSource rand = entity.getRandom();
-        for (EquipmentSlot slot : new EquipmentSlot[] {EquipmentSlot.FEET, EquipmentSlot.LEGS, EquipmentSlot.CHEST, EquipmentSlot.HEAD}) {
+        for (EquipmentSlot slot : ARMOR_SLOTS) {
             ItemStack stack = player.getItemBySlot(slot);
-            if (stack.isEmpty() || !stack.is(Sealing.SEALED_ARMOR)) isSealed = false;
+            if (!canSeal(stack)) isSealed = false;
             if (stack.isEmpty()) continue;
 
-            if (rand.nextInt(2) == 0 && stack.isDamageableItem()) stack.setDamageValue(stack.getDamageValue() + 1);
+            if (rand.nextInt(2) == 0) {
+                if (stack.getItem() instanceof ArmorFSBPowered powered) {
+                    powered.dischargeBattery(stack, powered.consumption);
+                } else if (stack.isDamageableItem()) {
+                    stack.setDamageValue(stack.getDamageValue() + 1);
+                }
+            }
 
             boolean enabled = !(stack.getItem() instanceof ArmorFSB fsb) || fsb.isArmorEnabled(stack);
             if ((stack.isDamageableItem() && stack.getDamageValue() >= stack.getMaxDamage())
@@ -240,7 +302,7 @@ public final class Breathing {
         ItemStack chest = player.getItemBySlot(EquipmentSlot.CHEST);
         if (!chest.isEmpty() && ArmorModHandler.hasMods(chest)) {
             ItemStack insertMod = ArmorModHandler.pryMod(chest, ArmorModHandler.kevlar);
-            if (insertMod.isEmpty() || !insertMod.is(Sealing.CORROSION_PROTECTION)) return ItemStack.EMPTY;
+            if (!isCorrosionProtection(insertMod)) return ItemStack.EMPTY;
             return insertMod;
         }
         return ItemStack.EMPTY;

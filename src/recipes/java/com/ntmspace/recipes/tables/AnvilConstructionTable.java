@@ -37,7 +37,7 @@ public final class AnvilConstructionTable extends RecipeSource<ConstructionRow> 
     @Override
     protected void registerDefaults() {
         // registerConstruction: plates (nickel after titanium, stainless after steel)
-        add(3, after("hbm:anvil_construction/plate_titanium"), null, out("ntmspace:plate_nickel", 1), tag("c:ingots/nickel", 1));
+        add(3, after("hbm:anvil_construction/plate_titanium"), null, out("ntmspace:plate_nickel", 1), tag("c:ingots/nickel_pure", 1));
         add(3, after("hbm:anvil_construction/plate_steel"), null, out("ntmspace:plate_stainless", 1), tag("c:ingots/stainless", 1));
         // the Mats.orderedList wire loop (tier 4): zinc's WIRE autogen, after zirconium
         add(4, after("hbm:anvil_construction/wire_fine_zirconium"), null, out("ntmspace:wire_fine_zinc", 8), tag("c:ingots/zinc", 1));

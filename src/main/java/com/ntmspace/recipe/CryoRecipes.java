@@ -18,6 +18,9 @@ import org.jspecify.annotations.Nullable;
  */
 public final class CryoRecipes extends DataGenericRecipes<GenericRecipe> {
 
+    /** Authored default feed; individual datapack rows retain their own amounts. */
+    public static final int FEED = 100;
+
     public static final CryoRecipes INSTANCE = new CryoRecipes();
 
     /** One step: {@code input} mB of the atmosphere become the four {@code fractions}, for {@code power} HE. */

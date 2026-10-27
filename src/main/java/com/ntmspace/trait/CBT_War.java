@@ -1,5 +1,8 @@
 package com.ntmspace.trait;
 
+import dev.golem.core.Ids;
+import net.minecraft.resources.ResourceKey;
+import net.minecraft.world.level.Level;
 import com.mojang.serialization.Codec;
 import com.mojang.serialization.codecs.RecordCodecBuilder;
 import java.util.ArrayList;
@@ -39,6 +42,11 @@ public class CBT_War extends CelestialBodyTrait {
         projectiles.add(new Projectile(traveltime, size, damage, x, y, z, type, target));
     }
 
+    public void launchProjectile(float traveltime, int size, int damage, float x, double y, double z, ProjectileType type,
+                                 ResourceKey<Level> target) {
+        launchProjectile(traveltime, size, damage, x, y, z, type, Ids.keyId(target).toString());
+    }
+
     public void split(int amount, Projectile projectile, ProjectileType type) {
         // currently kind of temp, there might be a better way to generalize this (1.7)
         if (projectile.getTravel() <= 0) {
@@ -55,7 +63,7 @@ public class CBT_War extends CelestialBodyTrait {
 
     @Override
     public void update(boolean remote, String body) {
-        if (remote) return;
+        if (remote || !CelestialTraits.simulationRunsNormally()) return;
         for (int i = 0; i < this.getProjectiles().size(); i++) {
             Projectile projectile = this.getProjectiles().get(i);
             projectile.update();
@@ -110,9 +118,8 @@ public class CBT_War extends CelestialBodyTrait {
 
     @Override
     public void readFromBytes(RegistryFriendlyByteBuf buf) {
-        // 1.7 quirk, kept: written health then shield, read back shield then health (they swap on the client)
-        shield = buf.readInt();
         health = buf.readInt();
+        shield = buf.readInt();
         int numProjectiles = buf.readInt();
         projectiles = new ArrayList<>(numProjectiles);
         for (int i = 0; i < numProjectiles; i++) {
@@ -187,6 +194,11 @@ public class CBT_War extends CelestialBodyTrait {
             this.translateZ = posZ;
             this.type = type;
             this.target = target;
+        }
+
+        public Projectile(float traveltime, int size, int damage, double posX, double posY, double posZ, ProjectileType type,
+                          ResourceKey<Level> target) {
+            this(traveltime, size, damage, posX, posY, posZ, type, Ids.keyId(target).toString());
         }
 
         Projectile copy() {

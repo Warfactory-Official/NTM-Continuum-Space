@@ -5,7 +5,7 @@ import java.util.Random;
 /**
  * hbm-space's {@code ChunkProviderLaythe} with Laythe's four biomes ({@code dim/laythe/biome}), ported line for line:
  * stone under laythe silt with a sea of water below y 63, through the biome map of {@link LaytheLayers17}; then tilted
- * spires (of packed ice and snow when the chunk's origin column is polar, of stone and silt otherwise), oak "roots",
+ * spires (of packed ice and snow when the chunk's origin column is polar, of stone and silt otherwise), Laythe root wood,
  * Greg caves, wide underwater ravines and desulfurized-oil bubbles, in that order.
  *
  * <p>The polar surface picked snow or packed ice with {@code Math.random()}. As in {@link EveTerrain17}, the port draws
@@ -47,6 +47,8 @@ public class LaytheTerrain17 extends LayeredBodyTerrain17 {
         register(LaytheLayers17.OCEAN, ocean);
         register(LaytheLayers17.POLAR, polar);
         register(LaytheLayers17.COAST, coast);
+        // BiomeGenLaytheIslands overrides its base tint after construction.
+        islands.waterColorMultiplier = 0x5B209A;
         this.sessionSeed = session.nextLong();
 
         rgen.yMin = 32;
@@ -77,8 +79,12 @@ public class LaytheTerrain17 extends LayeredBodyTerrain17 {
     }
 
     @Override
-    protected Primer getChunkPrimer(int x, int z) {
+    protected void prepareSurface(int x, int z) {
         mathRandom.setSeed(sessionSeed ^ ((long) x * 341873128712L + (long) z * 132897987541L));
+    }
+
+    @Override
+    protected Primer getChunkPrimer(int x, int z) {
         Primer buffer = super.getChunkPrimer(x, z);
         oil.setMetas(buffer.metas);
 
@@ -104,6 +110,7 @@ public class LaytheTerrain17 extends LayeredBodyTerrain17 {
             this.rootHeight = rootHeight;
             this.heightVariation = heightVariation;
             this.topBlock = Block17.LAYTHE_SILT;
+            this.waterColorMultiplier = PURPLE_WATER_MULTIPLIER;
             this.fillerBlock = Block17.LAYTHE_SILT;
         }
 
@@ -186,6 +193,8 @@ public class LaytheTerrain17 extends LayeredBodyTerrain17 {
         Polar(float rootHeight, float heightVariation) {
             super(rootHeight, heightVariation);
             this.topBlock = Block17.SNOW;
+            // BiomeGenLaythePolar.
+            this.waterColorMultiplier = 0xC1F4FF;
             this.fillerBlock = Block17.ICE;
         }
 

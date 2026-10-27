@@ -1,6 +1,8 @@
 package com.ntmspace.fork;
 
 import com.hbm.api.energymk2.IEnergyReceiverMK2;
+import com.hbm.api.energymk2.IBatteryItem;
+import com.hbm.tileentity.machine.storage.CapacitorCharge;
 import com.hbm.api.redstoneoverradio.IRORValueProvider;
 import com.hbm.blocks.machine.MachineCapacitorBus;
 import com.hbm.lib.ForgeDirection;
@@ -63,7 +65,7 @@ public class ComplexCapacitorEntity extends TileEntityLoadedBase implements IEne
         }
 
         if (target != null && last != null) {
-            long toProvide = Math.min(capacitor.getPower(), capacitor.getMaxPower() / 300);
+            long toProvide = Math.min(capacitor.getPower(), capacitor.getBusProviderSpeed());
             long accepted = EnergyPush.push(server, target, last, toProvide, capacitor);
             if (accepted > 0) capacitor.usePower(accepted);
         }
@@ -93,42 +95,47 @@ public class ComplexCapacitorEntity extends TileEntityLoadedBase implements IEne
 
     @Override
     public void deserialize(RegistryFriendlyByteBuf buf) {
-        power = buf.readLong();
-        maxPower = buf.readLong();
+        var stored = buf.readLong();
+        setMaximum(buf.readLong());
+        setPower(stored);
         powerReceived = buf.readLong();
         powerSent = buf.readLong();
     }
 
     @Override
-    public long transferPower(long power, boolean simulate) {
-        if (power + this.getPower() <= this.getMaxPower()) {
-            if (!simulate) {
-                this.setPower(power + this.getPower());
-                this.powerReceived += power;
-            }
-            return 0;
+    public long transferPower(long amount, boolean simulate) {
+        if (amount < 0) throw new IllegalArgumentException("Negative energy transfer");
+        var next = IBatteryItem.adjustCharge(power, amount, maxPower, false);
+        var accepted = next - power;
+        if (!simulate && accepted > 0) {
+            setPower(next);
+            powerReceived = IBatteryItem.adjustCharge(powerReceived, accepted, Long.MAX_VALUE, false);
         }
-        long capacity = this.getMaxPower() - this.getPower();
-        long overshoot = power - capacity;
-        if (!simulate) {
-            this.powerReceived += capacity;
-            this.setPower(this.getMaxPower());
-        }
-        return overshoot;
+        return amount - accepted;
     }
 
     @Override
-    public void usePower(long power) {
-        this.powerSent += Math.min(this.getPower(), power);
-        this.setPower(this.getPower() - power);
+    public void usePower(long amount) {
+        if (amount < 0) throw new IllegalArgumentException("Negative energy debit");
+        var taken = Math.min(power, amount);
+        if (taken == 0) return;
+        powerSent = IBatteryItem.adjustCharge(powerSent, taken, Long.MAX_VALUE, false);
+        setPower(power - taken);
     }
 
     @Override public long getPower() { return power; }
     @Override public long getMaxPower() { return maxPower; }
     @Override public long getProviderSpeed() { return 0L; }
+    /** Maximum rate sent through the capacitor bus by {@link #serverTick}. */
+    public long getBusProviderSpeed() { return getMaxPower() / 300; }
+
     @Override public long getReceiverSpeed() { return this.getMaxPower() / 100; }
     @Override public ConnectionPriority getPriority() { return ConnectionPriority.LOW; }
-    @Override public void setPower(long power) { this.power = power; }
+    @Override public void setPower(long power) {
+        this.power = IBatteryItem.clampCharge(power, maxPower);
+        setChanged();
+        dataChanged();
+    }
 
     @Override
     public boolean canConnect(ForgeDirection dir) {
@@ -145,9 +152,19 @@ public class ComplexCapacitorEntity extends TileEntityLoadedBase implements IEne
     @Override
     protected void loadData(DataIn input) {
         super.loadData(input);
-        power = input.getLongOr("power", 0L);
-        long saved = input.getLongOr("maxPower", 0L);
-        if (saved > 0) maxPower = saved;
+        setMaximum(input.getLongOr("maxPower", maxPower));
+        setPower(input.getLongOr("power", 0L));
+    }
+
+    /** Restores the actual carried ceiling before bounding its stored charge. */
+    public void restore(CapacitorCharge state) {
+        setMaximum(state.maxPower());
+        setPower(state.power());
+    }
+
+    private void setMaximum(long value) {
+        if (value <= 0) throw new IllegalArgumentException("A complex capacitor needs positive capacity");
+        maxPower = Math.min(value, ((ComplexCapacitor) getBlockState().getBlock()).power);
     }
 
     @Override
@@ -158,7 +175,7 @@ public class ComplexCapacitorEntity extends TileEntityLoadedBase implements IEne
     @Override
     public String provideRORValue(String name) {
         if ((PREFIX_VALUE + "fill").equals(name)) return "" + this.power;
-        if ((PREFIX_VALUE + "fillpercent").equals(name)) return "" + (maxPower == 0 ? 0 : this.power * 100 / this.maxPower);
+        if ((PREFIX_VALUE + "fillpercent").equals(name)) return "" + (maxPower == 0 ? 0 : CapacitorCharge.fillPercent(power, maxPower));
         return null;
     }
 }

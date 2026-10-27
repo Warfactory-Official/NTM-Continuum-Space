@@ -53,7 +53,7 @@ public class GUIMachineDriveProcessor extends CompatContainerScreen<ContainerDri
             if (p > 0) GuiDraw.blit(graphics, TEXTURE, leftPos + 59, topPos + 63, 192F, 14F, p, 14, 256, 256);
         }
 
-        GuiDraw.text(graphics, font, machine.status, leftPos + 41, topPos + 86, 0xFFFFFF, false);
+        GuiDraw.text(graphics, font, machine.status.text(), leftPos + 41, topPos + 86, 0xFFFFFF, false);
     }
 
     @Override

@@ -35,6 +35,11 @@ public interface BodyOre {
         return item != null ? item.get() : block.asItem();
     }
 
+    static Item item(BlockState state) {
+        var block = state.getBlock();
+        return block instanceof BodyOre ? item(block, state.getValue(BlockBodyOre.BODY)) : block.asItem();
+    }
+
     static ItemStack stack(Block block, BlockState state) {
         return new ItemStack(item(block, state.getValue(BlockBodyOre.BODY)));
     }

@@ -45,8 +45,7 @@ public final class BedrockOreCommands {
         ItemStack stack = new ItemStack(ModOreBlocks.bedrock_ore_base.get());
         ItemBedrockOreBase.setOreAmount(level, stack, x, z, 1D);
         StringBuilder line = new StringBuilder("bedrock_sample ").append(dev.golem.core.Ids.keyId(level.dimension()))
-                .append(' ').append(ItemBedrockOreBase.COMPOSITION.get(stack).map(ItemBedrockOreBase.Composition::origin)
-                        .orElse("-"));
+                .append(' ').append(ItemBedrockOreBase.SAMPLE.get(stack).map(sample -> sample.set().id()).orElse("-"));
         for (BedrockOreType type : ItemBedrockOreBase.types(stack)) {
             line.append(' ').append(type.name()).append('=').append(ItemBedrockOreBase.getOreAmount(stack, type));
         }

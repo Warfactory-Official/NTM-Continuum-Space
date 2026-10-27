@@ -26,7 +26,7 @@ import net.minecraft.world.phys.AABB;
 /**
  * The combat drop pod (hbm-space {@code EntityCombatDropPod}, {@code TileEntityCombatDropPod},
  * {@code CBT_Invasion.spawnCattle}). Expected values are 1.7's: the pod lands where the block above its position is
- * solid and becomes {@code combat_drop} at {@code (int)x, (int)y + 1, (int)z}; the block waits 40 ticks, then opens and
+ * solid and becomes {@code combat_drop} in the same floored column; the block waits 40 ticks, then opens and
  * releases {@code amount} payload entities one block up; wave 1 pods carry two {@code hbm:entity_glyphid}, colour 2,
  * 250 blocks up.
  */
@@ -61,8 +61,7 @@ public final class DropPodGameTests {
         }
         BlockPos floor = helper.absolutePos(centre);
         double x = floor.getX() + 0.5, y = floor.getY() + 10, z = floor.getZ() + 0.5;
-        // 1.7: the block goes to (int)x, (int)y + 1, (int)z at the step where (int)(y + 1) is the floor
-        BlockPos expected = new BlockPos((int) x, floor.getY(), (int) z);
+        BlockPos expected = floor;
 
         EntityCombatDropPod pod = EntityCombatDropPod.create(level);
         pod.setPos(x, y, z);

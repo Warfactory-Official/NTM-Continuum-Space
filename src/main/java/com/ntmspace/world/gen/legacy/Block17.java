@@ -119,7 +119,9 @@ public final class Block17 {
     public static final Block17 ORE_BRINE = new Block17("ntmspace:ore_brine", true, false, BodyOres17.form("ore_brine"));
 
     // NTM: Space, Laythe and Tekto
-    public static final Block17 LAYTHE_SILT = new Block17("ntmspace:laythe_silt", true, false);
+    public static final Block17 LAYTHE_SILT = new Block17("ntmspace:laythe_silt", true, false,
+            meta -> "ntmspace:laythe_silt[shade=" + (meta == 6 ? 2 : meta == 3 ? 1 : 0) + "]");
+    public static final Block17 LAYTHE_ROOT = new Block17("ntmspace:laythe_root", true, false);
     /** Tekto's sea: hbm-space's {@code ccl_block}, a {@code GenericFluidBlock} of {@code Material.water}. */
     public static final Block17 CCL_BLOCK = new Block17("ntmspace:ccl_block", false, true);
     public static final Block17 RUBBER_GRASS = new Block17("ntmspace:rubber_grass", true, false);

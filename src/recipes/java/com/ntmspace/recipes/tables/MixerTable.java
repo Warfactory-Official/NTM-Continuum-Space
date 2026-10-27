@@ -60,7 +60,8 @@ public final class MixerTable extends GenericTableSource<GenericRecipe> {
         // hbm-space has only the oxygen row (HBM's air row, index 0, and oxygen row, index 1, are removed)
         remove("hbm:mixer/oxyhydrogen.0");
         remove("hbm:mixer/oxyhydrogen.1");
-        register(Fluids.OXYHYDROGEN, after("hbm:mixer/oxyhydrogen.0"), new MixerRecipe(1_000, 50).setStack1(new FluidStack(Fluids.HYDROGEN, 500)).setStack2(new FluidStack(Fluids.OXYGEN, 500)));
+        register("mixer.oxyhydrogen_oxygen", Fluids.OXYHYDROGEN, after("hbm:mixer/oxyhydrogen.0"),
+                new MixerRecipe(1_000, 50).setStack1(new FluidStack(Fluids.HYDROGEN, 500)).setStack2(new FluidStack(Fluids.OXYGEN, 500)));
 
         // after KEROSENE_REFORM
         register(SpaceFluids.SMILK, after("hbm:mixer/kerosene_reform.0"), new MixerRecipe(500, 50).setStack1(new FluidStack(SpaceFluids.MILK, 500)).setSolid(new TagStack(KEY_STRAWBERRY, 4)));
@@ -84,8 +85,8 @@ public final class MixerTable extends GenericTableSource<GenericRecipe> {
 
         // after ALUMINA
         register(SpaceFluids.CONGLOMERA, after("hbm:mixer/alumina.1"), new MixerRecipe(1000, 70).setStack1(new FluidStack(SpaceFluids.AQUEOUS_NICKEL, 250)).setSolid(new ComparableStack(PopulateBlocks.STONE_RESOURCE_CONGLOMERATE.get().asItem(), 1)));
-        // 1.7 NIM.dust(): the pentlandite chunk
-        register(SpaceFluids.AQUEOUS_NICKEL, after("hbm:mixer/alumina.1"), new MixerRecipe(1000, 80).setStack1(new FluidStack(SpaceFluids.BRINE, 250)).setSolid(new ComparableStack(SpaceMachineItems.CHUNK_ORE_PENTLANDITE.get())));
+        // 1.7 NIM.dust(): the generic-nickel tag, which the pentlandite chunk joins.
+        register(SpaceFluids.AQUEOUS_NICKEL, after("hbm:mixer/alumina.1"), new MixerRecipe(1000, 80).setStack1(new FluidStack(SpaceFluids.BRINE, 250)).setSolid(new TagStack(tag("c", "dusts/nickel"), 1)));
         register(SpaceFluids.AQUEOUS_COPPER, after("hbm:mixer/alumina.1"), new MixerRecipe(1000, 80).setStack1(new FluidStack(SpaceFluids.BRINE, 250)).setSolid(new ComparableStack(ModIntermediateItems.chunk(EnumChunkType.MALACHITE), 1)));
 
         // after PERFLUOROMETHYL
@@ -112,16 +113,21 @@ public final class MixerTable extends GenericTableSource<GenericRecipe> {
         for (int i = 0; i < rec.length; i++) {
             MixerRecipe entry = rec[i];
             if (entry == UNCHANGED) continue;
-            GenericRecipe row = new GenericRecipe("mixer." + type.getName().toLowerCase(Locale.ROOT) + "." + i)
-                    .setup(entry.processTime, 0)
-                    .outputFluids(new FluidStack(type, entry.output));
-            if (entry.solidInput != null) row.inputItems(entry.solidInput);
-            if (entry.input1 != null && entry.input2 != null) row.inputFluids(entry.input1, entry.input2);
-            else if (entry.input1 != null) row.inputFluids(entry.input1);
-            else if (entry.input2 != null) row.inputFluids(entry.input2);
-            if (order != null) row.order = order;
-            register(row);
+            register("mixer." + type.getName().toLowerCase(Locale.ROOT) + "." + i, type, order, entry);
         }
+    }
+
+    /** One row under an id of its own (a Space replacement keeping its 1.7-descriptive name). */
+    private void register(String id, FluidType type, Integer order, MixerRecipe entry) {
+        GenericRecipe row = new GenericRecipe(id)
+                .setup(entry.processTime, 0)
+                .outputFluids(new FluidStack(type, entry.output));
+        if (entry.solidInput != null) row.inputItems(entry.solidInput);
+        if (entry.input1 != null && entry.input2 != null) row.inputFluids(entry.input1, entry.input2);
+        else if (entry.input1 != null) row.inputFluids(entry.input1);
+        else if (entry.input2 != null) row.inputFluids(entry.input2);
+        if (order != null) row.order = order;
+        register(row);
     }
 
     /** The order of the HBM row a row follows (or, for a changed row, replaces). */

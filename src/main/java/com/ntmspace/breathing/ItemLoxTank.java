@@ -23,26 +23,26 @@ import net.minecraft.world.level.Level;
  */
 public class ItemLoxTank extends CompatItem {
 
+    private static final int CHARGE = 1000;
+
     public ItemLoxTank(Properties properties) {
         super(properties);
     }
 
     @Override
     protected InteractionResult compatUse(Level level, Player player, InteractionHand hand) {
-        ItemStack stack = player.getItemInHand(hand);
-        ItemStack helmet = player.getItemBySlot(EquipmentSlot.HEAD);
-        if (helmet.isEmpty()) return InteractionResult.TRY_WITH_EMPTY_HAND;
-        if (!level.isClientSide() && ArmorModHandler.hasMods(helmet)) {
-            ItemStack tankStack = ArmorModHandler.pryMod(helmet, ArmorModHandler.plate_only);
-            if (tankStack.isEmpty() || !(tankStack.getItem() instanceof IFillableItem fillable)) return InteractionResult.TRY_WITH_EMPTY_HAND;
-            if (!fillable.acceptsFluid(Fluids.OXYGEN, tankStack)) return InteractionResult.TRY_WITH_EMPTY_HAND;
+        if (level.isClientSide()) return InteractionResult.SUCCESS;
+        var helmet = player.getItemBySlot(EquipmentSlot.HEAD);
+        if (!ArmorModHandler.hasMods(helmet)) return InteractionResult.TRY_WITH_EMPTY_HAND;
+        var tankStack = ArmorModHandler.pryMod(helmet, ArmorModHandler.plate_only);
+        if (!(tankStack.getItem() instanceof IFillableItem fillable)
+                || !fillable.acceptsFluid(Fluids.OXYGEN, tankStack)) return InteractionResult.TRY_WITH_EMPTY_HAND;
+        if (fillable.tryFill(Fluids.OXYGEN, CHARGE, tankStack) >= CHARGE) return InteractionResult.TRY_WITH_EMPTY_HAND;
 
-            if (fillable.tryFill(Fluids.OXYGEN, 1000, tankStack) < 1000) {
-                level.playSound(null, player.getX(), player.getY(), player.getZ(), ModSounds.JETPACK_TANK.get(), SoundSource.PLAYERS, 1.0F, 1.0F);
-                stack.shrink(1);
-            }
-            ArmorModHandler.applyMod(helmet, tankStack);
-        }
+        ArmorModHandler.applyMod(helmet, tankStack);
+        var stack = player.getItemInHand(hand);
+        if (!player.getAbilities().instabuild) stack.shrink(1);
+        level.playSound(null, player.getX(), player.getY(), player.getZ(), ModSounds.JETPACK_TANK.get(), SoundSource.PLAYERS, 1.0F, 1.0F);
         return InteractionResult.SUCCESS;
     }
 

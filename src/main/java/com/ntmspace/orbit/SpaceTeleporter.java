@@ -5,7 +5,6 @@ import dev.golem.core.world.Teleports;
 import java.util.ArrayDeque;
 import java.util.Queue;
 import java.util.UUID;
-import net.minecraft.core.BlockPos;
 import net.minecraft.resources.ResourceKey;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerLevel;
@@ -13,21 +12,13 @@ import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.util.Mth;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.level.Level;
+import net.minecraft.world.level.levelgen.Heightmap;
+import net.minecraft.world.phys.Vec3;
 
 /**
- * hbm-space's {@code CelestialTeleporter}: moving an entity between bodies and the orbit level. The move is queued and
- * run from the server tick, one per level per tick (1.7 polled the queue once per world tick end), never from inside
- * an entity's own update. Rockets, the orbit fall and {@code /ntmstations} call {@link #teleport}.
- *
- * <ul>
- *   <li>{@code grounded}: the y is replaced by 5 above the topmost non-air block of the target column (1.7
- *       {@code placeInPortal}; the column's chunk is loaded or generated for it). Otherwise the target chunk is just
- *       loaded and the y kept (a fall from orbit starts at y 800).</li>
- *   <li>A vehicle carrying a player is moved by moving the player: the player is sent first, the vehicle after it
- *       (vanilla recreates it in the target level with the same UUID), then the player is put back in it and the
- *       vehicle told ({@link StationDock#teleportedWith}, 1.7's "rocket stickiness").</li>
- * </ul>
- * 1.7's extra {@code setPositionAndUpdate(x, 900, z)} after remounting was a client refresh hack and is not ported.
+ * Moves an entity, its root vehicle and its passengers between bodies and the orbit level. On versions with vanilla
+ * passenger transitions the move runs immediately; a caller iterating the departing level's players iterates a copy.
+ * Older versions retain the end-of-tick transfer and remount worker.
  */
 public final class SpaceTeleporter {
 
@@ -47,16 +38,36 @@ public final class SpaceTeleporter {
     }
 
     /**
-     * Queues moving {@code entity} to {@code x, y, z} of {@code target}. Ignored when the entity is in that level
-     * already (1.7: "ignore if we're teleporting to the same place"), and on the client.
+     * Moves {@code entity} to {@code x, y, z} of {@code target}. Ignored when the entity is in that level already,
+     * and on the client. Refuses a destination whose server level does not exist.
      */
     public static synchronized void teleport(Entity entity, ResourceKey<Level> target, double x, double y, double z, boolean grounded) {
         if (entity.level().dimension().equals(target)) return;
         if (entity.level().isClientSide()) return;
+        var server = ((ServerLevel) entity.level()).getServer();
+        if (Teleports.defersTransfers()) {
+            targetLevel(server, target);
+            QUEUE.add(new Pending(entity, target, x, y, z, grounded));
+        } else {
+            run(server, new Pending(entity, target, x, y, z, grounded));
+        }
+    }
+
+    /** Defers a move until the player-copy callback has finished placing the new player in its respawn level. */
+    public static synchronized void teleportAfterRespawn(Entity entity, ResourceKey<Level> target,
+                                                          double x, double y, double z, boolean grounded) {
+        if (entity.level().dimension().equals(target) || entity.level().isClientSide()) return;
+        targetLevel(((ServerLevel) entity.level()).getServer(), target);
         QUEUE.add(new Pending(entity, target, x, y, z, grounded));
     }
 
-    /** How many moves wait (GameTests). */
+    private static ServerLevel targetLevel(MinecraftServer server, ResourceKey<Level> target) {
+        var level = server.getLevel(target);
+        if (level == null) throw new IllegalArgumentException("no level is declared for " + target);
+        return level;
+    }
+
+    /** How many deferred moves wait. */
     public static synchronized int pending() {
         return QUEUE.size();
     }
@@ -77,12 +88,9 @@ public final class SpaceTeleporter {
 
     /** Runs one move now (the queue's worker; GameTests call it directly). */
     static void run(MinecraftServer server, Pending pending) {
-        ServerLevel targetLevel = server.getLevel(pending.target);
-        if (targetLevel == null) return;
+        var targetLevel = targetLevel(server, pending.target);
         Entity entity = pending.entity;
 
-        // If this entity got teleported with a player rider, switch to the rider!
-        if (entity.getFirstPassenger() instanceof ServerPlayer rider) entity = rider;
         if (entity.isRemoved()) return;
         // queued twice before the first ran (the orbit fall asks every tick): the second finds it there already
         if (entity.level().dimension().equals(pending.target)) return;
@@ -90,6 +98,12 @@ public final class SpaceTeleporter {
         double x = pending.x, y = pending.y, z = pending.z;
         y = placeY(targetLevel, x, y, z, pending.grounded);
 
+        var position = new Vec3(x, y, z);
+        // Modern vanilla moves the root with its passengers at once; legacy moves player and craft separately below.
+        if (Teleports.transferRoot(entity.getRootVehicle(), targetLevel, position, SpaceTeleporter::teleported)) return;
+
+        // A player drives the older transfer path so it can remount the recreated craft.
+        if (entity.getFirstPassenger() instanceof ServerPlayer rider) entity = rider;
         if (entity instanceof ServerPlayer player) {
             Entity vehicle = player.getVehicle();
             if (vehicle != null && vehicle.isAlive()) {
@@ -109,6 +123,15 @@ public final class SpaceTeleporter {
             }
         } else {
             Teleports.toLevel(entity, targetLevel, x, y, z);
+        }
+    }
+
+    // Vanilla invokes this after the transferred entity's passengers have been put back aboard.
+    private static void teleported(Entity moved) {
+        if (moved instanceof StationDock dock) {
+            for (var passenger : moved.getPassengers()) {
+                if (passenger instanceof ServerPlayer player) dock.teleportedWith(player);
+            }
         }
     }
 
@@ -144,15 +167,12 @@ public final class SpaceTeleporter {
 
     /** 1.7 {@code placeInPortal}: the y the entity arrives at. */
     static double placeY(ServerLevel target, double x, double y, double z, boolean grounded) {
-        int ix = (int) x;
-        int iz = (int) z;
-        if (grounded) {
-            for (int i = target.getMaxY() + 1; i > target.getMinY(); i--) {
-                if (!target.getBlockState(new BlockPos(ix, i, iz)).isAir()) return i + 5;
-            }
-            return y;
-        }
-        target.getBlockState(new BlockPos(ix, Mth.clamp((int) y, 1, 255), iz)); // dummy load to maybe gen chunk
-        return y;
+        int ix = Mth.floor(x);
+        int iz = Mth.floor(z);
+        // Loads, or generates, the arrival chunk before consulting its surface height.
+        var chunk = target.getChunk(ix >> 4, iz >> 4);
+        if (!grounded) return y;
+        int top = chunk.getHeight(Heightmap.Types.WORLD_SURFACE, ix, iz);
+        return top > target.getMinY() ? top + 5 : y;
     }
 }

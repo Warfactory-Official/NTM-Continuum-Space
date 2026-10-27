@@ -27,7 +27,9 @@ public class TektoTerrain17 extends LayeredBodyTerrain17 {
     private final MapGenVolcano17 volcano = new MapGenVolcano17(12);
 
     private final MapGenBubble tektonic = new MapGenBubble(OIL_SPAWN);
-    private final MapGenBedrockOil17 bedtonic = new MapGenBedrockOil17(BEDROCK_OIL_SPAWN);
+    public static final MapGenBedrockOil17.Config BEDROCK_OIL = new MapGenBedrockOil17.Config(
+            Block17.ORE_BEDROCK_OIL, TEKTO_META, Block17.BASALT, MapGenBedrockOil17.TEKTO_SCARS);
+    private final MapGenBedrockOil17 bedtonic = BEDROCK_OIL.create(BEDROCK_OIL_SPAWN);
 
     private final long sessionSeed;
     /** Stands in for {@code Math.random()} in the surface pass; reseeded per chunk. */
@@ -64,16 +66,17 @@ public class TektoTerrain17 extends LayeredBodyTerrain17 {
         tektonic.replace = Block17.BASALT;
         tektonic.setSize(8, 16);
 
-        bedtonic.replace = Block17.BASALT;
-        bedtonic.meta = TEKTO_META;
-
         stoneBlock = Block17.BASALT;
         seaBlock = Block17.CCL_BLOCK;
     }
 
     @Override
-    protected Primer getChunkPrimer(int x, int z) {
+    protected void prepareSurface(int x, int z) {
         mathRandom.setSeed(sessionSeed ^ ((long) x * 341873128712L + (long) z * 132897987541L));
+    }
+
+    @Override
+    protected Primer getChunkPrimer(int x, int z) {
         Primer buffer = super.getChunkPrimer(x, z);
         tektonic.setMetas(buffer.metas);
         bedtonic.setMetas(buffer.metas);
@@ -106,6 +109,7 @@ public class TektoTerrain17 extends LayeredBodyTerrain17 {
             this.rootHeight = rootHeight;
             this.heightVariation = heightVariation;
             this.topBlock = top;
+            this.waterColorMultiplier = PURPLE_WATER_MULTIPLIER;
             this.fillerBlock = filler;
             this.rock = river ? Block17.DUNA_ROCK : Block17.BASALT;
             this.smooth = river ? Block17.DUNA_SANDS : Block17.BASALT_SMOOTH;

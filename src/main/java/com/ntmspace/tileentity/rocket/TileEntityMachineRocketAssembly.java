@@ -1,5 +1,8 @@
 package com.ntmspace.tileentity.rocket;
 
+import java.util.function.Consumer;
+import com.ntmspace.satellite.SpaceSatellites;
+
 import com.hbm.items.ISatChip;
 import com.hbm.tileentity.TileEntityMachineBase;
 import com.ntmspace.block.rocket.MachineRocketAssembly;
@@ -40,9 +43,17 @@ import org.jspecify.annotations.Nullable;
  */
 public class TileEntityMachineRocketAssembly extends TileEntityMachineBase implements MenuProvider {
 
+    public static final int SLOT_CAPSULE = 0;
     public static final int SLOT_RESULT = 1 + RocketStruct.MAX_STAGES * 3;
     public static final int SLOT_DRIVES = SLOT_RESULT + 1;
     public static final int SLOT_COUNT = SLOT_DRIVES + RocketStruct.MAX_STAGES * 2;
+    public static final int STACK_LIMIT = 8;
+
+    public static int fuselage(int stage) { return 1 + stage * 3; }
+    public static int fins(int stage) { return 2 + stage * 3; }
+    public static int thruster(int stage) { return 3 + stage * 3; }
+    public static int driveFrom(int stage) { return SLOT_DRIVES + stage * 2; }
+    public static int driveTo(int stage) { return driveFrom(stage) + 1; }
 
     public RocketStruct rocket = new RocketStruct();
 
@@ -64,12 +75,17 @@ public class TileEntityMachineRocketAssembly extends TileEntityMachineBase imple
 
     /** The "from" and "to" drives of the stage the screen shows. */
     public ItemStack fromDrive() {
-        return getItem(SLOT_DRIVES + currentStage * 2);
+        return getItem(driveFrom(currentStage));
     }
 
     public ItemStack toDrive() {
-        return getItem(SLOT_DRIVES + currentStage * 2 + 1);
+        return getItem(driveTo(currentStage));
     }
+
+    public int spireHeight() {
+        return platforms.isEmpty() ? 0 : Math.min(platforms.get(platforms.size() - 1), level.getMaxY() - 1 - worldPosition.getY());
+    }
+    public int[] platforms() { return platforms.stream().mapToInt(Integer::intValue).toArray(); }
 
     public static void serverTick(Level level, BlockPos pos, BlockState state, TileEntityMachineRocketAssembly te) {
         // updates the orbital station information and syncs it to the client, if necessary
@@ -85,7 +101,7 @@ public class TileEntityMachineRocketAssembly extends TileEntityMachineBase imple
         }
 
         if (te.platformFailed) {
-            te.rocket.addIssue(Component.literal("VAB ceiling too low ").withStyle(ChatFormatting.RED));
+            te.rocket.addIssue(Component.translatable("desc.gui.rocket.ceilingTooLow").withStyle(ChatFormatting.RED));
         }
 
         te.networkPackNT();
@@ -129,7 +145,7 @@ public class TileEntityMachineRocketAssembly extends TileEntityMachineBase imple
 
         // Check headroom
         int maxHeight = Integer.MAX_VALUE;
-        for (int h = 1; h < 256; h++) {
+        for (int h = 1; y + h < level.getMaxY(); h++) {
             BlockState above = level.getBlockState(new BlockPos(x, y + h, z));
             if (!above.canBeReplaced() && above.getBlock() != block) {
                 maxHeight = h;
@@ -161,12 +177,12 @@ public class TileEntityMachineRocketAssembly extends TileEntityMachineBase imple
 
             // Create a central spire (required so the VAB can be broken properly)
             for (int i = 1; i < targetHeight + 1; i++) {
-                if (y + i > 255) break;
+                if (y + i >= level.getMaxY()) break;
                 for (int[] spire : SPIRES) placeCell(level, block, new BlockPos(x + spire[0], y + i, z + spire[1]));
             }
 
             for (int[] spire : SPIRES) {
-                for (int i = targetHeight + 1; i < 256; i++) {
+                for (int i = targetHeight + 1; y + i < level.getMaxY(); i++) {
                     BlockPos at = new BlockPos(x + spire[0], y + i, z + spire[1]);
                     if (level.getBlockState(at).getBlock() != block) break;
                     removeCell(level, block, at);
@@ -214,9 +230,9 @@ public class TileEntityMachineRocketAssembly extends TileEntityMachineBase imple
     }
 
     /** Every position a platform or spire may occupy, for the teardown. */
-    public static void visitDynamicCells(BlockPos core, java.util.function.Consumer<BlockPos> visitor) {
+    public static void visitDynamicCells(Level level, BlockPos core, Consumer<BlockPos> visitor) {
         BlockPos.MutableBlockPos pos = new BlockPos.MutableBlockPos();
-        for (int h = 1; h < 256; h++) {
+        for (int h = 1; core.getY() + h < level.getMaxY(); h++) {
             for (int x = -4; x <= 4; x++) {
                 for (int z = -4; z <= 4; z++) {
                     visitor.accept(pos.set(core.getX() + x, core.getY() + h, core.getZ() + z));
@@ -228,10 +244,9 @@ public class TileEntityMachineRocketAssembly extends TileEntityMachineBase imple
     // ---------------------------------------------------------------------------------------- build
 
     public void construct() {
-        if (!rocket.validate()) return;
+        if (!getItem(SLOT_RESULT).isEmpty() || !rocket.validate()) return;
 
         ItemStack stack = ItemCustomRocket.build(rocket);
-        if (rocket.satFreq != 0) ISatChip.setFreqS(stack, rocket.satFreq);
         setItem(SLOT_RESULT, stack);
 
         for (int i = 0; i < SLOT_RESULT; i++) {
@@ -258,6 +273,7 @@ public class TileEntityMachineRocketAssembly extends TileEntityMachineBase imple
         ItemStack capsule = built.capsule != null ? new ItemStack(built.capsule.item()) : ItemStack.EMPTY;
         if (capsule.getItem() instanceof ISatChip) {
             ISatChip.setFreqS(capsule, satFreq);
+            SpaceSatellites.ORBIT.get(source).ifPresent(settings -> SpaceSatellites.ORBIT.set(capsule, settings));
         }
         setItem(0, capsule);
         for (int i = 0; i < built.stages.size(); i++) {
@@ -276,13 +292,17 @@ public class TileEntityMachineRocketAssembly extends TileEntityMachineBase imple
     /** 1.7 {@code getInventoryStackLimit}. */
     @Override
     public int getMaxStackSize() {
-        return 8;
+        return STACK_LIMIT;
     }
 
     /** 1.7 {@code isBreaking}: the drive slots hold ghost copies, which are not dropped. */
+    public boolean dropsSlot(int slot) {
+        return slot < SLOT_DRIVES;
+    }
+
     @Override
     public void preRemoveSideEffects(BlockPos pos, BlockState state) {
-        for (int i = SLOT_DRIVES; i < SLOT_COUNT; i++) setItem(i, ItemStack.EMPTY);
+        for (var i = 0; i < SLOT_COUNT; i++) if (!dropsSlot(i)) setItem(i, ItemStack.EMPTY);
         super.preRemoveSideEffects(pos, state);
     }
 

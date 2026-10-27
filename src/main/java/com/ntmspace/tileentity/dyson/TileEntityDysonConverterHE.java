@@ -51,7 +51,7 @@ public class TileEntityDysonConverterHE extends TileEntityLoadedBase implements 
     private PortDef[] cachedPorts;
 
     public PortDef[] getPorts() {
-        if (cachedPorts == null) cachedPorts = MachinePorts.ports(getBlockState(), worldPosition, output(worldPosition, MachineCore.facing(getBlockState())));
+        if (cachedPorts == null) cachedPorts = MachinePorts.ports(level, getBlockState(), worldPosition, output(worldPosition, MachineCore.facing(getBlockState())));
         return cachedPorts;
     }
 

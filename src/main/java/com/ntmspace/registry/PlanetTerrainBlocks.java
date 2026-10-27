@@ -6,6 +6,7 @@ import com.hbm.items.block.DecoBlockItem;
 import com.hbm.registration.Presets;
 import com.ntmspace.NtmSpace;
 import dev.golem.core.registry.BlockTag;
+import dev.golem.core.dejson.Tags;
 import dev.golem.core.registry.DeferredRegister;
 import dev.golem.core.registry.Loot;
 import dev.golem.core.registry.Registrar;
@@ -25,6 +26,8 @@ import net.minecraft.world.level.block.SoundType;
  */
 public final class PlanetTerrainBlocks {
 
+    public static final BlockTag PUMP_GROUND = BlockTag.of("hbm:pump_ground");
+
     public static final DeferredRegister.Blocks BLOCKS = DeferredRegister.createBlocks(NtmSpace.MOD_ID);
     public static final DeferredRegister.Items ITEMS = DeferredRegister.createItems(NtmSpace.MOD_ID);
     private static final Registrar REG = Registrar.of(BLOCKS, ITEMS);
@@ -34,19 +37,19 @@ public final class PlanetTerrainBlocks {
     /** 1.7: {@code BlockFalling(Material.sand)}, hardness 0.5, sand sound. */
     public static final RegistryObject<BlockFallingBase> EVE_SILT = REG.block("eve_silt", BlockFallingBase::new,
                     p -> p.strength(0.5F).sound(SoundType.SAND))
-            .transform(Presets.cubeAll()).loot(Loot.self()).tag(BlockTag.SHOVEL);
+            .transform(Presets.cubeAll()).loot(Loot.self()).tag(BlockTag.SHOVEL).tag(PUMP_GROUND);
     public static final RegistryObject<BlockItem> EVE_SILT_ITEM = REG.blockItem(EVE_SILT).tab(HbmTab.BLOCKS);
 
     /** 1.7: {@code BlockGeneric(Material.rock)}, hardness 1.5, resistance 10, stone sound; texture {@code eve_stone_2}. */
     public static final RegistryObject<Block> EVE_ROCK = REG.simpleBlock("eve_rock", PlanetTerrainBlocks::rock)
-            .transform(Presets.cubeAll("ntmspace:blocks/eve_stone_2")).loot(Loot.self()).tag(BlockTag.PICKAXE);
+            .transform(Presets.cubeAll("ntmspace:blocks/eve_stone_2")).loot(Loot.self()).tag(BlockTag.PICKAXE).tag(PUMP_GROUND);
     public static final RegistryObject<BlockItem> EVE_ROCK_ITEM = REG.blockItem(EVE_ROCK).tab(HbmTab.BLOCKS);
 
     // ---------------------------------------------------------------- Moho
 
     /** 1.7: {@code BlockGeneric(Material.rock)}, hardness 1.5, resistance 10, stone sound. */
     public static final RegistryObject<Block> MOHO_REGOLITH = REG.simpleBlock("moho_regolith", PlanetTerrainBlocks::rock)
-            .transform(Presets.cubeAll()).loot(Loot.self()).tag(BlockTag.PICKAXE);
+            .transform(Presets.cubeAll()).loot(Loot.self()).tag(BlockTag.PICKAXE).tag(PUMP_GROUND);
     public static final RegistryObject<BlockItem> MOHO_REGOLITH_ITEM = REG.blockItem(MOHO_REGOLITH).tab(HbmTab.BLOCKS);
 
     public static final RegistryObject<Block> MOHO_STONE = REG.simpleBlock("moho_stone", PlanetTerrainBlocks::rock)
@@ -65,16 +68,22 @@ public final class PlanetTerrainBlocks {
 
     /**
      * 1.7: texture {@code minflat_regolith}, registered with {@code ItemBlockLore}, whose tooltip is the
-     * {@code .desc} translation (grey, as 1.7 drew every tooltip line after the name).
+     * {@code .desc} translation (grey, as 1.7 drew every tooltip line after the name). The line uses the
+     * {@code desc} key so imported upstream rows can find it.
      */
     public static final RegistryObject<Block> MINMUS_SMOOTH = REG.simpleBlock("minmus_smooth", PlanetTerrainBlocks::rock)
-            .transform(Presets.cubeAll("ntmspace:blocks/minflat_regolith")).loot(Loot.self()).tag(BlockTag.PICKAXE);
+            .transform(Presets.cubeAll("ntmspace:blocks/minflat_regolith")).loot(Loot.self()).tag(BlockTag.PICKAXE).tag(PUMP_GROUND);
     private static final Supplier<Component> MINMUS_SMOOTH_DESC =
-            () -> Component.translatable("block.ntmspace.minmus_smooth.desc").withStyle(ChatFormatting.GRAY);
+            () -> Component.translatable("desc.ntmspace.minmus_smooth.line1").withStyle(ChatFormatting.GRAY);
     public static final RegistryObject<DecoBlockItem> MINMUS_SMOOTH_ITEM = REG.item("minmus_smooth",
                     (net.minecraft.world.item.Item.Properties p) -> new DecoBlockItem(MINMUS_SMOOTH.get(),
                             dev.golem.core.world.Compat.blockDescription(p), List.of(MINMUS_SMOOTH_DESC)))
             .tab(HbmTab.BLOCKS);
+
+    static {
+        // 1.7 TileEntityMachinePumpBase.validBlocks also includes the shared Mun soil.
+        Tags.member("block", "hbm", "pump_ground", "hbm:moon_turf");
+    }
 
     private PlanetTerrainBlocks() {}
 

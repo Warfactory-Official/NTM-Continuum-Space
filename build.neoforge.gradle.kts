@@ -1,3 +1,4 @@
+
 plugins {
     id("java-library")
     id("net.neoforged.moddev") version "2.0.141"
@@ -30,6 +31,10 @@ val probe = sourceSets.create("probe") {
     runtimeClasspath += sourceSets["main"].output + sourceSets["main"].runtimeClasspath
 }
 
+// The opt-in imported suite shares the real mod and has no native probe content.
+val importedTests = sourceSets.findByName("upstreamTests")
+val devRunSource = importedTests ?: probe
+
 // The NeoForge this build runs on: deps.neoforge, or deps.neoforge_kubejs in a -Pkubejs.run=true dev run (KubeJS may need
 // an older build; see versions/*/gradle.properties). Release jars always use deps.neoforge.
 val neoforgeVersion = propOrNull("deps.neoforge_kubejs")?.takeIf { propOrNull("kubejs.run") == "true" } ?: prop("deps.neoforge")
@@ -41,9 +46,9 @@ neoForge {
 
     runs {
         configureEach {
-            systemProperty("neoforge.enabledGameTestNamespaces", "$modId,ntmprobe")
+            systemProperty("neoforge.enabledGameTestNamespaces", if (importedTests == null) "$modId,ntmprobe" else modId)
             ideName = "NTM: Space NeoForge ${name.replaceFirstChar { it.uppercase() }} ($mcVersion)"
-            sourceSet = probe
+            sourceSet = devRunSource
         }
         register("client") {
             client()
@@ -65,13 +70,20 @@ neoForge {
     }
 
     mods {
-        register(modId) { sourceSet(sourceSets["main"]) }
-        register("ntmprobe") { sourceSet(probe) }
+        register(modId) {
+            sourceSet(sourceSets["main"])
+            if (importedTests != null) sourceSet(importedTests)
+        }
+        if (importedTests == null) register("ntmprobe") { sourceSet(probe) }
     }
 }
 
 repositories {
     mavenCentral()
+    exclusiveContent {
+        forRepository { maven("https://api.modrinth.com/maven") { name = "Modrinth" } }
+        filter { includeGroup("maven.modrinth") }
+    }
     maven("https://maven.blamejared.com") { name = "BlameJared" }
 }
 
@@ -117,7 +129,7 @@ val modProps = mapOf(
 /** The node's resource templating, shared by the mod's resources and the recipe generator's copy of them. */
 fun ProcessResources.expandModResources() {
     inputs.properties(modProps)
-    filesMatching(listOf("META-INF/neoforge.mods.toml", "pack.mcmeta")) { expand(modProps) }
+    filesMatching(listOf("META-INF/neoforge.mods.toml", "pack.mcmeta", "*.mixins.json")) { expand(modProps) }
     exclude("fabric.mod.json", "data/$modId/forge/**", "META-INF/mods.toml")
 }
 
@@ -193,7 +205,8 @@ if (project.name == "26.1-neoforge") {
             // The generator's mod group repeats NTM: Space's classes and resources without the generated rows: every other
             // run loads the mod's own groups only, or it would hold two copies of the mod and could pick the one without them.
             matching { it.name != "generateData" }.configureEach {
-                loadedMods.set(setOf(mods.getByName(modId), mods.getByName("ntmprobe")))
+                loadedMods.set(if (importedTests == null)
+                    setOf(mods.getByName(modId), mods.getByName("ntmprobe")) else setOf(mods.getByName(modId)))
             }
             // HBM's generator run, for this mod: a headless GameTest server that writes once started and halts.
             register("generateData") {

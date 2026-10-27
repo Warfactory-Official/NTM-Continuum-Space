@@ -40,13 +40,20 @@ public final class SolarSystemSavedData extends CompatSavedData<SolarSystemSaved
         }
         Map<Class<? extends CelestialBodyTrait>, CelestialBodyTrait> newTraits = new HashMap<>();
         for (CelestialBodyTrait trait : traits) newTraits.put(trait.getClass(), trait);
+        retireInvasion(traitMap.get(bodyName), newTraits);
         traitMap.put(bodyName, newTraits);
         setDirty();
     }
 
     public void clearTraits(String bodyName) {
-        traitMap.remove(bodyName);
+        retireInvasion(traitMap.remove(bodyName), Map.of());
         setDirty();
+    }
+
+    private static void retireInvasion(@Nullable Map<Class<? extends CelestialBodyTrait>, CelestialBodyTrait> previous,
+                                       Map<Class<? extends CelestialBodyTrait>, CelestialBodyTrait> current) {
+        if (previous != null && previous.get(CBT_Invasion.class) instanceof CBT_Invasion invasion
+                && current.get(CBT_Invasion.class) != invasion) invasion.removeBar();
     }
 
     /** The live traits of {@code bodyName}, or null when it has none saved (it then has its defaults). */

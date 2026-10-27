@@ -29,6 +29,7 @@ import net.minecraft.world.item.Items;
 import net.minecraft.world.level.GameType;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.Blocks;
+import net.minecraft.world.level.block.state.BlockState;
 
 /**
  * hbm-space's non-space fork content (package {@code com.ntmspace.fork} and its data rows) against the hbm-space source:
@@ -311,7 +312,7 @@ public final class ForkGameTests {
         finish(helper, errors);
     }
 
-    private static net.minecraft.world.level.block.state.BlockState bodyState(String id, String body) {
+    static BlockState bodyState(String id, String body) {
         Block block = block(id);
         if (block == Blocks.AIR) return null;
         var prop = block.getStateDefinition().getProperty("body");
@@ -464,7 +465,7 @@ public final class ForkGameTests {
         return BuiltInRegistries.ITEM.getOptional(Ids.parse(id)).orElse(Items.AIR);
     }
 
-    private static Block block(String id) {
+    static Block block(String id) {
         return BuiltInRegistries.BLOCK.getOptional(Ids.parse(id)).orElse(Blocks.AIR);
     }
 

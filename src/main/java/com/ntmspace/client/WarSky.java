@@ -1,5 +1,6 @@
 package com.ntmspace.client;
 
+import com.ntmspace.world.SkyMath;
 import com.hbm.client.model.WavefrontObj;
 import com.mojang.blaze3d.vertex.PoseStack;
 import com.mojang.math.Axis;
@@ -81,13 +82,7 @@ public final class WarSky implements Skyboxes.Skybox {
 
     /** {@code WorldProviderCelestial.getSunBrightness}'s "brightness inside of the atmosphere": {@code 100 - flash} each. */
     public static float insideBrightness(Level level) {
-        float add = 0;
-        CBT_War war = CelestialTraits.getTrait(level, CBT_War.class);
-        if (war == null) return 0;
-        for (CBT_War.Projectile projectile : war.getProjectiles()) {
-            if (projectile.getAnimtime() > 0) add += 100 - projectile.getFlashtime();
-        }
-        return add;
+        return SkyMath.insideBrightness(CelestialTraits.getTrait(level, CBT_War.class));
     }
 
     // ------------------------------------------------------------------------------------------------ meteors

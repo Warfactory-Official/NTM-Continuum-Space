@@ -1,5 +1,11 @@
 package com.ntmspace.fluid.trait;
 
+import com.ntmspace.registry.DunaBlocks;
+import com.ntmspace.registry.LaytheTektoBlocks;
+import com.ntmspace.world.SolarSystem;
+import java.util.Locale;
+import net.minecraft.world.level.block.Block;
+import net.minecraft.world.level.block.Blocks;
 import com.google.gson.JsonObject;
 import com.hbm.api.fluid.TooltipTrait;
 import com.hbm.inventory.fluid.FluidProperties;
@@ -9,9 +15,9 @@ import net.minecraft.network.chat.Component;
 
 /**
  * The fluid traits hbm-space adds to 1.7's {@code FluidTrait} registry ({@code rocket}, {@code terraformer}, {@code uk},
- * {@code explosive}), added to HBM's {@code fluid_property} format in the {@code ntmspace} namespace. Only
- * {@link FT_Rocket} is on any of hbm-space's fluids; the other three were registered for its trait config file and are
- * kept for datapacks that set them.
+ * {@code explosive}), added to HBM's {@code fluid_property} format in the {@code ntmspace} namespace.
+ * Propellants carry {@link FT_Rocket}; ammonia carries the authored Duna {@link FT_Terraformer}. The remaining
+ * registered traits are available to fluid property datapacks.
  */
 public final class SpaceFluidTraits {
 
@@ -62,12 +68,22 @@ public final class SpaceFluidTraits {
         private final String body;
 
         public FT_Terraformer(String body) {
-            this.body = body;
+            var target = SolarSystem.body(body.toLowerCase(Locale.ROOT));
+            this.body = target.name.toUpperCase(Locale.ROOT);
         }
 
         /** The 1.7 {@code SolarSystem.Body} name ({@code DUNA}, {@code LAYTHE}, ...). */
         public String getBody() {
             return body;
+        }
+
+        /** The exact soil that the configured body lets this fluid terraform. */
+        public Block getTargetBlock() {
+            return switch (body) {
+                case "DUNA" -> DunaBlocks.DUNA_SANDS.get();
+                case "LAYTHE" -> LaytheTektoBlocks.LAYTHE_SILT.get();
+                default -> Blocks.STONE;
+            };
         }
 
         /** hbm-space {@code FT_Terraformer.addInfo}. */

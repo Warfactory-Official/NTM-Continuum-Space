@@ -271,7 +271,7 @@ public final class ForkGameTests3 {
         machine.setDamaged(true);
         List<ItemStack> drops = Block.getDrops(level.getBlockState(core), level, core, level.getBlockEntity(core));
         ItemStack damaged = drops.stream().filter(s -> s.is(condenser.asItem())).findFirst().orElse(ItemStack.EMPTY);
-        if (damaged.isEmpty() || !ItemStacks.carriedBoolean(damaged, "damaged")) errors.add("a damaged condenser dropped " + drops);
+        if (damaged.isEmpty() || !DamagedMachines.carriedDamage(damaged)) errors.add("a damaged condenser dropped " + drops);
         BlockPos other = helper.absolutePos(new BlockPos(4, 2, 10));
         level.setBlock(other, condenser.defaultBlockState(), 3);
         if (level.getBlockEntity(other) instanceof DamagedMachines.Damageable placed) {

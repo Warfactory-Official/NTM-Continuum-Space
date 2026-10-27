@@ -1,12 +1,10 @@
 package com.ntmspace.entity.mob.siege;
 
-import com.hbm.items.ItemEnums.EnumCircuitType;
-import com.hbm.items.ModIntermediateItems;
-import com.hbm.items.ModItems;
+import dev.golem.core.Ids;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.function.Consumer;
-import java.util.function.Supplier;
+import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.item.ItemStack;
 import org.jspecify.annotations.Nullable;
@@ -24,15 +22,15 @@ public class SiegeTier {
         return nextID;
     }
 
-    public static final SiegeTier DEFAULT_BUFF = new SiegeTier(20, "buff").addDrop(() -> new ItemStack(ModItems.ingot_steel.get(), 1)).setDR(0.2F).setDMG(2F).setLaser(0F, 0F, false);
-    public static final SiegeTier CLAY = new SiegeTier(30, "clay").addDrop(() -> new ItemStack(ModItems.ingot_steel.get(), 1)).setDR(0.2F).setDMG(3F).setLaser(0F, 0F, false);
-    public static final SiegeTier STONE = new SiegeTier(40, "stone").addDrop(() -> new ItemStack(ModItems.ingot_steel.get(), 4)).setDR(0.3F).setDT(1F).setFP().setDMG(5F).setLaser(0F, 0F, true);
-    public static final SiegeTier IRON = new SiegeTier(50, "iron").addDrop(() -> new ItemStack(ModItems.ingot_steel.get(), 6)).setDR(0.3F).setDT(2F).setFP().setDMG(7.5F).setFF().setLaser(0F, 1F, true);
-    public static final SiegeTier SILVER = new SiegeTier(70, "silver").addDrop(() -> new ItemStack(ModItems.ingot_steel.get(), 8)).setDR(0.5F).setDT(3F).setNF().setFP().setDMG(10F).setSP(0.5F).setFF().setLaser(0.01F, 1F, true);
-    public static final SiegeTier GOLD = new SiegeTier(100, "gold").addDrop(() -> new ItemStack(ModItems.ingot_steel.get(), 8)).addDrop(() -> ModIntermediateItems.circuit(EnumCircuitType.CAPACITOR, 2)).setDR(0.5F).setDT(5F).setNF().setFP().setDMG(15F).setSP(0.5F).setFF().setLaser(0.02F, 1.5F, true);
-    public static final SiegeTier DESH = new SiegeTier(150, "desh").addDrop(() -> new ItemStack(ModItems.ingot_steel.get(), 16)).addDrop(() -> ModIntermediateItems.circuit(EnumCircuitType.CAPACITOR, 3)).setDR(0.7F).setDT(7F).setNF().setFP().setDMG(25F).setSP(0.5F).setFF().setLaser(0.05F, 1.5F, true);
-    public static final SiegeTier SCHRAB = new SiegeTier(250, "schrab").addDrop(() -> new ItemStack(ModItems.ingot_steel.get(), 32)).addDrop(() -> new ItemStack(ModItems.ingot_cobalt.get(), 2)).addDrop(() -> ModIntermediateItems.circuit(EnumCircuitType.ADVANCED, 3)).setDR(0.7F).setDT(10F).setNF().setFP().setDMG(50F).setSP(1F).setFF().setLaser(0.1F, 2F, true);
-    public static final SiegeTier DNT = new SiegeTier(500, "dnt").addDrop(() -> new ItemStack(ModItems.ingot_starmetal.get(), 1)).setDR(0.9F).setDT(20F).setNF().setFP().setDMG(100F).setSP(1F).setFF().setLaser(0.2F, 2F, true);
+    public static final SiegeTier DEFAULT_BUFF = new SiegeTier(20, "buff").addDrop("hbm:ingot_steel", 1).setDR(0.2F).setDMG(2F).setLaser(0F, 0F, false);
+    public static final SiegeTier CLAY = new SiegeTier(30, "clay").addDrop("hbm:ingot_steel", 1).setDR(0.2F).setDMG(3F).setLaser(0F, 0F, false);
+    public static final SiegeTier STONE = new SiegeTier(40, "stone").addDrop("hbm:ingot_steel", 4).setDR(0.3F).setDT(1F).setFP().setDMG(5F).setLaser(0F, 0F, true);
+    public static final SiegeTier IRON = new SiegeTier(50, "iron").addDrop("hbm:ingot_steel", 6).setDR(0.3F).setDT(2F).setFP().setDMG(7.5F).setFF().setLaser(0F, 1F, true);
+    public static final SiegeTier SILVER = new SiegeTier(70, "silver").addDrop("hbm:ingot_steel", 8).setDR(0.5F).setDT(3F).setNF().setFP().setDMG(10F).setSP(0.5F).setFF().setLaser(0.01F, 1F, true);
+    public static final SiegeTier GOLD = new SiegeTier(100, "gold").addDrop("hbm:ingot_steel", 8).addDrop("hbm:circuit_capacitor", 2).setDR(0.5F).setDT(5F).setNF().setFP().setDMG(15F).setSP(0.5F).setFF().setLaser(0.02F, 1.5F, true);
+    public static final SiegeTier DESH = new SiegeTier(150, "desh").addDrop("hbm:ingot_steel", 16).addDrop("hbm:circuit_capacitor", 3).setDR(0.7F).setDT(7F).setNF().setFP().setDMG(25F).setSP(0.5F).setFF().setLaser(0.05F, 1.5F, true);
+    public static final SiegeTier SCHRAB = new SiegeTier(250, "schrab").addDrop("hbm:ingot_steel", 32).addDrop("hbm:ingot_cobalt", 2).addDrop("hbm:circuit_advanced", 3).setDR(0.7F).setDT(10F).setNF().setFP().setDMG(50F).setSP(1F).setFF().setLaser(0.1F, 2F, true);
+    public static final SiegeTier DNT = new SiegeTier(500, "dnt").addDrop("hbm:ingot_starmetal", 1).setDR(0.9F).setDT(20F).setNF().setFP().setDMG(100F).setSP(1F).setFF().setLaser(0.2F, 2F, true);
 
     public final int id;
     public float dt = 0F;
@@ -44,8 +42,10 @@ public class SiegeTier {
     public boolean fireProof = false;
     public boolean noFall = false;
     public boolean noFriendlyFire = false;
-    /** Built on use: the items are registry objects, and this class may load before registration. */
-    private final List<Supplier<ItemStack>> drops = new ArrayList<>();
+    /** Registry-independent declarations shared with the generated death tables. */
+    public record Drop(String itemId, int count) {}
+
+    private final List<Drop> drops = new ArrayList<>();
 
     public float laserBreak = 0F;
     public float laserExplosive = 0F;
@@ -110,15 +110,19 @@ public class SiegeTier {
         return this;
     }
 
-    private SiegeTier addDrop(Supplier<ItemStack> drop) {
-        this.drops.add(drop);
+    private SiegeTier addDrop(String itemId, int count) {
+        this.drops.add(new Drop(itemId, count));
         return this;
     }
 
-    /** Fresh copies of this tier's drops. */
+    public List<Drop> lootDrops() {
+        return List.copyOf(drops);
+    }
+
+    /** Fresh copies of this tier's drops, resolved only after item registration. */
     public List<ItemStack> dropItems() {
-        List<ItemStack> out = new ArrayList<>();
-        for (Supplier<ItemStack> drop : this.drops) out.add(drop.get());
+        var out = new ArrayList<ItemStack>();
+        for (var drop : this.drops) out.add(new ItemStack(BuiltInRegistries.ITEM.getValue(Ids.parse(drop.itemId())), drop.count()));
         return out;
     }
 

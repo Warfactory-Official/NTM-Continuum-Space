@@ -16,6 +16,7 @@ import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.util.Mth;
 import net.minecraft.util.RandomSource;
+import net.minecraft.world.Difficulty;
 import net.minecraft.world.entity.EntitySpawnReason;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.level.levelgen.FlatLevelSource;
@@ -51,13 +52,13 @@ public final class Invasions {
             }
 
             @Override
-            public void ufo(ServerLevel level, CBT_Invasion invasion) {
-                Invasions.ufo(level, invasion.wave);
+            public @Nullable LivingEntity ufo(ServerLevel level, CBT_Invasion invasion) {
+                return Invasions.ufo(level, invasion.wave);
             }
 
             @Override
-            public void boss(ServerLevel level, CBT_Invasion invasion) {
-                Invasions.boss(level);
+            public @Nullable EntityUFO boss(ServerLevel level, CBT_Invasion invasion) {
+                return Invasions.boss(level);
             }
         };
         CBT_Invasion.KILLS = new CBT_Invasion.KillValue() {
@@ -111,15 +112,13 @@ public final class Invasions {
             SiegeTier chosen = (bigRoll < 0.5F - waveFactor) ? SiegeTier.STONE : SiegeTier.IRON;
 
             bigUfo.setTier(chosen);
-            level.addFreshEntity(bigUfo);
-            return bigUfo;
+            return level.addFreshEntity(bigUfo) ? bigUfo : null;
         }
 
         EntitySiegeUFO smallUfo = Entities.create(SpaceMobs.SIEGE_UFO.get(), level, EntitySpawnReason.EVENT);
         smallUfo.snapTo(spawnX, spawnY, spawnZ, rand.nextFloat() * 360.0F, 0.0F);
         smallUfo.setTier(smallTier(rand.nextFloat(), waveFactor));
-        level.addFreshEntity(smallUfo);
-        return smallUfo;
+        return level.addFreshEntity(smallUfo) ? smallUfo : null;
     }
 
     /** 1.7's small-saucer tier table for one roll in [0, 1). */
@@ -140,14 +139,16 @@ public final class Invasions {
         if (players.isEmpty()) return null;
         RandomSource rand = level.getRandom();
         ServerPlayer player = players.get(rand.nextInt(players.size()));
+        // Keep the player-selection draw when the hostile boss must wait for Peaceful to end.
+        if (level.getDifficulty() == Difficulty.PEACEFUL) return null;
         EntityUFO entity = Entities.create(ModNtmEntities.UFO.get(), level, EntitySpawnReason.EVENT);
+        if (entity == null) return null;
         entity.scanCooldown = 100;
         entity.snapTo(player.getX(), player.getY() + 50, player.getZ(), Mth.wrapDegrees(rand.nextFloat() * 360.0F), 0.0F);
         entity.setYHeadRot(entity.getYRot());
         entity.setYBodyRot(entity.getYRot());
         entity.finalizeSpawn(level, level.getCurrentDifficultyAt(BlockPos.containing(entity.position())), EntitySpawnReason.EVENT, null);
-        level.addFreshEntity(entity);
-        return entity;
+        return level.addFreshEntity(entity) ? entity : null;
     }
 
     /**

@@ -34,6 +34,8 @@ public final class MaterialDistributionTable extends RecipeSource<Row> {
     protected void registerDefaults() {
         registerEntry(item("ntmspace:blade_syngas"), mat("stainless"), q(INGOT, 3));
         registerOre("c:ores/zinc", mat("zinc"), q(INGOT, 2), mat("stone"), quart());
+        // Raw drops keep two thirds of the ore's metal and gangue, rounded to whole material quanta.
+        registerOre("c:raw_materials/zinc", mat("zinc"), 96, mat("stone"), 108);
         registerOre("c:ores/conglomerate", mat("conglomerate"), q(INGOT, 4));
         registerEntry(item("ntmspace:stone_resource_calcium"), mat("flux"), q(INGOT, 12));
         registerEntry(item("hbm:ring_starmetal"), mat("starmetal"), q(INGOT, 4));

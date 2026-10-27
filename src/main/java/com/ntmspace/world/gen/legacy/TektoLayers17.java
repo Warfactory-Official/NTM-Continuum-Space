@@ -74,9 +74,23 @@ public final class TektoLayers17 {
      * Polyvinyl Plains. Its other branches (a biome id 1.7 had not registered, mushroom islands) cannot happen with
      * Tekto's ids and are left out.
      */
+    /** The same river compositor with explicit biome ids, used by configured biome-layer callers. */
+    public static GenLayer17 riverMix(GenLayer17 biomes, GenLayer17 rivers, int river, int preservedBiome) {
+        return new RiverMix(100L, biomes, rivers, river, preservedBiome);
+    }
+
     static final class RiverMix extends GenLayerRiverMix17 {
+        private final int river;
+        private final int preservedBiome;
+
         RiverMix(long seed, GenLayer17 biomePatternGeneratorChain, GenLayer17 riverPatternGeneratorChain) {
-            super(seed, biomePatternGeneratorChain, riverPatternGeneratorChain);
+            this(seed, biomePatternGeneratorChain, riverPatternGeneratorChain, TETRACHLORIC_RIVER, POLYVINYL_PLAINS);
+        }
+
+        RiverMix(long seed, GenLayer17 biomes, GenLayer17 rivers, int river, int preservedBiome) {
+            super(seed, biomes, rivers);
+            this.river = river;
+            this.preservedBiome = preservedBiome;
         }
 
         @Override
@@ -85,8 +99,8 @@ public final class TektoLayers17 {
             int[] riverBiomeIds = this.rivers.getInts(x, z, width, length);
             int[] outputBiomeIds = new int[width * length];
             for (int i1 = 0; i1 < width * length; ++i1) {
-                if (inputBiomeIds[i1] != POLYVINYL_PLAINS && riverBiomeIds[i1] == GenLayerRiver17.VANILLA_RIVER) {
-                    outputBiomeIds[i1] = TETRACHLORIC_RIVER;
+                if (inputBiomeIds[i1] != preservedBiome && riverBiomeIds[i1] == GenLayerRiver17.VANILLA_RIVER) {
+                    outputBiomeIds[i1] = river;
                 } else {
                     outputBiomeIds[i1] = inputBiomeIds[i1];
                 }

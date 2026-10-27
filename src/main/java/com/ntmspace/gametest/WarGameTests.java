@@ -1,6 +1,7 @@
 package com.ntmspace.gametest;
 
 import com.hbm.entity.ModNtmEntities;
+import com.hbm.entity.mob.EntityUFO;
 import com.hbm.items.ISatChip;
 import com.hbm.items.ModSatelliteItems;
 import com.hbm.saveddata.SatelliteSavedData;
@@ -117,12 +118,13 @@ public final class WarGameTests {
             errors.add("invasion round trip lost a field");
         }
 
-        // the client sync: 1.7 wrote health, shield and read them back swapped; the flash rides along (perma-sync)
+        // Client sync preserves health and shield independently; the flash rides along (perma-sync).
         RegistryFriendlyByteBuf buf = dev.golem.core.net.GolemBuffers.wrap(Unpooled.buffer(), helper.getLevel());
         war.writeToBytes(buf);
         CBT_War client = new CBT_War();
         client.readFromBytes(buf);
-        if (client.health != 7 || client.shield != 64) errors.add("1.7 sync swaps health and shield: " + client.health + "/" + client.shield);
+        if (client.health != 64) errors.add("synced war health: expected 64, got " + client.health);
+        if (client.shield != 7) errors.add("synced war shield: expected 7, got " + client.shield);
         if (client.projectiles.size() != 1 || client.projectiles.get(0).getFlashtime() != 42.5F
                 || client.projectiles.get(0).getAnimtime() != 12) {
             errors.add("synced projectile lost its flash or animation");
@@ -211,8 +213,11 @@ public final class WarGameTests {
         int[] bosses = {0};
         CBT_Invasion.SPAWNER = new CBT_Invasion.Spawner() {
             @Override public void dropPod(ServerLevel l, CBT_Invasion i) {}
-            @Override public void ufo(ServerLevel l, CBT_Invasion i) {}
-            @Override public void boss(ServerLevel l, CBT_Invasion i) { bosses[0]++; }
+            @Override public LivingEntity ufo(ServerLevel l, CBT_Invasion i) { return null; }
+            @Override public EntityUFO boss(ServerLevel l, CBT_Invasion i) {
+                bosses[0]++;
+                return new EntityUFO(ModNtmEntities.UFO.get(), l);
+            }
         };
         try {
             CBT_Invasion inv = new CBT_Invasion(0, 0, true);

@@ -6,6 +6,7 @@ import com.hbm.inventory.RecipesCommon.TagStack;
 import com.hbm.inventory.recipes.CentrifugeRecipes;
 import com.hbm.inventory.recipes.CentrifugeRecipes.Row;
 import com.hbm.inventory.recipes.CrystallizerRecipes.ItemOutput;
+import com.hbm.inventory.recipes.CrystallizerRecipes.ChanceOutput;
 import com.hbm.inventory.recipes.CrystallizerRecipes.Output;
 import com.hbm.inventory.recipes.loader.GenericRecipeCodec.ItemOut;
 import dev.golem.core.Ids;
@@ -36,6 +37,11 @@ public final class CentrifugeTable extends RecipeSource<Row> {
         // hbm-space puts NI.ore() right after IRON.ore()
         put("ore_nickel", tag("c:ores/nickel"), after("hbm:centrifuge/tag_ores_iron"),
                 out("ntmspace:chunk_ore_pentlandite", 2), out("hbm:sulfur", 1), out("hbm:powder_iron", 1), out("minecraft:gravel", 1));
+        register("ore_nickel_raw", new Row(tag("c:raw_materials/nickel_pure"), List.of(
+                new ChanceOutput(out("ntmspace:chunk_ore_pentlandite", 2), 0.667F),
+                new ChanceOutput(out("hbm:sulfur", 1), 0.667F),
+                new ChanceOutput(out("hbm:powder_iron", 1), 0.667F),
+                new ChanceOutput(out("minecraft:gravel", 1), 0.667F)), List.of(), after("hbm:centrifuge/tag_ores_iron")));
 
         put("ore_fire", tag("ntmspace:ores/ore_fire"), after("hbm:centrifuge/ore_nether_fire"),
                 out("minecraft:blaze_powder", 2), out("hbm:powder_fire", 2), out("hbm:ingot_phosphorus", 1), out("minecraft:gravel", 1));

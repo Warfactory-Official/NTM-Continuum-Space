@@ -31,7 +31,7 @@ public final class AnnihilatorTable extends RecipeSource<Row> {
     protected void registerDefaults() {
         // if(GeneralConfig.enable528) {
         put("c:ingots/aluminium",                       new AnnihilatorRecipe(512, ItemBlueprints.make(GenericRecipes.POOL_PREFIX_528 + "aluminium")));
-        put("c:ingots/stainless",                       new AnnihilatorRecipe(1024, ItemBlueprints.make(GenericRecipes.POOL_PREFIX_528 + "stainless")));
+        put("c:ingots/stainless_steel",                 new AnnihilatorRecipe(1024, ItemBlueprints.make(GenericRecipes.POOL_PREFIX_528 + "stainless")));
         put(item("ntmspace:circuit_gaschip"),            new AnnihilatorRecipe(512, ItemBlueprints.make(GenericRecipes.POOL_PREFIX_528 + "gaschip")));
         // }
     }

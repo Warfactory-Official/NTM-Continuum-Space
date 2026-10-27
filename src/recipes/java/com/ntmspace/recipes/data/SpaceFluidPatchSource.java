@@ -46,8 +46,10 @@ public final class SpaceFluidPatchSource extends DataSource<FluidProperties.Patc
         addTraits(PLASMA_XM, new FT_Rocket(25000, 700_000));
         // hbm-space WASTEFLUID.addTraits(new FT_Heatable().setEff(HeatingType.PWR, 1.0D).addStep(300, 1, WASTEGAS, 1), new FT_PWRModerator(1.20D))
         addTraits(WASTEFLUID, new FT_Heatable().setEff(HeatingType.PWR, 1.0D).addStep(300, 1, WASTEGAS, 1), new FT_PWRModerator(1.20D));
-        // hbm-space WASTEGAS: new FT_Rocket(900, 700_000); WASTEGAS.addTraits(new FT_Coolable(WATZ, 1, 1, 300))
-        addTraits(WASTEGAS, new FT_Rocket(900, 700_000), new FT_Coolable(WATZ, 1, 1, 300));
+        // hbm-space WASTEGAS: new FT_Rocket(900, 700_000); WASTEGAS.addTraits(new FT_Coolable(WATZ, 1, 1, 300)).
+        // 1.7 cools to WATZ, but WASTEFLUID heats into WASTEGAS (line above), so cooling closes the loop on
+        // WASTEFLUID instead (upstream hbm-space made the same change); the imported row pins this pairing.
+        addTraits(WASTEGAS, new FT_Rocket(900, 700_000), new FT_Coolable(WASTEFLUID, 1, 1, 300));
         // hbm-space WATZ.addTraits(new FT_Heatable().setEff(HeatingType.PWR, 1.0D).addStep(300, 1, GAS_WATZ, 1), new FT_PWRModerator(1.40D))
         addTraits(WATZ, new FT_Heatable().setEff(HeatingType.PWR, 1.0D).addStep(300, 1, SpaceFluids.GAS_WATZ, 1), new FT_PWRModerator(1.40D));
         addTraits(XENON, new FT_Rocket(4200, 80_000));

@@ -1,5 +1,9 @@
 package com.ntmspace.world.populate;
 
+import com.ntmspace.block.terrain.BlockLaytheSilt;
+import com.ntmspace.registry.LaytheTektoBlocks;
+import java.util.Collections;
+import java.util.LinkedHashMap;
 import com.hbm.config.GeneralConfig;
 import com.hbm.config.WorldConfig;
 import com.hbm.inventory.fluid.FluidStack;
@@ -227,11 +231,7 @@ public final class Populate17 {
                 features.minmusConglomerate.generate(world, seed, k, l, stone);
             }
             case LAYTHE -> {
-                if (features.acidSulfurCave != null) features.acidSulfurCave.generate(world, seed, k, l, stone, rand);
-                if (features.asbestosCave != null) features.asbestosCave.generate(world, seed, k, l, stone, rand);
-                features.laytheTumor.generate(world, seed, k, l, stone, rand);
-                features.laytheSilt6.generate(world, seed, k, l, stone, rand);
-                features.laytheSilt3.generate(world, seed, k, l, stone, rand);
+                for (var cave : laytheCaves().values()) cave.generate(world, seed, k, l, stone, rand);
             }
             default -> {
             }
@@ -268,6 +268,11 @@ public final class Populate17 {
             int z = l + rand.nextInt(16);
             Ores17.minable(rand, x, y, z, size, placer);
         }
+    }
+
+    /** Ordered native producers used by Laythe's live pre-decoration pass; disabled caves are absent. */
+    public static Map<String, OreCave17> laytheCaves() {
+        return Features.get().laytheCaves;
     }
 
     // ---------------------------------------------------------------- the FML world generators
@@ -427,6 +432,7 @@ public final class Populate17 {
         final OreCave17 laytheTumor;
         final OreCave17 laytheSilt6;
         final OreCave17 laytheSilt3;
+        final Map<String, OreCave17> laytheCaves;
 
         static Features get() {
             Features f = instance;
@@ -475,11 +481,20 @@ public final class Populate17 {
             // tumor: BlockStalagmite.getMetaFromResource(tumor) is FLESH
             laytheTumor = new OreCave17("hbm:tile.tumor", 0, s("ntmspace:tumor"), 0.3D, 20, 70, 25)
                     .spikes(s("ntmspace:stalactite_flesh"), s("ntmspace:stalagmite_flesh"));
-            // laythe_silt metadata 6 and 3 were tints the port's silt does not keep; the draws are the same
-            laytheSilt6 = new OreCave17("hbm:tile.laythe_silt", 6, s("ntmspace:laythe_silt"), 0.25D, 80, 24, 54)
+            // Authored metadata 6 and 3 map to the real dark and light silt states; random draws are unchanged.
+            laytheSilt6 = new OreCave17("hbm:tile.laythe_silt", 6, () -> LaytheTektoBlocks.LAYTHE_SILT.get().defaultBlockState()
+                    .setValue(BlockLaytheSilt.SHADE, 2), 0.25D, 80, 24, 54)
                     .blockOverride(() -> PopulateWorld.block("ntmspace:laythe_silt")).ignoreWater().noStalagmites();
-            laytheSilt3 = new OreCave17("hbm:tile.laythe_silt", 3, s("ntmspace:laythe_silt"), 0.2D, 60, 14, 58)
+            laytheSilt3 = new OreCave17("hbm:tile.laythe_silt", 3, () -> LaytheTektoBlocks.LAYTHE_SILT.get().defaultBlockState()
+                    .setValue(BlockLaytheSilt.SHADE, 1), 0.2D, 60, 14, 58)
                     .blockOverride(() -> PopulateWorld.block("ntmspace:laythe_silt")).ignoreWater().noStalagmites();
+            var caves = new LinkedHashMap<String, OreCave17>();
+            if (acidSulfurCave != null) caves.put("ore_cave_sulfur", acidSulfurCave);
+            if (asbestosCave != null) caves.put("ore_cave_asbestos", asbestosCave);
+            caves.put("ore_cave_tumor", laytheTumor);
+            caves.put("ore_cave_silt_dark", laytheSilt6);
+            caves.put("ore_cave_silt", laytheSilt3);
+            laytheCaves = Collections.unmodifiableMap(caves);
         }
     }
 

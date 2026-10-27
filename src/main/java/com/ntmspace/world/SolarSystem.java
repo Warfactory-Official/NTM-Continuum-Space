@@ -1,5 +1,6 @@
 package com.ntmspace.world;
 
+import net.minecraft.world.level.Level;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -19,8 +20,14 @@ public final class SolarSystem {
     public static final long SECONDS_IN_KSP_DAY = 6 * 60 * 60;
     public static final long TICKS_IN_DAY = SECONDS_IN_DAY * 20;
     public static final double DAY_FACTOR = (double) SECONDS_IN_DAY / (double) SECONDS_IN_KSP_DAY;
-    /** hbm-space {@code AstronomyUtil.TIME_MULTIPLIER}: mutable, the time wand ({@code wand_time}) doubles/halves it (server only, unsynced, as 1.7). */
-    public static long TIME_MULTIPLIER = 1;
+    /** Server-authoritative celestial rate; changed by the Time Wand and published by CelestialTimeSync. */
+    public static volatile long TIME_MULTIPLIER = 1;
+    /** The local client's received rate, kept separate from an integrated server's authority. */
+    public static volatile long CLIENT_TIME_MULTIPLIER = 1;
+
+    public static long timeMultiplier(Level level) {
+        return level.isClientSide() ? CLIENT_TIME_MULTIPLIER : TIME_MULTIPLIER;
+    }
 
     // SolarSystem
     public static final double RENDER_SCALE = 180;
@@ -96,7 +103,15 @@ public final class SolarSystem {
 
         /** In ticks. */
         public double getRotationalPeriod() {
-            return (double) rotationalPeriod * (DAY_FACTOR / (double) TIME_MULTIPLIER) * 20;
+            return getRotationalPeriod(TIME_MULTIPLIER);
+        }
+
+        public double getClientRotationalPeriod() {
+            return getRotationalPeriod(CLIENT_TIME_MULTIPLIER);
+        }
+
+        public double getRotationalPeriod(long timeMultiplier) {
+            return (double) rotationalPeriod * (DAY_FACTOR / (double) timeMultiplier) * 20;
         }
 
         /** {@code CelestialBody.getSunPower}: the sun's strength here relative to Kerbin's, by the planet's distance. */
@@ -188,16 +203,29 @@ public final class SolarSystem {
         return BY_NAME.get(name);
     }
 
+    /** The legacy CelestialBody lookup: an unknown name denotes the overworld's body. */
+    public static Body getBody(String name) {
+        return BY_NAME.getOrDefault(name, BY_NAME.get("kerbin"));
+    }
+
     // ---------------------------------------------------------------------------------------- time of day
 
     /** {@code WorldProviderCelestial.getDayLength}: a solar day on {@code body}, in ticks. */
     public static double dayLength(Body body) {
-        return body.getRotationalPeriod() / (1 - (1 / body.getPlanet().getOrbitalPeriod()));
+        return dayLength(body, TIME_MULTIPLIER);
+    }
+
+    public static double dayLength(Body body, long timeMultiplier) {
+        return body.getRotationalPeriod(timeMultiplier) / (1 - (1 / body.getPlanet().getOrbitalPeriod()));
     }
 
     /** {@code WorldProviderCelestial.calculateCelestialAngle}: the SOLAR angle on {@code body} (0 noon, 0.5 midnight). */
     public static float solarAngle(Body body, long worldTime, float partialTicks) {
-        double dayLength = dayLength(body);
+        return solarAngle(body, worldTime, partialTicks, TIME_MULTIPLIER);
+    }
+
+    public static float solarAngle(Body body, long worldTime, float partialTicks, long timeMultiplier) {
+        double dayLength = dayLength(body, timeMultiplier);
         double j = worldTime % dayLength;
         double f1 = (j + partialTicks) / dayLength - 0.25F;
         if (f1 < 0.0F) ++f1;
@@ -209,8 +237,22 @@ public final class SolarSystem {
 
     // ---------------------------------------------------------------------------------------- mechanics
 
+    /** The level observer uses game time, independently of the level's adjustable day clock. */
+    public static List<AstroMetric> calculateMetricsFromBody(Level level, float partialTicks,
+                                                            Body body, float solarAngle) {
+        return calculateMetricsFromBody((double) level.getGameTime() + partialTicks, body, solarAngle, timeMultiplier(level));
+    }
+
     /** {@code calculateMetricsFromBody}: every other body as seen from {@code body}, farthest first. */
     public static List<AstroMetric> calculateMetricsFromBody(double totalWorldTime, Body body, float solarAngle) {
+        return calculateMetricsFromBody(totalWorldTime, body, solarAngle, TIME_MULTIPLIER);
+    }
+
+    public static List<AstroMetric> calculateClientMetricsFromBody(double totalWorldTime, Body body, float solarAngle) {
+        return calculateMetricsFromBody(totalWorldTime, body, solarAngle, CLIENT_TIME_MULTIPLIER);
+    }
+
+    public static List<AstroMetric> calculateMetricsFromBody(double totalWorldTime, Body body, float solarAngle, long timeMultiplier) {
         List<AstroMetric> metrics = new ArrayList<>();
 
         double rotOffset = -120.0F;
@@ -223,7 +265,7 @@ public final class SolarSystem {
             }
         }
 
-        double ticks = totalWorldTime * (double) TIME_MULTIPLIER;
+        double ticks = totalWorldTime * (double) timeMultiplier;
         calculatePositionsRecursive(metrics, null, body.getStar(), ticks, tidalLockedBody, solarAngle * 360.0, rotOffset);
         calculateMetricsFromBody(metrics, body);
         metrics.sort((a, b) -> (int) (b.distance - a.distance));
@@ -422,6 +464,14 @@ public final class SolarSystem {
             if (metric.body == to) toPos = metric.position;
         }
         return distance(fromPos, toPos);
+    }
+
+    /** The observer angle from the level's current game-time positions, without a surface tidal lock. */
+    public static double calculateSingleAngle(Level level, Body from, Body to) {
+        var metrics = new ArrayList<AstroMetric>();
+        calculatePositionsRecursive(metrics, null, from.getStar(),
+                (double) level.getGameTime() * timeMultiplier(level), null, 0, 0);
+        return calculateSingleAngle(metrics, from, to);
     }
 
     /** {@code calculateSingleAngle(metrics, from, to)}: the apparent angle of {@code to} seen from {@code from}. */
@@ -654,8 +704,12 @@ public final class SolarSystem {
      * {@code ticks = (totalWorldTime + partialTicks) * TIME_MULTIPLIER}.
      */
     public static List<OrreryMetric> calculatePositionsOrrery(double totalWorldTime, float partialTicks, Body star) {
+        return calculatePositionsOrrery(totalWorldTime, partialTicks, star, TIME_MULTIPLIER);
+    }
+
+    public static List<OrreryMetric> calculatePositionsOrrery(double totalWorldTime, float partialTicks, Body star, long timeMultiplier) {
         List<OrreryMetric> metrics = new ArrayList<>();
-        double ticks = (totalWorldTime + partialTicks) * (double) TIME_MULTIPLIER;
+        double ticks = (totalWorldTime + partialTicks) * (double) timeMultiplier;
         calculatePositionsRecursiveOrrery(metrics, null, star, ticks);
         return metrics;
     }

@@ -1,6 +1,8 @@
 package com.ntmspace.probe;
 
 import com.hbm.api.environment.Environment;
+import com.hbm.handler.ArmorUtil;
+import com.hbm.hazard.transformer.HazardTransformerRadiationNBT;
 import com.hbm.inventory.fluid.Fluids;
 import dev.golem.core.gametest.GameTests;
 import dev.golem.core.hook.Hook;
@@ -75,7 +77,8 @@ public final class ProbeHookGameTests {
         rows.add(new Row("Weathers.PROVIDERS", dev.golem.core.world.Weathers.PROVIDERS, false));
         rows.add(new Row("Skies.MODIFIERS", dev.golem.core.world.Skies.MODIFIERS, false));
         rows.add(new Row("ArmorUtil.HAZMAT", com.hbm.handler.ArmorUtil.HAZMAT, false));
-        rows.add(new Row("HazardTypeRadiation.STACK_RADIATION", com.hbm.hazard.type.HazardTypeRadiation.STACK_RADIATION, false));
+        rows.add(new Row("HazardTransformerRadiationNBT.COMPONENT_RADIATION",
+                HazardTransformerRadiationNBT.COMPONENT_RADIATION, false));
         rows.add(new Row("ItemRag.USE", com.hbm.items.special.ItemRag.USE, false));
         rows.add(new Row("ItemEnergy.EMPTY", com.hbm.items.special.ItemEnergy.EMPTY, false));
         rows.add(new Row("ContaminationUtil.GEIGER_LINES", com.hbm.util.ContaminationUtil.GEIGER_LINES, false));
@@ -112,11 +115,12 @@ public final class ProbeHookGameTests {
         int firstSpace = Integer.MAX_VALUE, lastSpace = -1, firstProbe = Integer.MAX_VALUE, lastProbe = -1;
         List<?> listeners = hook.listeners();
         for (int i = 0; i < listeners.size(); i++) {
-            String owner = listeners.get(i).getClass().getName();
+            var listener = listeners.get(i);
+            var owner = listener.getClass().getName();
             if (owner.startsWith("com.ntmspace.probe.")) {
                 firstProbe = Math.min(firstProbe, i);
                 lastProbe = i;
-            } else if (owner.startsWith("com.ntmspace.") && !owner.startsWith("com.ntmspace.gametest.")) { // not a test fixture
+            } else if (spaceListener(listener)) {
                 firstSpace = Math.min(firstSpace, i);
                 lastSpace = i;
             }
@@ -126,6 +130,13 @@ public final class ProbeHookGameTests {
         boolean ok = probeFirst ? lastProbe < firstSpace : lastSpace < firstProbe;
         return ok ? null : name + ": probe listeners at " + firstProbe + ".." + lastProbe + ", NTM: Space's at "
                 + firstSpace + ".." + lastSpace + " (probe " + (probeFirst ? "first" : "after") + " expected)";
+    }
+
+    private static boolean spaceListener(Object listener) {
+        var owner = listener.getClass().getName();
+        return owner.startsWith("com.ntmspace.") && !owner.startsWith("com.ntmspace.probe.")
+                && !owner.startsWith("com.ntmspace.gametest.")
+                || listener == ArmorUtil.effectHazmat().get("ntmspace:nitan");
     }
 
     private static void order(GameTestHelper helper) {
@@ -143,8 +154,7 @@ public final class ProbeHookGameTests {
     static <T> List<T> space(Hook<T> hook) {
         List<T> own = new ArrayList<>();
         for (T listener : hook.listeners()) {
-            String owner = listener.getClass().getName();
-            if (owner.startsWith("com.ntmspace.") && !owner.startsWith("com.ntmspace.probe.")) own.add(listener);
+            if (spaceListener(listener)) own.add(listener);
         }
         return own;
     }

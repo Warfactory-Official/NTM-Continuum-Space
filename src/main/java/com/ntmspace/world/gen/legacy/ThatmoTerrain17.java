@@ -5,11 +5,10 @@ import java.util.Random;
 /**
  * hbm-space's {@code ChunkProviderThatmo} with {@code BiomeGenThatmo}, ported line for line: one biome everywhere
  * ({@code WorldChunkManagerHell}), basalt under snow with basalt "seas" below y 64, then Greg caves, ravines and small
- * craters, all three working in slaked sellafite.
+ * craters. Caves and ravines dig the terrain's basalt and the biome's snow; craters expose slaked sellafite.
  *
- * <p><b>Ported oddity:</b> the tunnel caves and the ravines dig only their stone block, slaked sellafite, and the biome's
- * snow: they leave the basalt Thatmo is made of alone and open only where the surface pass laid sellafite or snow (the
- * noise caves of {@link MapGenGreg} dig anything but bedrock, as everywhere).
+ * <p>The cave and ravine host is corrected from 1.7's slaked sellafite to basalt, so their original geometry can open
+ * the stone that fills this body. The noise caves of {@link MapGenGreg} dig anything but bedrock, as everywhere.
  *
  * <p>The surface picked basalt or slaked sellafite with {@code Math.random()}; as in {@link EveTerrain17}, the port
  * draws that choice from a {@code Random} seeded per chunk from the session.
@@ -29,8 +28,8 @@ public class ThatmoTerrain17 extends CelestialTerrain17 {
     public ThatmoTerrain17(long seed, Random session) {
         super(seed);
         this.sessionSeed = session.nextLong();
-        caveGenV3.stoneBlock = Block17.SELLAFIELD_SLAKED;
-        rgen.stoneBlock = Block17.SELLAFIELD_SLAKED;
+        caveGenV3.stoneBlock = Block17.BASALT;
+        rgen.stoneBlock = Block17.BASALT;
 
         smallCrater.setSize(8, 32);
 
@@ -48,8 +47,12 @@ public class ThatmoTerrain17 extends CelestialTerrain17 {
     }
 
     @Override
-    protected Primer getChunkPrimer(int x, int z) {
+    protected void prepareSurface(int x, int z) {
         mathRandom.setSeed(sessionSeed ^ ((long) x * 341873128712L + (long) z * 132897987541L));
+    }
+
+    @Override
+    protected Primer getChunkPrimer(int x, int z) {
         Primer buffer = super.getChunkPrimer(x, z);
 
         // NEW CAVES

@@ -16,10 +16,12 @@ import com.ntmspace.tileentity.machine.TileEntityMachineStardar;
 import dev.golem.core.gametest.GameTestHelpers;
 import dev.golem.core.gametest.GameTests;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.gametest.framework.GameTestHelper;
+import net.minecraft.nbt.CompoundTag;
 import net.minecraft.world.InteractionHand;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.ItemStack;
@@ -55,7 +57,7 @@ public final class MachineGameTestsD {
 
     public static void init() {}
 
-    private static TileEntityMachineStardar placeStardar(GameTestHelper helper) {
+    static TileEntityMachineStardar placeStardar(GameTestHelper helper) {
         BlockPos core = helper.absolutePos(GameTests.paddedCentre(4, 4));
         MultiblockHandlerXR.placeAssembled(helper.getLevel(), core, SpaceMachinesD.MACHINE_STARDAR.get(), Direction.NORTH);
         return GameTestHelpers.blockEntity(helper, GameTests.relativePos(helper, core), TileEntityMachineStardar.class);
@@ -132,36 +134,56 @@ public final class MachineGameTestsD {
         MachineGameTests.finish(helper, errors);
     }
 
-    /** {@code updateDriveCoords}: ax + px - 128, az + pz - 128 (1.7 does not process the drive here). */
+    /** Map picks use the scanned chunk corner; without a map a pick leaves the drive unchanged. */
     private static void driveCoords(GameTestHelper helper) {
-        TileEntityMachineStardar te = placeStardar(helper);
-        List<String> errors = new ArrayList<>();
-
-        ItemStack drive = new ItemStack(RocketItems.drive(DriveBody.DUNA));
+        var te = placeStardar(helper);
+        var errors = new ArrayList<String>();
+        var drive = new ItemStack(RocketItems.drive(DriveBody.KERBIN));
         RocketItems.DRIVE.set(drive, DriveData.EMPTY.withApproximate(1000, -500));
         te.setItem(0, drive);
-        te.updateDriveCoords(130, 10);
-        DriveData data = ItemVOTVdrive.data(te.getItem(0));
-        if (data.x() != 1002 || data.z() != -618) errors.add("coordinates " + data.x() + ", " + data.z() + ", 1.7 1002, -618");
-        if (data.processed()) errors.add("updateDriveCoords processed the drive");
 
-        // control packet path: px/pz
-        net.minecraft.nbt.CompoundTag control = new net.minecraft.nbt.CompoundTag();
-        control.putInt("px", 0);
-        control.putInt("pz", 255);
+        te.heightmap = null;
+        te.updateDriveCoords(130, 10);
+        var data = ItemVOTVdrive.data(te.getItem(0));
+        if (data.x() != 0 || data.z() != 0) errors.add("a pick without a map moved the drive");
+
+        // Run the actual producer once to select its canonical destination key; the known map tests picks, not generation.
+        TileEntityMachineStardar.serverTick(helper.getLevel(), te.getBlockPos(), te.getBlockState(), te);
+        te.heightmap = bumpMap();
+        te.updateDriveCoords(130, 10);
+        data = ItemVOTVdrive.data(te.getItem(0));
+        // The scan starts at chunk (54, -40), block (864, -640), independent of the rough point's within-chunk offset.
+        if (data.x() != 994 || data.z() != -630) errors.add("mapped column " + data.x() + ", " + data.z() + ", expected 994, -630");
+        if (data.processed()) errors.add("a map pick processed the drive");
+
+        var control = new CompoundTag();
+        control.putInt("px", 50);
+        control.putInt("pz", 60);
         te.receiveControl(control);
         data = ItemVOTVdrive.data(te.getItem(0));
-        if (data.x() != 872 || data.z() != -373) errors.add("control coordinates " + data.x() + ", " + data.z() + ", 1.7 872, -373");
+        if (data.x() != 914 || data.z() != -580) errors.add("the control path lost a valid map column");
 
-        // a drive without an approximate destination rolls one within the probe distance first
-        ItemStack fresh = new ItemStack(RocketItems.drive(DriveBody.MUN));
-        te.setItem(0, fresh);
+        te.heightmap = null;
+        te.setItem(0, new ItemStack(RocketItems.drive(DriveBody.MUN)));
         te.updateDriveCoords(128, 128);
         data = ItemVOTVdrive.data(te.getItem(0));
-        if (data.ax().isEmpty() || Math.abs(data.ax().get()) > Orbit.MAX_PROBE_DISTANCE) errors.add("no approximate destination rolled");
-        else if (data.x() != data.ax().get() || data.z() != data.az().get()) errors.add("centre pixel is not the approximate destination");
-
+        if (data.ax().isPresent() || data.az().isPresent() || data.x() != 0 || data.z() != 0)
+            errors.add("a missing-map pick rolled or wrote a destination");
+        retireScan(helper, te);
         MachineGameTests.finish(helper, errors);
+    }
+
+    static int[] bumpMap() {
+        var map = new int[TileEntityMachineStardar.MAP_SIZE * TileEntityMachineStardar.MAP_SIZE];
+        Arrays.fill(map, 70);
+        map[100 * TileEntityMachineStardar.MAP_SIZE + 101] = 71;
+        return map;
+    }
+
+    /** Retires the real asynchronous scan started for the fixture key through the normal pulled-drive path. */
+    static void retireScan(GameTestHelper helper, TileEntityMachineStardar te) {
+        te.setItem(0, ItemStack.EMPTY);
+        TileEntityMachineStardar.serverTick(helper.getLevel(), te.getBlockPos(), te.getBlockState(), te);
     }
 
     /** The background height-map scan: 16 x 16 chunks, each column the level's MOTION_BLOCKING height. */

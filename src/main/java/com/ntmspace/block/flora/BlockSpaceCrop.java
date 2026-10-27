@@ -3,6 +3,8 @@ package com.ntmspace.block.flora;
 import com.hbm.blocks.generic.BlockTerrainPlant;
 import com.ntmspace.registry.FloraBlocks;
 import dev.golem.core.world.CompatBonemealableBlock;
+import dev.golem.core.world.CompatBlock;
+import dev.golem.core.hook.Verdict;
 import dev.golem.core.world.CompatEnchantments;
 import java.util.ArrayList;
 import java.util.List;
@@ -69,7 +71,13 @@ public class BlockSpaceCrop extends BlockTerrainPlant implements CompatBonemeala
 
     @Override
     protected boolean canStay(BlockState state, LevelReader level, BlockPos pos) {
-        return isCropGround(level.getBlockState(pos.below()));
+        var below = pos.below();
+        var soil = level.getBlockState(below);
+        if (soil.getBlock() instanceof CompatBlock support) {
+            var answer = support.sustainsPlant(level, below, soil, state);
+            if (answer != Verdict.PASS) return answer == Verdict.ALLOW;
+        }
+        return isCropGround(soil);
     }
 
     @Override

@@ -1,5 +1,6 @@
 package com.ntmspace.recipes.tables;
 
+import com.ntmspace.tileentity.machine.TileEntityMachineCryoDistill;
 import com.hbm.inventory.fluid.FluidStack;
 import com.hbm.inventory.fluid.FluidType;
 import com.hbm.inventory.fluid.Fluids;
@@ -19,9 +20,9 @@ import java.util.Locale;
 public final class CryoDistillTable extends GenericTableSource<GenericRecipe> {
 
     /** 1.7 {@code TileEntityMachineCryoDistill}: mB of the atmosphere per step. */
-    private static final int INPUT = 100;
+    private static final int INPUT = CryoRecipes.FEED;
     /** 1.7 {@code TileEntityMachineCryoDistill}: HE per step. */
-    private static final long POWER = 20_000;
+    private static final long POWER = TileEntityMachineCryoDistill.CONSUMPTION;
 
     public CryoDistillTable() {
         super(CryoRecipes.INSTANCE);

@@ -6,12 +6,17 @@ import com.hbm.blocks.ModFallingBlocks;
 import com.hbm.inventory.fluid.Fluids;
 import com.hbm.inventory.fluid.trait.FT_Corrosive;
 import com.ntmspace.fluid.SpaceFluids;
+import com.ntmspace.orbit.Orbit;
 import com.ntmspace.trait.CBT_Atmosphere;
 import com.ntmspace.trait.CelestialTraits;
+import com.ntmspace.world.CelestialBodies;
+import dev.golem.core.hook.Verdict;
 import dev.golem.core.platform.Lifecycle;
 import dev.golem.core.world.BlockBreaks;
+import dev.golem.core.world.BlockChanges;
 import dev.golem.core.world.BlockPlaces;
 import dev.golem.core.world.Vegetation;
+import it.unimi.dsi.fastutil.longs.LongLinkedOpenHashSet;
 import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -45,9 +50,9 @@ import org.jetbrains.annotations.Nullable;
  * chemical thrower's seed slurry starts ("terraforming"). "Misnomer, this isn't actually chunk based, but instead a global
  * handler" (1.7).
  *
- * <p>Events, as in 1.7: a placed block may close a room or be snuffed by the air it lands in, a broken block may open a
- * room, a door finishing its move updates its cells ({@link Sealing}). Not reached: explosions opening rooms and saplings
- * growing in a room (Golem Core has no detonation or tree-growth event yet; reported).
+ * <p>Committed block changes update room topology once at the end of the tick, including explosions, machines, and
+ * door state changes. Entity placements still apply the air's effects to the placed block and update the body's lights;
+ * a door finishing its move also reports its cells ({@link Sealing}), deduplicated with their state changes.
  */
 public final class AtmosphereHandler {
 
@@ -55,6 +60,8 @@ public final class AtmosphereHandler {
 
     private static final Map<ResourceKey<Level>, LinkedHashMap<AtmosphereProvider, AtmosphereBlob>> worldBlobs = new HashMap<>();
     private static final Map<ResourceKey<Level>, Queue<Growth>> growthMap = new HashMap<>();
+    private static final Map<ResourceKey<Level>, List<AtmosphereBlob>> topologyBlobs = new HashMap<>();
+    private static final Map<ResourceKey<Level>, LongLinkedOpenHashSet> topologyChanges = new HashMap<>();
     private static final int MAX_BLOB_RADIUS = 256;
 
     // How much CO2 is converted into O2 from various growing. Balanced around these amounts of plants providing for a single
@@ -70,13 +77,28 @@ public final class AtmosphereHandler {
         Lifecycle.onLevelUnload((server, level) -> {
             worldBlobs.remove(level.dimension());
             growthMap.remove(level.dimension());
+            topologyBlobs.remove(level.dimension());
+            topologyChanges.remove(level.dimension());
         });
         Lifecycle.onServerStopping(server -> {
             worldBlobs.clear();
             growthMap.clear();
+            topologyBlobs.clear();
+            topologyChanges.clear();
             Decompressions.clear();
         });
         Lifecycle.onServerTick(AtmosphereHandler::serverTick);
+        BlockChanges.onChange(new BlockChanges.Handler() {
+            @Override
+            public boolean observesChunk(ServerLevel level, int chunkX, int chunkZ) {
+                return hasTopologyInChunk(level, chunkX, chunkZ);
+            }
+
+            @Override
+            public void onChange(ServerLevel level, BlockPos pos, BlockState before, BlockState after) {
+                topologyChanged(level, pos);
+            }
+        });
         BlockPlaces.onPlace((placer, level, pos, placed) -> blockPlaced(level, pos.immutable(), placed));
         BlockBreaks.onBreak((player, level, pos, state) -> blockBroken(level, pos.immutable(), state));
         Sealing.init();
@@ -150,11 +172,11 @@ public final class AtmosphereHandler {
         return false;
     }
 
-    static List<AtmosphereBlob> getBlobsWithinRadius(Level level, BlockPos pos) {
+    public static List<AtmosphereBlob> getBlobsWithinRadius(Level level, BlockPos pos) {
         return getBlobsWithinRadius(level, pos, MAX_BLOB_RADIUS);
     }
 
-    static List<AtmosphereBlob> getBlobsWithinRadius(Level level, BlockPos pos, int radius) {
+    public static List<AtmosphereBlob> getBlobsWithinRadius(Level level, BlockPos pos, int radius) {
         List<AtmosphereBlob> list = new LinkedList<>();
         double radiusSqr = (double) radius * radius;
         for (AtmosphereBlob blob : blobs(level).values()) {
@@ -171,6 +193,18 @@ public final class AtmosphereHandler {
     /** Is the air pressure high enough to support liquids. */
     public static boolean hasLiquidPressure(@Nullable CBT_Atmosphere atmosphere) {
         return atmosphere != null && atmosphere.getPressure() >= 0.19D;
+    }
+
+    /** Space 1.7 provider boiling, with the bucket/dispenser exception for sufficient air at the placement position. */
+    public static Verdict waterEvaporation(Level level, BlockPos pos) {
+        var inOrbit = Orbit.inOrbit(level);
+        if (CelestialBodies.of(level) == null && !inOrbit) return Verdict.PASS;
+        // Rooms are server-owned; client prediction and off-thread queries use the body's synced ambient air.
+        if (level instanceof ServerLevel server && server.getServer().isSameThread()
+                && hasLiquidPressure(getAtmosphere(level, pos))) return Verdict.DENY;
+        if (inOrbit) return Verdict.ALLOW;
+        var atmosphere = CelestialTraits.getTrait(level, CBT_Atmosphere.class);
+        return atmosphere == null || atmosphere.getPressure() <= 0.2F ? Verdict.ALLOW : Verdict.DENY;
     }
 
     public static boolean willCorrode(@Nullable CBT_Atmosphere atmosphere) {
@@ -242,17 +276,78 @@ public final class AtmosphereHandler {
         if (blob == null) {
             blob = new AtmosphereBlob(handler);
             blobs.put(handler, blob);
+            topologyBlobs.put(handler.getLevel().dimension(), List.copyOf(blobs.values()));
             blob.addBlock(handler.getRootPosition());
         }
     }
 
     public static void unregisterAtmosphere(AtmosphereProvider handler) {
         LinkedHashMap<AtmosphereProvider, AtmosphereBlob> blobs = worldBlobs.get(handler.getLevel().dimension());
-        if (blobs != null) blobs.remove(handler);
+        if (blobs != null && blobs.remove(handler) != null) {
+            var dimension = handler.getLevel().dimension();
+            if (blobs.isEmpty()) {
+                topologyBlobs.remove(dimension);
+                topologyChanges.remove(dimension);
+            } else {
+                topologyBlobs.put(dimension, List.copyOf(blobs.values()));
+            }
+        }
     }
 
     // ---------------------------------------------------------------------------------------------------------------
     // Hooks to update our volumes as necessary
+
+    static boolean hasBlobs(Level level) {
+        return topologyBlobs.containsKey(level.dimension());
+    }
+
+    private static boolean hasTopologyInChunk(ServerLevel level, int chunkX, int chunkZ) {
+        var blobs = topologyBlobs.get(level.dimension());
+        if (blobs == null) return false;
+        int minX = chunkX << 4;
+        int minZ = chunkZ << 4;
+        for (int i = 0; i < blobs.size(); i++) {
+            var root = blobs.get(i).getRootPosition();
+            double dx = Math.max(Math.max(minX - root.getX(), root.getX() - (minX + 15)), 0);
+            double dz = Math.max(Math.max(minZ - root.getZ(), root.getZ() - (minZ + 15)), 0);
+            if (dx * dx + dz * dz <= (double) MAX_BLOB_RADIUS * MAX_BLOB_RADIUS) return true;
+        }
+        return false;
+    }
+
+    /** A cell's sealing may have changed; evaluate its committed state once at the end of this tick. */
+    public static void topologyChanged(ServerLevel level, BlockPos pos) {
+        var blobs = topologyBlobs.get(level.dimension());
+        if (blobs == null) return;
+        for (int i = 0; i < blobs.size(); i++) {
+            var blob = blobs.get(i);
+            if (blob.getRootPosition().distSqr(pos) <= (double) MAX_BLOB_RADIUS * MAX_BLOB_RADIUS) {
+                topologyChanges.computeIfAbsent(level.dimension(), key -> new LongLinkedOpenHashSet()).add(pos.asLong());
+                return;
+            }
+        }
+    }
+
+    private static void updateTopology(ServerLevel level) {
+        var changes = topologyChanges.remove(level.dimension());
+        var snapshot = topologyBlobs.get(level.dimension());
+        if (changes == null || snapshot == null) return;
+        // The provider snapshot is refreshed only when providers change. Reuse it and a nearby list and cursor for
+        // the entire batch; changes caused by atmospheric effects enter the next tick's batch.
+        var nearby = new ArrayList<AtmosphereBlob>(snapshot.size());
+        var pos = new BlockPos.MutableBlockPos();
+        var positions = changes.iterator();
+        while (positions.hasNext()) {
+            long packed = positions.nextLong();
+            pos.set(BlockPos.getX(packed), BlockPos.getY(packed), BlockPos.getZ(packed));
+            if (level.getChunkSource().getChunkNow(pos.getX() >> 4, pos.getZ() >> 4) == null) continue;
+            nearby.clear();
+            for (var blob : snapshot) {
+                if (blob.getRootPosition().distSqr(pos) <= (double) MAX_BLOB_RADIUS * MAX_BLOB_RADIUS) nearby.add(blob);
+            }
+            onSealableChange(level, pos, nearby);
+        }
+    }
 
     static void onSealableChange(ServerLevel level, BlockPos pos, List<AtmosphereBlob> nearbyBlobs) {
         if (AtmosphereBlob.isBlockSealed(level, pos)) {
@@ -265,7 +360,7 @@ public final class AtmosphereHandler {
                 }
             }
         } else {
-            onBlockRemoved(level, pos);
+            onBlockRemoved(pos, nearbyBlobs);
         }
     }
 
@@ -297,7 +392,11 @@ public final class AtmosphereHandler {
     }
 
     static void onBlockRemoved(Level level, BlockPos pos) {
-        for (AtmosphereBlob blob : getBlobsWithinRadius(level, pos)) {
+        onBlockRemoved(pos, getBlobsWithinRadius(level, pos));
+    }
+
+    private static void onBlockRemoved(BlockPos pos, List<AtmosphereBlob> nearbyBlobs) {
+        for (AtmosphereBlob blob : nearbyBlobs) {
             // Make sure that a block can actually be attached to the blob
             for (Direction dir : Direction.values()) {
                 if (blob.contains(pos.relative(dir))) {
@@ -310,18 +409,16 @@ public final class AtmosphereHandler {
         }
     }
 
-    /** 1.7 {@code receiveBlockPlaced} + {@code ModEventHandler.onBlockPlaced}: the seal, then the air's effect, then lights. */
+    /** Entity placement effects and body lights; committed block changes own the room topology. */
     private static void blockPlaced(ServerLevel level, BlockPos pos, BlockState placed) {
-        onBlockPlaced(level, pos);
         boolean placeCancelled = runEffectsOnBlock(level, placed, pos);
         if (placeCancelled) return;
         if (placed.getBlock() instanceof BonemealableBlock) trackPlant(level, pos);
         SpaceLights.placed(level, pos, placed);
     }
 
-    /** 1.7 {@code receiveBlockBroken} (the break event comes before the block is gone) + the lights of the body. */
+    /** The pre-break event updates body lights; topology waits for a successful committed removal. */
     private static void blockBroken(ServerLevel level, BlockPos pos, BlockState state) {
-        onBlockRemoved(level, pos);
         SpaceLights.broken(level, pos, state);
     }
 
@@ -342,14 +439,21 @@ public final class AtmosphereHandler {
     }
 
     private static void serverTick(MinecraftServer server) {
-        Decompressions.tick();
+        var simulating = CelestialTraits.simulationRunsNormally();
+        if (simulating) Decompressions.tick();
         for (ServerLevel level : server.getAllLevels()) {
-            tickTerraforming(level);
-            if (level.getGameTime() % 20 != 0) continue;
+            if (simulating) tickTerraforming(level);
+            updateTopology(level);
+            if (!simulating || level.getGameTime() % 20 != 0) continue;
             LinkedHashMap<AtmosphereProvider, AtmosphereBlob> blobs = worldBlobs.get(level.dimension());
             if (blobs != null) for (AtmosphereBlob blob : new ArrayList<>(blobs.values())) blob.checkGrowth();
-            // 1.7 ModEventHandler world tick: once per second, run atmospheric chemistry
-            CelestialTraits.updateChemistry(level);
+        }
+        if (simulating && server.overworld().getGameTime() % 20 == 0) {
+            // Alias dimensions share their body's air; react each registered surface body once.
+            for (var body : Orbit.landableNames()) {
+                var traits = CelestialTraits.getTraits(body);
+                if (CelestialTraits.updateChemistry(traits)) CelestialTraits.setTraits(body, traits);
+            }
         }
     }
 

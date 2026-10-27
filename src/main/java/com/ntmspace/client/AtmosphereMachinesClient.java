@@ -28,6 +28,10 @@ public final class AtmosphereMachinesClient {
 
     private static @Nullable AudioWrapper breathing;
 
+    public static @Nullable AudioWrapper breathing() {
+        return breathing;
+    }
+
     private AtmosphereMachinesClient() {}
 
     public static void init() {
@@ -68,7 +72,7 @@ public final class AtmosphereMachinesClient {
         data.putFloat("max", 3F);
         data.putInt("life", 100 + rand.nextInt(50));
         data.putString("type", "tower");
-        data.putInt("color", emitter.tank.getTankType().getColor());
+        data.putInt("color", emitter.tank.getTankType().clientMetadata().getColor());
         data.putDouble("mY", 0.2);
         ParticleCreators.TOWER.makeParticle(level, mc.player, rand,
                 pos.getX() + 0.5 - dir.offsetX * 0.5 + rot.offsetX * 0.5, pos.getY() + 2.5,

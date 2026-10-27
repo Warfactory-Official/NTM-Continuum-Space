@@ -31,6 +31,7 @@ public class TileEntityAirScrubber extends TileEntityMachineBase implements IFlu
         TileEntityAirPump.CO2Scrubber {
 
     public static final long MAX_POWER = 10000;
+    public static final long MIN_POWER = 200;
 
     private @Nullable TileEntityAirPump pump;
     public final FluidTankNTM tank = new FluidTankNTM(Fluids.CARBONDIOXIDE, 16_000);
@@ -106,7 +107,7 @@ public class TileEntityAirScrubber extends TileEntityMachineBase implements IFlu
 
     @Override
     public boolean canOperate() {
-        return power > 200;
+        return power > MIN_POWER;
     }
 
     /** 1.7 {@code scrub}: takes as much of {@code amount} as the tank holds, 10 HE per mB; returns what it took. */

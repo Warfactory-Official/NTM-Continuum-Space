@@ -1,5 +1,15 @@
 package com.ntmspace.world.populate;
 
+import dev.golem.core.Ids;
+import java.util.Optional;
+import java.util.function.Predicate;
+import net.minecraft.core.BlockPos;
+import net.minecraft.resources.Identifier;
+import net.minecraft.util.RandomSource;
+import net.minecraft.world.level.WorldGenLevel;
+import net.minecraft.world.level.levelgen.RandomSupport;
+import net.minecraft.world.level.levelgen.structure.templatesystem.BlockMatchTest;
+import net.minecraft.world.level.levelgen.structure.templatesystem.RuleTest;
 import com.ntmspace.world.gen.noise.Noise17Perlin;
 import java.util.Random;
 import java.util.function.Supplier;
@@ -78,6 +88,46 @@ public final class OreCave17 {
         return this;
     }
 
+    /** Configurable placement and a view of the same live producer's materials and band bounds. */
+    public record Config(BlockState ore, Optional<BlockState> fluid,
+                         Optional<BlockState> stalactite, Optional<BlockState> stalagmite,
+                         RuleTest replaceable,
+                         double threshold, int rangeMult, int maxRange, int yLevel,
+                         Identifier domain, boolean exposedByFluid) {}
+
+    /** Legacy producers own their ore-hash seed rather than a named domain; their domain is absent. */
+    public Config configuration(Block stone) {
+        return new Config(ore.get(), Optional.ofNullable(fluid == null ? null : fluid.get()),
+                Optional.ofNullable(stalagmites ? stalactite.get() : null),
+                Optional.ofNullable(stalagmites ? stalagmite.get() : null),
+                new BlockMatchTest(override == null ? stone : override.get()),
+                threshold, rangeMult, maxRange, yLevel, null, ignoreWater);
+    }
+
+    /** Places an explicit band through the same core as the native pre-decoration producer. */
+    public static boolean place(WorldGenLevel level, RandomSource random,
+                                BlockPos origin, Config config) {
+        var cave = new OreCave17("configured:" + config.domain(), 0, config::ore,
+                config.threshold(), config.rangeMult(), config.maxRange(), config.yLevel());
+        config.fluid().ifPresent(value -> cave.withFluid(() -> value));
+        cave.spikes(() -> config.stalactite().orElse(null), () -> config.stalagmite().orElse(null));
+        cave.ignoreWater = config.exposedByFluid();
+        var world = new FeaturePopulateWorld(level, origin, random);
+        // The source's configured field salts the world seed by the actual dimension and requested noise domain.
+        long dimensionSalt = identifierSalt(Ids.keyId(level.getLevel().dimension()));
+        long dimensionSeed = RandomSupport.mixStafford13(level.getSeed() ^ dimensionSalt);
+        long seed = RandomSupport.mixStafford13(dimensionSeed ^ identifierSalt(config.domain()));
+        var sampler = new Noise17Perlin(new Random(seed), 2);
+        cave.generateBand(world, origin.getX() & ~15, origin.getZ() & ~15, world.worldRandom(),
+                state -> config.replaceable().test(state, random), sampler, level);
+        return true;
+    }
+
+    private static long identifierSalt(Identifier id) {
+        var hash = RandomSupport.seedFromHashOf(id.toString());
+        return RandomSupport.mixStafford13(hash.seedLo() ^ Long.rotateLeft(hash.seedHi(), 29));
+    }
+
     /** The noise seed 1.7 gave this cave in a world of {@code worldSeed}. */
     public long noiseSeed(long worldSeed) {
         return worldSeed + (oreHash * 31) + yLevel;
@@ -95,14 +145,23 @@ public final class OreCave17 {
                 noiseSeed = worldSeed;
             }
         }
+        generateBand(world, cX + 8, cZ + 8, rand,
+                state -> PopulateWorld.normalCube(state) && state.is(replace), noise, null);
+    }
+
+    private void generateBand(PopulateWorld world, int startX, int startZ, Random rand,
+                              Predicate<BlockState> replaceable, Noise17Perlin sampler,
+                              WorldGenLevel liveLevel) {
+        boolean configured = liveLevel != null;
+        var pos = new BlockPos.MutableBlockPos();
         BlockState oreState = ore.get();
         BlockState fluidState = fluid == null ? null : fluid.get();
         boolean hasFluid = fluid != null;
         double scale = 0.01D;
 
-        for (int x = cX + 8; x < cX + 24; x++) {
-            for (int z = cZ + 8; z < cZ + 24; z++) {
-                double n = noise.value(x * scale, z * scale);
+        for (int x = startX; x < startX + 16; x++) {
+            for (int z = startZ; z < startZ + 16; z++) {
+                double n = sampler.value(x * scale, z * scale);
                 if (n > threshold) {
                     int range = (int) ((n - threshold) * rangeMult);
                     if (range > maxRange) range = (maxRange * 2) - range;
@@ -111,14 +170,14 @@ public final class OreCave17 {
                     for (int y = yLevel - range; y <= yLevel + range; y++) {
                         BlockState genTarget = world.get(x, y, z);
 
-                        if (PopulateWorld.normalCube(genTarget) && genTarget.is(replace)) {
+                        if (replaceable.test(genTarget)) {
                             boolean shouldGen = false;
-                            boolean canGenFluid = rand.nextBoolean();
+                            boolean canGenFluid = (!configured || hasFluid) && rand.nextBoolean();
 
                             for (int d = 0; d < 6; d++) {
                                 int[] dir = DIRECTIONS[d];
                                 BlockState neighbor = world.get(x + dir[0], y + dir[1], z + dir[2]);
-                                if (neighbor.isAir() || (ignoreWater && PopulateWorld.water(neighbor)) || spike(neighbor)) {
+                                if (neighbor.isAir() || (ignoreWater && (configured ? PopulateWorld.liquid(neighbor) : PopulateWorld.water(neighbor))) || spike(neighbor)) {
                                     shouldGen = true;
                                 }
 
@@ -154,9 +213,11 @@ public final class OreCave17 {
                                 BlockState hanging = stalactite.get();
                                 BlockState standing = stalagmite.get();
                                 // canPlaceBlockAt: the stalactite needs a solid underside above, the stalagmite a solid top below
-                                if (hanging != null && PopulateWorld.normalCube(world.get(x, y + 1, z))) {
+                                if (hanging != null && (configured ? hanging.canSurvive(liveLevel, pos.set(x, y, z))
+                                        : PopulateWorld.normalCube(world.get(x, y + 1, z)))) {
                                     world.set(x, y, z, hanging);
-                                } else if (standing != null && PopulateWorld.normalCube(world.get(x, y - 1, z))) {
+                                } else if (standing != null && (configured ? standing.canSurvive(liveLevel, pos.set(x, y, z))
+                                        : PopulateWorld.normalCube(world.get(x, y - 1, z)))) {
                                     world.set(x, y, z, standing);
                                 }
                             }

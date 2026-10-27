@@ -1,8 +1,10 @@
 package com.ntmspace.inventory.machine;
 
 import java.util.function.Consumer;
+import java.util.function.Predicate;
 import net.minecraft.world.Container;
 import net.minecraft.world.entity.player.Inventory;
+import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.inventory.Slot;
 import net.minecraft.world.item.ItemStack;
 
@@ -35,6 +37,19 @@ public final class MachineMenus {
                 return false;
             }
         };
+    }
+
+    /** Finishes a successful shift-click, including the output slot's crafted-item and achievement callbacks. */
+    public static ItemStack quickMove(Player player, Slot slot, Predicate<ItemStack> route) {
+        if (!slot.hasItem()) return ItemStack.EMPTY;
+        var stack = slot.getItem();
+        var before = stack.copy();
+        if (!route.test(stack)) return ItemStack.EMPTY;
+        slot.onQuickCraft(stack, before);
+        if (stack.isEmpty()) slot.setByPlayer(ItemStack.EMPTY);
+        else slot.setChanged();
+        slot.onTake(player, stack);
+        return before;
     }
 
     /** The 27 inventory slots from {@code top} and the hotbar at {@code hotbarY}, x from 8 (1.7's loops). */

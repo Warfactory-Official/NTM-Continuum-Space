@@ -13,7 +13,7 @@ import java.util.Map;
 import java.util.function.Consumer;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
-import net.minecraft.world.level.EmptyBlockGetter;
+import net.minecraft.world.level.BlockGetter;
 import net.minecraft.world.level.block.state.BlockState;
 
 /**
@@ -59,14 +59,14 @@ public final class MachinePorts {
      * The 1.7 points as ports: each cell of the structure next to a point, the core included, is a port aimed at it.
      * 1.7 subscribed at the point itself, so a point's direction does not always say which cell is behind it.
      */
-    public static PortDef[] ports(BlockState coreState, BlockPos core, DirPos... points) {
+    public static PortDef[] ports(BlockGetter level, BlockState coreState, BlockPos core, DirPos... points) {
         BlockMultiblockCore block = (BlockMultiblockCore) coreState.getBlock();
         Direction facing = coreState.getValue(BlockMultiblockCore.FACING);
         Map<BlockPos, List<ForgeDirection>> byCell = new LinkedHashMap<>();
         for (DirPos point : points) {
             for (Direction toCell : Direction.values()) {
                 BlockPos cell = point.getPos().relative(toCell);
-                if (!cell.equals(core) && !block.claimsCell(EmptyBlockGetter.INSTANCE, core, cell, facing)) continue;
+                if (!cell.equals(core) && !block.claimsCell(level, core, cell, facing)) continue;
                 byCell.computeIfAbsent(cell, k -> new ArrayList<>()).add(ForgeDirection.getOrientation(toCell.getOpposite()));
             }
         }

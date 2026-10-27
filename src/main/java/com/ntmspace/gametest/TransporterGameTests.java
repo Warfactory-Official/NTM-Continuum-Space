@@ -70,7 +70,7 @@ public final class TransporterGameTests {
 
     public static void init() {}
 
-    private static TileEntityTransporterRocket place(GameTestHelper helper, BlockPos relative, Direction facing) {
+    static TileEntityTransporterRocket place(GameTestHelper helper, BlockPos relative, Direction facing) {
         BlockPos core = helper.absolutePos(relative);
         MultiblockHandlerXR.placeAssembled(helper.getLevel(), core, TransporterBlocks.TRANSPORTER_ROCKET.get(), facing);
         return GameTestHelpers.blockEntity(helper, relative, TileEntityTransporterRocket.class);
@@ -292,7 +292,7 @@ public final class TransporterGameTests {
         return data;
     }
 
-    private static CompoundTag linkTo(String dimension, BlockPos pos) {
+    static CompoundTag linkTo(String dimension, BlockPos pos) {
         CompoundTag data = new CompoundTag();
         data.putString("dimension", dimension);
         data.putIntArray("linkedTo", new int[] {pos.getX(), pos.getY(), pos.getZ()});

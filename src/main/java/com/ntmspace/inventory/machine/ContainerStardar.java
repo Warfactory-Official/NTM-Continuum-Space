@@ -1,6 +1,8 @@
 package com.ntmspace.inventory.machine;
 
 import com.ntmspace.registry.SpaceMachinesD;
+import com.ntmspace.tileentity.machine.StardarHeightmap;
+import net.minecraft.server.level.ServerPlayer;
 import com.ntmspace.tileentity.machine.TileEntityMachineStardar;
 import net.minecraft.core.BlockPos;
 import net.minecraft.world.Container;
@@ -18,6 +20,9 @@ import org.jspecify.annotations.Nullable;
  */
 public class ContainerStardar extends AbstractContainerMenu {
 
+    private static final int[] UNSENT = new int[0];
+    private int @Nullable [] sent = UNSENT;
+    private final Player viewer;
     private final Container machine;
     private final @Nullable TileEntityMachineStardar te;
 
@@ -28,6 +33,7 @@ public class ContainerStardar extends AbstractContainerMenu {
     public ContainerStardar(int id, Inventory playerInv, @Nullable TileEntityMachineStardar te) {
         super(SpaceMachinesD.STARDAR_MENU.get(), id);
         this.te = te;
+        this.viewer = playerInv.player;
         this.machine = te != null ? te : new SimpleContainer(1) {
             @Override public int getMaxStackSize() { return 1; }
         };
@@ -35,6 +41,15 @@ public class ContainerStardar extends AbstractContainerMenu {
         addSlot(MachineMenus.plain(machine, 0, 150, 124));
 
         MachineMenus.playerInventory(this::addSlot, playerInv, 174, 232);
+    }
+
+    @Override public void broadcastChanges() {
+        super.broadcastChanges();
+        if (te == null || !(viewer instanceof ServerPlayer player)) return;
+        var map = te.heightmap;
+        if (map == sent) return;
+        sent = map;
+        StardarHeightmap.send(player, te.getBlockPos(), map);
     }
 
     public @Nullable TileEntityMachineStardar getTile() {

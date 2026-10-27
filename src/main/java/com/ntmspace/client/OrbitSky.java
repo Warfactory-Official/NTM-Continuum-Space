@@ -1,5 +1,6 @@
 package com.ntmspace.client;
 
+import com.google.gson.JsonObject;
 import com.mojang.blaze3d.vertex.PoseStack;
 import com.mojang.math.Axis;
 import com.ntmspace.orbit.Orbit;
@@ -47,7 +48,7 @@ public final class OrbitSky implements Skyboxes.Skybox {
         Skies.MODIFIERS.register(SpaceSkies.PHASE, new Skies.Modifier() {
             @Override
             public boolean active(Level level) {
-                return Orbit.inOrbit(level);
+                return level.isClientSide() && Orbit.inOrbit(level);
             }
 
             @Override
@@ -67,6 +68,14 @@ public final class OrbitSky implements Skyboxes.Skybox {
             }
 
             @Override
+            public boolean rawSkyLightFactor(Level level) { return true; }
+
+            @Override
+            public float skyLightFactor(Level level, float factor) {
+                return 1.0F - (float) eclipseAmount;
+            }
+
+            @Override
             public Vec3 skyColor(Level level, Vec3 color) {
                 return Vec3.ZERO;
             }
@@ -81,6 +90,14 @@ public final class OrbitSky implements Skyboxes.Skybox {
                 return null;
             }
         });
+    }
+
+    /** The last rendered orbital state, exposed through the existing sky observation query. */
+    static void appendState(JsonObject json) {
+        json.addProperty("eclipse", eclipseAmount);
+        json.addProperty("orbital_angle", celestialAngle);
+        json.addProperty("orbiting", OrbitalStation.clientStation.orbiting.name);
+        json.addProperty("orbital_state", OrbitalStation.clientStation.state.name());
     }
 
     /** {@code WorldProviderOrbit.updateSky}: the metrics, the sun's angle and the eclipse for this frame. */

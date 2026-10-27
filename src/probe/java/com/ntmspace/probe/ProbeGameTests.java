@@ -1,6 +1,7 @@
 package com.ntmspace.probe;
 
 import dev.golem.core.gametest.GameTests;
+import java.util.ServiceLoader;
 import net.minecraft.gametest.framework.GameTestHelper;
 
 /** The probe's GameTests (the ntmprobe:* namespace). */
@@ -110,9 +111,15 @@ public final class ProbeGameTests {
         helper.succeed();
     }
 
-    public static void init() {
+    private static boolean extended;
+
+    public static synchronized void init() {
         ProbeHookGameTests.init();
         ProbeRegistryGameTests.init();
+        if (extended) return;
+        extended = true;
+        ServiceLoader.load(ProbeExtension.class, ProbeExtension.class.getClassLoader())
+                .forEach(ProbeExtension::tests);
     }
 
     private static void both(GameTestHelper helper) {

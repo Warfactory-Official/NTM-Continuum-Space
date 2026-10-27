@@ -1,15 +1,19 @@
 package com.ntmspace.rocket;
 
+import net.minecraft.network.chat.MutableComponent;
 import com.hbm.inventory.fluid.FluidType;
 import com.hbm.items.weapon.ItemCustomMissilePart.PartType;
 import com.mojang.serialization.Codec;
 import com.mojang.serialization.codecs.RecordCodecBuilder;
 import com.ntmspace.orbit.Orbit;
+import com.ntmspace.satellite.SatelliteOrbit;
+import com.ntmspace.satellite.SpaceSatellites;
 import com.ntmspace.world.SolarSystem;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import net.minecraft.ChatFormatting;
 import net.minecraft.network.RegistryFriendlyByteBuf;
 import net.minecraft.network.chat.Component;
@@ -28,6 +32,8 @@ public final class RocketStruct {
     public @Nullable RocketPart capsule;
     public List<RocketStage> stages = new ArrayList<>();
     public int satFreq = 0;
+    /** Payload settings live in the assembled item's separate {@link SpaceSatellites#ORBIT} component. */
+    public @Nullable SatelliteOrbit satOrbit;
 
     public List<Component> extraIssues = new ArrayList<>();
 
@@ -37,6 +43,7 @@ public final class RocketStruct {
 
     public RocketStruct(ItemStack capsule) {
         this.capsule = RocketParts.get(capsule);
+        satOrbit = SpaceSatellites.ORBIT.get(capsule).orElse(null);
     }
 
     public RocketStruct(@Nullable RocketPart capsule) {
@@ -47,6 +54,7 @@ public final class RocketStruct {
         RocketStruct rocket = new RocketStruct(capsule);
         for (RocketStage stage : stages) rocket.stages.add(stage.copy());
         rocket.satFreq = satFreq;
+        rocket.satOrbit = satOrbit;
         rocket.extraIssues = new ArrayList<>(extraIssues);
         return rocket;
     }
@@ -105,39 +113,39 @@ public final class RocketStruct {
         if (capsule == null && stages.size() == 0) return issues;
 
         if (capsule == null || (!capsule.isApollo() && !capsule.isSatellite()))
-            issues.add(Component.literal("Invalid Capsule/Satellite").withStyle(ChatFormatting.RED));
+            issues.add(issue("invalidCapsule").withStyle(ChatFormatting.RED));
 
         // Current stage stats
         if (stageNum < stages.size()) {
             RocketStage stage = stages.get(stageNum);
-            issues.add(Component.literal("Dry mass: " + getLaunchMass(stageNum) + "kg"));
-            issues.add(Component.literal("Wet mass: " + getWetMass(stageNum) + "kg"));
+            issues.add(issue("dryMass", getLaunchMass(stageNum)));
+            issues.add(issue("wetMass", getWetMass(stageNum)));
             if (stage.thruster != null) {
-                issues.add(Component.literal("Thrust: " + getThrust(stage) + "N"));
-                issues.add(Component.literal("ISP: " + getISP(stage) + "s"));
+                issues.add(issue("thrust", getThrust(stage)));
+                issues.add(issue("isp", getISP(stage)));
             }
         }
 
         for (int i = 0; i < stages.size(); i++) {
             RocketStage stage = stages.get(i);
             if (stage.fuselage == null)
-                issues.add(Component.literal("Stage " + (i + 1) + " missing fuselage").withStyle(ChatFormatting.RED));
+                issues.add(issue("missingFuselage", i + 1).withStyle(ChatFormatting.RED));
             if (stage.thruster == null)
-                issues.add(Component.literal("Stage " + (i + 1) + " missing thruster").withStyle(ChatFormatting.RED));
+                issues.add(issue("missingThruster", i + 1).withStyle(ChatFormatting.RED));
 
             if (stage.fuselage == null || stage.thruster == null)
                 continue;
 
             if (stage.thrusterCount > stage.fuselageCount)
-                issues.add(Component.literal("Stage " + (i + 1) + " too many thrusters").withStyle(ChatFormatting.RED));
+                issues.add(issue("tooManyThrusters", i + 1).withStyle(ChatFormatting.RED));
             if (stage.fuselageCount % stage.thrusterCount != 0)
-                issues.add(Component.literal("Stage " + (i + 1) + " uneven thrusters").withStyle(ChatFormatting.RED));
+                issues.add(issue("unevenThrusters", i + 1).withStyle(ChatFormatting.RED));
 
             if (!"ANY".equals(stage.fuselage.fuel()) && !java.util.Objects.equals(stage.fuselage.fuel(), stage.thruster.fuel()))
-                issues.add(Component.literal("Stage " + (i + 1) + " fuel mismatch").withStyle(ChatFormatting.RED));
+                issues.add(issue("fuelMismatch", i + 1).withStyle(ChatFormatting.RED));
 
             if (i > 0 && stage.fins == null)
-                issues.add(Component.literal("Stage " + (i + 1) + " lacks landing legs").withStyle(ChatFormatting.YELLOW));
+                issues.add(issue("noLegs", i + 1).withStyle(ChatFormatting.YELLOW));
 
             // I was gonna add all sorts of realistic restrictions but then realised
             // KSP lets you shit any part onto any part, and that's fun
@@ -150,17 +158,21 @@ public final class RocketStruct {
             int fuelCapacity = getFuelCapacity(stageNum);
 
             if (fuelRequirement == Integer.MAX_VALUE) {
-                issues.add(Component.literal("Insufficient thrust").withStyle(ChatFormatting.YELLOW));
+                issues.add(issue("insufficientThrust").withStyle(ChatFormatting.YELLOW));
             } else if (fuelCapacity < fuelRequirement) {
-                issues.add(Component.literal("Insufficient fuel: " + fuelCapacity + "/" + fuelRequirement + "mB").withStyle(ChatFormatting.YELLOW));
+                issues.add(issue("insufficientFuel", fuelCapacity, fuelRequirement).withStyle(ChatFormatting.YELLOW));
             } else if (fuelCapacity > 0 && fuelRequirement > 0) {
-                issues.add(Component.literal("Trip possible! " + fuelCapacity + "/" + fuelRequirement + "mB").withStyle(ChatFormatting.GREEN));
+                issues.add(issue("tripPossible", fuelCapacity, fuelRequirement).withStyle(ChatFormatting.GREEN));
             }
         }
 
         issues.addAll(extraIssues);
 
         return issues;
+    }
+
+    private static MutableComponent issue(String key, Object... args) {
+        return Component.translatable("desc.gui.rocket." + key, args);
     }
 
     /** The fuels and amounts the stages hold; {@code Fluids.NONE} is solid fuel. Insertion order is 1.7's HashMap's. */
@@ -433,13 +445,18 @@ public final class RocketStruct {
 
     /** Structural equality (parts and counts), for change detection. */
     public boolean sameAs(@Nullable RocketStruct other) {
-        if (other == null || other.capsule != capsule || other.stages.size() != stages.size()) return false;
-        for (int i = 0; i < stages.size(); i++) {
-            RocketStage a = stages.get(i), b = other.stages.get(i);
-            if (a.fuselage != b.fuselage || a.fins != b.fins || a.thruster != b.thruster
-                    || a.fuselageCount != b.fuselageCount || a.thrusterCount != b.thrusterCount) return false;
-        }
-        return true;
+        return other != null && capsule == other.capsule && stages.equals(other.stages);
+    }
+
+    /** Payload frequency and orbit travel in their own item components; equality describes the rocket design. */
+    @Override
+    public boolean equals(Object other) {
+        return other instanceof RocketStruct rocket && sameAs(rocket);
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(capsule, stages);
     }
 
     public static final class RocketStage {
@@ -450,6 +467,24 @@ public final class RocketStruct {
 
         public int fuselageCount = 1;
         public int thrusterCount = 1;
+
+        public @Nullable RocketPart fuselage() { return fuselage; }
+        public @Nullable RocketPart fins() { return fins; }
+        public @Nullable RocketPart thruster() { return thruster; }
+        public int fuselageCount() { return fuselageCount; }
+        public int thrusterCount() { return thrusterCount; }
+
+        @Override
+        public boolean equals(Object other) {
+            return other instanceof RocketStage stage && fuselage == stage.fuselage && fins == stage.fins
+                    && thruster == stage.thruster && fuselageCount == stage.fuselageCount
+                    && thrusterCount == stage.thrusterCount;
+        }
+
+        @Override
+        public int hashCode() {
+            return Objects.hash(fuselage, fins, thruster, fuselageCount, thrusterCount);
+        }
 
         public RocketStage copy() {
             RocketStage stage = new RocketStage();

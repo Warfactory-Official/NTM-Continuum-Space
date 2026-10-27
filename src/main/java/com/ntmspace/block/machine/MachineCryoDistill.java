@@ -1,5 +1,9 @@
 package com.ntmspace.block.machine;
 
+import com.ntmspace.registry.SpaceMachines;
+import com.hbm.capability.ICapabilityBlock;
+import com.hbm.capability.MachineCaps;
+
 import com.hbm.api.energymk2.IEnergyConnectorBlock;
 import com.hbm.api.fluidmk2.IFluidConnectorBlockMK2;
 import com.hbm.blocks.multiblock.BlockMultiblockMachine;
@@ -24,7 +28,7 @@ import net.minecraft.world.level.block.state.BlockState;
  * {@code TileEntityProxyCombo().fluid().power()} cells on the bottom layer: four front outputs and two side inputs
  * (fluid at the front one, power behind it). Opens the GUI on use.
  */
-public class MachineCryoDistill extends BlockMultiblockMachine implements IEnergyConnectorBlock, IFluidConnectorBlockMK2, ILookOverlay {
+public class MachineCryoDistill extends BlockMultiblockMachine implements IEnergyConnectorBlock, IFluidConnectorBlockMK2, ILookOverlay, ICapabilityBlock {
 
     /** The five 1.7 {@code fillSpace} boxes around the core. */
     static final int[][] BOXES = {
@@ -34,6 +38,13 @@ public class MachineCryoDistill extends BlockMultiblockMachine implements IEnerg
             {2, 0, 3, -1, 2, 2},
             {3, 0, -2, 3, 2, 2},
     };
+
+    @Override
+    public MachineCaps caps() {
+        return MachineCaps.of(SpaceMachines.CRYO_DISTILL_BE).powerIn().fluidIn().fluidOut().fe()
+                .faces(TileEntityMachineCryoDistill.class, (be, side) -> side != Direction.DOWN)
+                .fluidFaces(TileEntityMachineCryoDistill.class, (be, side) -> side != Direction.DOWN);
+    }
 
     public MachineCryoDistill(Properties properties) {
         super(properties);
@@ -108,6 +119,11 @@ public class MachineCryoDistill extends BlockMultiblockMachine implements IEnerg
         }
         if (text.isEmpty()) return null;
         return new ILookOverlay.Data(getName().getString(), 0xffff00, 0x404000, text);
+    }
+
+    @Override
+    protected boolean carriesData() {
+        return true;
     }
 
     /** 1.7 {@code hitCheck}. */

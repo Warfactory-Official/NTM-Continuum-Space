@@ -1,5 +1,7 @@
 package com.ntmspace.fork.machine;
 
+import com.hbm.inventory.fluid.Fluids;
+import net.minecraft.nbt.CompoundTag;
 import com.hbm.inventory.RecipesCommon.AStack;
 import com.hbm.inventory.RecipesCommon.ComparableStack;
 import com.hbm.inventory.RecipesCommon.TagStack;
@@ -15,6 +17,7 @@ import net.minecraft.core.BlockPos;
 import net.minecraft.core.registries.Registries;
 import net.minecraft.network.RegistryFriendlyByteBuf;
 import net.minecraft.tags.TagKey;
+import net.minecraft.world.item.Item;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.LevelAccessor;
 import net.minecraft.world.level.block.state.BlockState;
@@ -25,13 +28,10 @@ import org.jspecify.annotations.Nullable;
  * an NBT structure) does nothing but sync; it is repaired with a blowtorch and six welded steel plates, eight steel
  * pipes, eight resistant-alloy ingots, 24 dense gold wires and a beryllium flywheel. Saved as {@code damaged}.
  *
- * <p>Not ported, on purpose: hbm-space's turbine body and lever are the pre-{@code TileEntityTurbineBase} upstream code
- * (the lever cycles the steam tier without the "operational" check); that is the fork lagging behind 1.7, not
- * NTM: Space content, so HBM's turbine logic stays.
+ * The steam-tier lever clears both tanks while preserving their capacities and the current running state.
  */
 public class TileEntityChungusSpace extends TileEntityChungus implements DamagedMachines.Damageable, INBTTileEntityTransformable {
 
-    public boolean damaged;
     private @Nullable Object lastExplosion;
     private final List<AStack> repair = new ArrayList<>();
 
@@ -40,8 +40,10 @@ public class TileEntityChungusSpace extends TileEntityChungus implements Damaged
     }
 
     public static void serverTick(Level level, BlockPos pos, BlockState state, TileEntityChungusSpace turbine) {
-        if (turbine.damaged) {
+        if (turbine.isDamaged()) {
             turbine.powerBuffer = 0;
+            turbine.operational = false;
+            turbine.stopTurning();
             turbine.networkPackNT();
             return;
         }
@@ -54,12 +56,33 @@ public class TileEntityChungusSpace extends TileEntityChungus implements Damaged
 
     @Override
     public boolean isDamaged() {
-        return damaged;
+        return DamagedMachines.damaged(this);
     }
 
     @Override
     public void setDamaged(boolean damaged) {
-        this.damaged = damaged;
+        DamagedMachines.set(this, damaged);
+    }
+
+    @Override public void damage() {
+        stopTurning();
+        setDamaged(true);
+    }
+
+    @Override public void onLeverPull() {
+        var old = tanks[0].getTankType();
+        var input = old == Fluids.STEAM ? Fluids.HOTSTEAM
+                : old == Fluids.HOTSTEAM ? Fluids.SUPERHOTSTEAM
+                : old == Fluids.SUPERHOTSTEAM ? Fluids.ULTRAHOTSTEAM
+                : Fluids.STEAM;
+        var output = old == Fluids.STEAM ? Fluids.STEAM
+                : old == Fluids.HOTSTEAM ? Fluids.HOTSTEAM
+                : old == Fluids.SUPERHOTSTEAM ? Fluids.SUPERHOTSTEAM
+                : Fluids.SPENTSTEAM;
+        tanks[0].setTankType(input);
+        tanks[0].setFill(0);
+        tanks[1].setTankType(output);
+        tanks[1].setFill(0);
         setChanged();
     }
 
@@ -84,43 +107,42 @@ public class TileEntityChungusSpace extends TileEntityChungus implements Damaged
         return repair;
     }
 
-    static TagKey<net.minecraft.world.item.Item> tag(String path) {
+    static TagKey<Item> tag(String path) {
         return TagKey.create(Registries.ITEM, Ids.of("c", path));
     }
 
     /** 1.7: a turbine an NBT structure places is a wreck. */
     @Override
     public void transformTE(LevelAccessor level, int coordBaseMode) {
-        damaged = true;
+        damage();
     }
 
     @Override
     public void serialize(RegistryFriendlyByteBuf buf) {
         super.serialize(buf);
-        buf.writeBoolean(damaged);
+        buf.writeBoolean(isDamaged());
     }
 
     @Override
     public void deserialize(RegistryFriendlyByteBuf buf) {
         super.deserialize(buf);
-        damaged = buf.readBoolean();
+        setDamaged(buf.readBoolean());
     }
 
     @Override
     protected void saveData(DataOut output) {
         super.saveData(output);
-        output.putBoolean("damaged", damaged);
+        output.putBoolean("damaged", isDamaged());
     }
 
     @Override
     protected void loadData(DataIn input) {
         super.loadData(input);
-        damaged = input.getBooleanOr("damaged", false);
+        setDamaged(input.getBooleanOr("damaged", isDamaged()));
     }
 
-    /** 1.7 {@code IPersistentNBT.restoreData}: a damaged item places a damaged machine. */
     @Override
-    protected void applyCarriedData(net.minecraft.nbt.CompoundTag data) {
+    protected void applyCarriedData(CompoundTag data) {
         super.applyCarriedData(data);
         DamagedMachines.applyCarried(this, data);
     }

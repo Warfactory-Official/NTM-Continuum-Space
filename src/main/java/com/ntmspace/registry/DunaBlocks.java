@@ -44,7 +44,7 @@ public final class DunaBlocks {
     /** 1.7: {@code BlockFalling(Material.sand)}, hardness 0.5, sand sound. */
     public static final RegistryObject<BlockFallingBase> DUNA_SANDS = REG.block("duna_sands", BlockFallingBase::new,
                     p -> p.strength(0.5F).sound(SoundType.SAND))
-            .transform(Presets.cubeAll()).loot(Loot.self()).tag(BlockTag.SHOVEL);
+            .transform(Presets.cubeAll()).loot(Loot.self()).tag(BlockTag.SHOVEL).tag(PlanetTerrainBlocks.PUMP_GROUND);
     public static final RegistryObject<BlockItem> DUNA_SANDS_ITEM = REG.blockItem(DUNA_SANDS).tab(HbmTab.BLOCKS);
 
     /** 1.7: {@code BlockGeneric(Material.rock)}, hardness 2, resistance 10. */
@@ -79,7 +79,7 @@ public final class DunaBlocks {
     /** 1.7: {@code BlockGeneric(Material.rock)}, hardness 1.5, resistance 10. */
     public static final RegistryObject<Block> IKE_STONE = REG.simpleBlock("ike_stone",
                     p -> p.strength(1.5F, 10.0F).sound(SoundType.STONE).requiresCorrectToolForDrops())
-            .transform(Presets.cubeAll()).loot(Loot.self()).tag(BlockTag.PICKAXE);
+            .transform(Presets.cubeAll()).loot(Loot.self()).tag(BlockTag.PICKAXE).tag(PlanetTerrainBlocks.PUMP_GROUND);
     public static final RegistryObject<BlockItem> IKE_STONE_ITEM = REG.blockItem(IKE_STONE).tab(HbmTab.BLOCKS);
 
     /**
@@ -95,7 +95,7 @@ public final class DunaBlocks {
                             .and("_2", Models.cubeAll("ntmspace:blocks/ike_regolith3"))
                             .and("_3", Models.cubeAll("ntmspace:blocks/ike_regolith4")))
                     .states(Variants.pool(4)))
-            .loot(Loot.self()).tag(BlockTag.PICKAXE);
+            .loot(Loot.self()).tag(BlockTag.PICKAXE).tag(PlanetTerrainBlocks.PUMP_GROUND);
     public static final RegistryObject<BlockItem> IKE_REGOLITH_ITEM = REG.blockItem(IKE_REGOLITH)
             .icon(d -> d.models(Models.blockItem("ntmspace:block/ike_regolith_0"))).tab(HbmTab.BLOCKS);
 

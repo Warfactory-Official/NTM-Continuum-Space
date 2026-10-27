@@ -1,5 +1,6 @@
 package com.ntmspace.block.generic;
 
+import net.minecraft.util.RandomSource;
 import com.hbm.api.block.BarrelSkin;
 import com.hbm.tileentity.TileEntityLoadedBase;
 import com.hbm.world.feature.OilSpot;
@@ -47,6 +48,20 @@ public class BrownBarrel extends CompatBlock implements TickingBlock, BarrelSkin
         super(properties);
     }
 
+    /** 1.7 {@code onBlockAdded}: the spill's vanilla tick, 20 ticks out. */
+    @Override
+    public void onPlace(BlockState state, Level level, BlockPos pos, BlockState oldState, boolean movedByPiston) {
+        super.onPlace(state, level, pos, oldState, movedByPiston);
+        if (!level.isClientSide()) level.scheduleTick(pos, this, TICK_RATE);
+    }
+
+    /** 1.7 {@code updateTick}: ten Gaussian picks around the barrel, then the next tick in 20. */
+    @Override
+    public void tick(BlockState state, ServerLevel level, BlockPos pos, RandomSource random) {
+        OilSpot.generateOilSpot(level, pos.getX(), pos.getZ(), 4, 10, false);
+        level.scheduleTick(pos, this, TICK_RATE);
+    }
+
     @Override
     public String barrelSkin() {
         return NtmSpace.MOD_ID + ":textures/blocks/barrel_oily.png";
@@ -69,13 +84,18 @@ public class BrownBarrel extends CompatBlock implements TickingBlock, BarrelSkin
 
     /** 1.7 {@code canDropFromExplosion} false: an explosion takes the barrel and leaves nothing. */
     @Override
+    public boolean dropFromExplosion(Explosion explosion) {
+        return false;
+    }
+
+    @Override
     protected boolean onExplosion(BlockState state, ServerLevel level, BlockPos pos, Explosion explosion,
                                   BiConsumer<ItemStack, BlockPos> onHit) {
         level.removeBlock(pos, false);
         return true;
     }
 
-    /** The renderer's anchor and the 20-tick oil spill. */
+    /** The renderer's anchor (1.7 bound {@code TileEntityBrownBarrel} but never made one); the spill is the block tick. */
     public static final class Barrel extends TileEntityLoadedBase {
 
         /**
@@ -89,9 +109,7 @@ public class BrownBarrel extends CompatBlock implements TickingBlock, BarrelSkin
         }
 
         public static void serverTick(Level level, BlockPos pos, BlockState state, Barrel barrel) {
-            if (++barrel.age % TICK_RATE == 0 && level instanceof ServerLevel server) {
-                OilSpot.generateOilSpot(server, pos.getX(), pos.getZ(), 4, 10, false);
-            }
+            barrel.age++;
         }
 
         public static void clientTick(Level level, BlockPos pos, BlockState state, Barrel barrel) {}

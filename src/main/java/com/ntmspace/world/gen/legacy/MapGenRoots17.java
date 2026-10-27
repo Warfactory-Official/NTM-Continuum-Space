@@ -4,7 +4,7 @@ import java.util.Random;
 
 /**
  * hbm-space's {@code MapGenRoots} ({@code com.hbm.dim.mapgen}), ported line for line: 1.7's cave tunnels, but instead
- * of digging they turn the stone they pass through into oak logs (obsidian below y 10) and grass where a root breaks the
+ * of digging they turn the stone they pass through into Laythe root wood (obsidian below y 10) and grass where a root breaks the
  * surface on filler. Laythe's "roots".
  *
  * <p><b>Ported oddities:</b> the water test of the original tunnel code still runs but its result is ignored (roots grow
@@ -194,7 +194,7 @@ public class MapGenRoots17 extends MapGen17 {
         return data[index] == biome.topBlock;
     }
 
-    /** Stone becomes obsidian below y 10, else an oak log, with grass on exposed filler above. */
+    /** Stone becomes obsidian below y 10, else Laythe root wood, with grass on exposed filler above. */
     protected void digBlock(Block17[] data, int index, int x, int y, int z, int chunkX, int chunkZ, boolean foundTop) {
         Biome17 biome = world.biomeAt(x + chunkX * 16, z + chunkZ * 16);
         Block17 filler = biome.fillerBlock;
@@ -204,7 +204,7 @@ public class MapGenRoots17 extends MapGen17 {
             if (y < 10) {
                 data[index] = Block17.OBSIDIAN;
             } else {
-                data[index] = Block17.OAK_LOG;
+                data[index] = Block17.LAYTHE_ROOT;
 
                 if (foundTop && data[index + 1] == filler) {
                     data[index + 1] = Block17.GRASS;

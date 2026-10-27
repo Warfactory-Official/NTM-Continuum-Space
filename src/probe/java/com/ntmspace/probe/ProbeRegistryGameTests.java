@@ -6,6 +6,7 @@ import static com.ntmspace.probe.ProbeHookGameTests.finish;
 import com.hbm.api.registry.NamedRegistry;
 import com.hbm.inventory.fluid.FluidType;
 import com.hbm.inventory.fluid.Fluids;
+import com.hbm.items.machine.ItemFELCrystal;
 import dev.golem.core.gametest.GameTests;
 import java.util.ArrayList;
 import java.util.List;
@@ -72,13 +73,13 @@ public final class ProbeRegistryGameTests {
         named(errors, "bomblet kind", com.hbm.entity.projectile.EntityBombletZeta.KINDS, "ntmspace:jet", ProbeRecords.NAME);
         named(errors, "warhead type", com.hbm.items.weapon.ItemCustomMissilePart.WarheadType.REGISTRY, "ntmspace:apollo", ProbeRecords.NAME);
         named(errors, "missile fuel", com.hbm.items.weapon.ItemCustomMissilePart.FuelType.REGISTRY, "ntmspace:hydrazine", ProbeRecords.NAME);
-        named(errors, "FEL wavelength", com.hbm.items.machine.ItemFELCrystal.EnumWavelengths.REGISTRY, "ntmspace:xray", "ntmprobe:far_uv");
+        named(errors, "FEL wavelength", ItemFELCrystal.EnumWavelengths.REGISTRY, "XRAY", "ntmprobe:far_uv");
 
         // the two spectra interleave by strength (NTM: Space moved GAMMA and DRX up for its X-ray; the probe's sits below)
         var w = com.hbm.items.machine.ItemFELCrystal.EnumWavelengths.class;
         double uv = com.hbm.items.machine.ItemFELCrystal.EnumWavelengths.UV.strength();
         double probe = ProbeRecords.WAVELENGTH.strength();
-        double xray = com.hbm.items.machine.ItemFELCrystal.EnumWavelengths.byName("ntmspace:xray").strength();
+        double xray = ItemFELCrystal.EnumWavelengths.byName("XRAY").strength();
         double gamma = com.hbm.items.machine.ItemFELCrystal.EnumWavelengths.GAMMA.strength();
         expect(errors, uv < probe && probe < xray && xray < gamma && gamma == 5D, w.getSimpleName() + " strengths " + uv + " < "
                 + probe + " < " + xray + " < " + gamma);
@@ -134,7 +135,7 @@ public final class ProbeRegistryGameTests {
                 && Fluids.networkId(space) != Fluids.networkId(probe) && !probe.isForeign(), "Fluids.register: both addons' fluids");
         // the probe's property file names a trait and a flag the probe registered
         ProbeRecords.ProbeTrait marker = probe.getTrait(ProbeRecords.ProbeTrait.class);
-        expect(errors, probe.temperature == 77 && marker != null && marker.level == 3 && probe.hasTrait(ProbeRecords.ProbeFlag.class),
+        expect(errors, probe.getTemperature() == 77 && marker != null && marker.level == 3 && probe.hasTrait(ProbeRecords.ProbeFlag.class),
                 "probe_fuel properties: " + com.hbm.inventory.fluid.FluidProperties.write(probe));
         refused(errors, "fluid trait ntmspace:rocket", () -> com.hbm.inventory.fluid.FluidProperties.registerTrait("ntmspace:rocket",
                 Object.class, json -> new Object(), trait -> new com.google.gson.JsonObject()));

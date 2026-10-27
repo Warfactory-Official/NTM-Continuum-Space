@@ -3,7 +3,7 @@ package com.ntmspace.entity.mob.ai;
 import com.hbm.entity.ModEntities;
 import com.hbm.entity.projectile.EntityArtilleryShell;
 import com.hbm.entity.projectile.EntityBulletBaseMK4;
-import com.hbm.items.weapon.sedna.factory.XFactory762mm;
+import com.ntmspace.entity.mob.MobWeaponsSpace;
 import com.hbm.sound.ModSounds;
 import java.util.EnumSet;
 import net.minecraft.sounds.SoundSource;
@@ -28,6 +28,10 @@ public class EntityAIBehemothGun extends Goal {
     private boolean artilleryMode;
     private int reloadTimer;
     private final int reloadDelay;
+
+    public EntityAIBehemothGun(PathfinderMob owner, int delay, int switchAttackDistance, int reloadDelay) {
+        this(owner, true, true, delay, switchAttackDistance, reloadDelay);
+    }
 
     public EntityAIBehemothGun(PathfinderMob owner, boolean checkSight, boolean nearbyOnly, int delay,
                                int switchAttackDistance, int reloadDelay) {
@@ -95,10 +99,8 @@ public class EntityAIBehemothGun extends Goal {
         targetY /= distance;
         targetZ /= distance;
 
-        // 1.7 setKnockback(0) mutates HBM's shared r762_ap config (so every 7.62 AP round loses its knockback once a
-        // behemoth has fired); hbm-space's side effect, ported as found. The muzzle "offset" arguments are absolute
-        // coordinates in 1.7 and are overwritten by the setPosition straight after.
-        EntityBulletBaseMK4 bullet = new EntityBulletBaseMK4(this.owner, XFactory762mm.r762_ap.setKnockback(0), 0.5F, 0.01F,
+        // The source muzzle offsets are overwritten immediately after construction.
+        EntityBulletBaseMK4 bullet = new EntityBulletBaseMK4(this.owner, MobWeaponsSpace.R762_AP_STILL, 0.5F, 0.01F,
                 this.owner.getX() + xOffset, this.owner.getY() + yOffset, this.owner.getZ() + zOffset);
         bullet.setPos(this.owner.getX() + xOffset, this.owner.getY() + yOffset, this.owner.getZ() + zOffset);
         bullet.setDeltaMovement(targetX * 0.5D, targetY * 0.5D, targetZ * 0.5D);
@@ -118,9 +120,7 @@ public class EntityAIBehemothGun extends Goal {
             double motionZ = vec.z * 0.05D;
             grenade.setDeltaMovement(motionX, motionY, motionZ);
             grenade.setThrowableHeading(motionX, motionY * 6, motionZ, 5F, 0F);
-            // 1.7 passed (x, z, y) to setTarget(x, y, z): the shell's target height is the target's z and its z the
-            // target's height. hbm-space's argument order, ported as found.
-            grenade.setTarget(this.target.getX(), this.target.getZ(), this.target.getY());
+            grenade.setTarget(this.target.getX(), this.target.getY(), this.target.getZ());
             this.owner.level().playSound(null, this.owner.getX(), this.owner.getY(), this.owner.getZ(),
                     ModSounds.TURRET_JEREMY_FIRE.get(), SoundSource.HOSTILE, 25.0F, 1.0F);
             this.owner.level().addFreshEntity(grenade);

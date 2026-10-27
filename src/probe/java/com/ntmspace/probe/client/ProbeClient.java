@@ -2,13 +2,17 @@ package com.ntmspace.probe.client;
 
 import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
+import com.ntmspace.fork.ForkCapes;
 import com.ntmspace.probe.ProbeEntry;
+import com.ntmspace.probe.ProbeExtension;
 import com.ntmspace.probe.ProbeMarks;
 import com.ntmspace.probe.ProbeNet;
 import com.ntmspace.probe.ProbeRecords;
 import com.ntmspace.probe.ProbeWorld;
 import dev.golem.core.hook.Hook;
 import java.util.List;
+import java.util.ServiceLoader;
+import java.util.UUID;
 import net.minecraft.client.Minecraft;
 import net.minecraft.resources.ResourceKey;
 import net.minecraft.world.level.Level;
@@ -100,6 +104,8 @@ public final class ProbeClient {
         // an entity renderer for the probe's entity type (NTM: Space's renderer class)
         dev.golem.core.client.ClientRegistrations.renderers(r ->
                 r.entity(ProbeRecords.PROBE_COW.get(), com.ntmspace.client.render.mob.RenderMoonCow::new));
+        ServiceLoader.load(ProbeExtension.class, ProbeExtension.class.getClassLoader())
+                .forEach(ProbeExtension::client);
         dev.golem.core.harness.HarnessQueryRegistry.register("ntmprobe_coexist", ProbeClient::query);
     }
 
@@ -242,7 +248,7 @@ public final class ProbeClient {
         out.addProperty("lower_camera_on", lowerOn);
 
         // capes: the first provider that names one; NTM: Space's named players keep NTM: Space's cape
-        java.util.UUID gwen = java.util.UUID.fromString(com.ntmspace.fork.client.ForkClient.DUODEC_);
+        UUID gwen = UUID.fromString(ForkCapes.DUODEC_);
         var spaceCape = dev.golem.core.client.Capes.capeFor(gwen, "probe");
         var ownOff = dev.golem.core.client.Capes.capeFor(mc.player.getUUID(), mc.player.getName().getString());
         ProbeMarks.flag("cape", true);

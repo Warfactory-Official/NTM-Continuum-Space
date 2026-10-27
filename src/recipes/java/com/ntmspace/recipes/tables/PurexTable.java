@@ -16,13 +16,10 @@ import net.minecraft.world.item.ItemStack;
 /**
  * hbm-space {@code PUREXRecipes.registerDefaults}: the Watz rows for the pellet types hbm-space adds to
  * {@code EnumWatzType} (NTM: Space's {@code watz_pellet_depleted_<type>} items, {@link SpaceSpecialItems#WATZ_DEPLETED}),
- * registered after 1.7's Watz rows; they take the order of the last of those (HBM order 47) and sort by id. Replaces
- * the former {@code gen_recipe_changes_nuclear.py}'s {@code gen_purex}.
+ * in 1.7's file order after 1.7's Watz rows. Replaces the former {@code gen_recipe_changes_nuclear.py}'s
+ * {@code gen_purex}.
  */
 public final class PurexTable extends GenericTableSource<GenericRecipe> {
-
-    /** HBM's order of 1.7's Watz rows, the last of which these follow. */
-    private static final int AFTER_WATZ = 47;
 
     public PurexTable() {
         super(PUREXRecipes.INSTANCE);
@@ -98,10 +95,14 @@ public final class PurexTable extends GenericTableSource<GenericRecipe> {
                 .outputFluids(new FluidStack(Fluids.WATZ, 1_000))));
     }
 
-    /** Every row follows 1.7's Watz rows ({@link #AFTER_WATZ}). */
+    /** Rows run in call order, which is 1.7's file order; the base positions them after its own. */
+    private int nextWatzOrder = -1;
+
+    /** Every row follows 1.7's Watz rows, in call order right after HBM's last one. */
     @Override
     public void register(String id, GenericRecipe recipe) {
-        recipe.order = AFTER_WATZ;
+        if (nextWatzOrder < 0) nextWatzOrder = orderOf("hbm:purex/schrabmen") + 1;
+        recipe.order = nextWatzOrder++;
         add(id, recipe);
     }
 

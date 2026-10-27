@@ -74,24 +74,19 @@ public class DunaTerrain17 extends LayeredBodyTerrain17 {
     @Override
     protected Primer getChunkPrimer(int x, int z) {
         // Instead of calling super, we want to do some generation before _and_ after block replacement, for shaping!
-        Primer buffer = new Primer();
-        generateBlocks(x, z, buffer.blocks);
+        Primer buffer = noisePrimer(x, z);
         int[] biomesForGeneration = chunkBiomeIds(x, z);
 
         boolean hasLowlands = false;
         boolean hasNotLowlands = false;
-        boolean hasPlateau = false;
 
         for (int i = 0; i < biomesForGeneration.length; i++) {
             if (biomesForGeneration[i] == DunaLayers17.LOWLANDS) hasLowlands = true; else hasNotLowlands = true;
-            if (biomesForGeneration[i] == DunaLayers17.HILLS) hasPlateau = true;
-            if (hasLowlands && hasNotLowlands && hasPlateau) break;
+            if (hasLowlands && hasNotLowlands) break;
         }
 
-        // Pre-biome blocks
-        if (hasPlateau) genPlateau.generate(this, x, z, buffer.blocks);
-
-        replaceBlocksForBiome(x, z, buffer.blocks, buffer.metas);
+        // The same pre-biome plateau and biome pass used for an external primer.
+        surfacePass(x, z, buffer, null);
 
         // Post-biome blocks
         if (hasLowlands) caveGenV2.generate(this, x, z, buffer.blocks);
@@ -101,6 +96,21 @@ public class DunaTerrain17 extends LayeredBodyTerrain17 {
         oil.generate(this, x, z, buffer.blocks);
 
         return buffer;
+    }
+
+    @Override
+    protected void shapeSurface(int x, int z, Block17[] blocks, Biome17 biome) {
+        if (biome == null ? !chunkHas(x, z, DunaLayers17.HILLS) : biome != hills) return;
+        Legacy17World world = this;
+        if (biome != null) {
+            world = new Legacy17World() {
+                @Override
+                public long seed() { return DunaTerrain17.this.seed(); }
+                @Override
+                public Biome17 biomeAt(int bx, int bz) { return biome; }
+            };
+        }
+        genPlateau.generate(world, x, z, blocks);
     }
 
     /** hbm-space's {@code WorldConfig.ironSpawn} and {@code zincSpawn} defaults. */

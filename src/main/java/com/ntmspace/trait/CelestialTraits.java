@@ -1,5 +1,7 @@
 package com.ntmspace.trait;
 
+import com.ntmspace.recipe.AtmosphereRecipes;
+import dev.golem.core.world.Simulation;
 import com.hbm.inventory.fluid.FluidType;
 import com.hbm.inventory.fluid.Fluids;
 import com.ntmspace.fluid.SpaceFluids;
@@ -230,8 +232,13 @@ public final class CelestialTraits {
     }
 
     /** Client: what the server synced (1.7 {@code updateClientTraits}). */
-    static void receive(Map<String, Map<Class<? extends CelestialBodyTrait>, CelestialBodyTrait>> traits) {
+    public static void receive(Map<String, Map<Class<? extends CelestialBodyTrait>, CelestialBodyTrait>> traits) {
         client = traits == null ? Map.of() : traits;
+    }
+
+    /** The saved trait overrides currently held by the client; defaults are not inserted into this store. */
+    public static Map<String, Map<Class<? extends CelestialBodyTrait>, CelestialBodyTrait>> clientTraits() {
+        return client;
     }
 
     /**
@@ -371,10 +378,18 @@ public final class CelestialTraits {
 
     /** 1.7 {@code consumeGas}: takes {@code amount} mB of {@code fluid} out of the body's air; false if it had none. */
     public static boolean consumeGas(String body, FluidType fluid, double amount) {
-        Map<Class<? extends CelestialBodyTrait>, CelestialBodyTrait> currentTraits = getTraits(body);
-        CBT_Atmosphere atmosphere = (CBT_Atmosphere) currentTraits.get(CBT_Atmosphere.class);
-        if (atmosphere == null) return false;
+        var currentTraits = getTraits(body);
+        if (!currentTraits.containsKey(CBT_Atmosphere.class)) return false;
+        boolean consumed = consumeGas(currentTraits, fluid, amount);
+        setTraits(body, currentTraits);
+        return consumed;
+    }
 
+    /** Takes gas from this exact trait map; detached body defaults stay detached. */
+    public static boolean consumeGas(Map<Class<? extends CelestialBodyTrait>, CelestialBodyTrait> currentTraits,
+                                     FluidType fluid, double amount) {
+        var atmosphere = (CBT_Atmosphere) currentTraits.get(CBT_Atmosphere.class);
+        if (atmosphere == null) return false;
         boolean didConsume = false;
         int emptyIndex = -1;
         for (int i = 0; i < atmosphere.fluids.size(); i++) {
@@ -390,14 +405,20 @@ public final class CelestialTraits {
             atmosphere.fluids.remove(emptyIndex);
             if (atmosphere.fluids.isEmpty()) currentTraits.remove(CBT_Atmosphere.class);
         }
-        setTraits(body, currentTraits);
         return didConsume;
     }
 
     /** 1.7 {@code emitGas}: adds {@code amount} mB of {@code fluid} to the body's air (at most eight gases, the thinnest goes). */
     public static void emitGas(String body, FluidType fluid, double amount) {
-        Map<Class<? extends CelestialBodyTrait>, CelestialBodyTrait> currentTraits = getTraits(body);
-        CBT_Atmosphere atmosphere = (CBT_Atmosphere) currentTraits.get(CBT_Atmosphere.class);
+        var currentTraits = getTraits(body);
+        emitGas(currentTraits, fluid, amount);
+        setTraits(body, currentTraits);
+    }
+
+    /** Adds gas to this exact trait map, without publishing an unsaved body's defaults. */
+    public static void emitGas(Map<Class<? extends CelestialBodyTrait>, CelestialBodyTrait> currentTraits,
+                               FluidType fluid, double amount) {
+        var atmosphere = (CBT_Atmosphere) currentTraits.get(CBT_Atmosphere.class);
         if (atmosphere == null) {
             atmosphere = new CBT_Atmosphere();
             currentTraits.put(CBT_Atmosphere.class, atmosphere);
@@ -418,14 +439,18 @@ public final class CelestialTraits {
             }
             atmosphere.fluids.add(new CBT_Atmosphere.FluidEntry(fluid, amount / MB_PER_ATM));
         }
-        setTraits(body, currentTraits);
+    }
+
+    /** Adds gas to the body of this level through the same map mutation as detached chemistry. */
+    public static void emitGas(Level level, FluidType fluid, double amount) {
+        attach(level);
+        emitGas(bodyOf(level), fluid, amount);
     }
 
     /** 1.7 {@code FT_Gaseous.release}: a gas vented into the air of {@code level}'s body (gases only). */
     public static void release(Level level, FluidType type, double mB) {
         if (level.isClientSide() || !isGas(type)) return;
-        attach(level);
-        emitGas(bodyOf(level), type, mB);
+        emitGas(level, type, mB);
     }
 
     /** 1.7 {@code FT_Gaseous.capture}: a gas taken out of the air of {@code level}'s body (gases only). */
@@ -460,17 +485,20 @@ public final class CelestialTraits {
      * 1.7 {@code updateChemistry}, once per second per level: steam in the air above 0.2 atm in total makes a water table,
      * and the air reacts through the {@code ntmspace:atmosphere} table ({@link com.ntmspace.recipe.AtmosphereRecipes}).
      *
-     * <p>Odd but 1.7's: the trait map is read once before the reactions, and when anything happened it is written back
-     * afterwards. On a body whose traits were never saved that map holds copies of the defaults, so the write-back undoes
-     * that first reaction's gas change (the reaction itself is then saved and runs again a second later); on a saved body
-     * the map holds the live traits the reactions changed, and nothing is lost.
+     * <p>Every reaction mutates the same map. Publishing that map once afterwards preserves reactions on an unsaved
+     * body's copy of its default traits as well as reactions on already saved traits.
      */
     public static void updateChemistry(Level level) {
         attach(level);
         String body = bodyOf(level);
+        var currentTraits = getTraits(body);
+        if (updateChemistry(currentTraits)) setTraits(body, currentTraits);
+    }
+
+    /** Runs one chemistry step on a supplied map, without changing which body owns or saves it. */
+    public static boolean updateChemistry(Map<Class<? extends CelestialBodyTrait>, CelestialBodyTrait> currentTraits) {
         boolean hasUpdated = false;
-        Map<Class<? extends CelestialBodyTrait>, CelestialBodyTrait> currentTraits = getTraits(body);
-        CBT_Atmosphere atmosphere = (CBT_Atmosphere) currentTraits.get(CBT_Atmosphere.class);
+        var atmosphere = (CBT_Atmosphere) currentTraits.get(CBT_Atmosphere.class);
         CBT_Water water = (CBT_Water) currentTraits.get(CBT_Water.class);
         if (water == null && atmosphere != null) {
             double pressure = 0;
@@ -487,10 +515,10 @@ public final class CelestialTraits {
         }
         if (atmosphere != null) {
             for (com.ntmspace.recipe.AtmosphereRecipes.Reaction reaction : com.ntmspace.recipe.AtmosphereRecipes.INSTANCE.reactions()) {
-                if (reactAtmosphere(level, body, reaction)) hasUpdated = true;
+                if (reactAtmosphere(currentTraits, reaction, true)) hasUpdated = true;
             }
         }
-        if (hasUpdated) setTraits(body, currentTraits);
+        return hasUpdated;
     }
 
     /**
@@ -498,9 +526,18 @@ public final class CelestialTraits {
      * the air holds 64 times each input; the inputs are captured and the product released (gases only).
      */
     public static boolean reactAtmosphere(Level level, String body, com.ntmspace.recipe.AtmosphereRecipes.Reaction reaction) {
-        CBT_Atmosphere atmosphere = (CBT_Atmosphere) getTraits(body).get(CBT_Atmosphere.class);
-        if (atmosphere == null) return false; // 1.7 would fail here after a reaction emptied the air; none can
-        int scale = 64;
+        var currentTraits = getTraits(body);
+        boolean apply = !level.isClientSide();
+        boolean reacted = reactAtmosphere(currentTraits, reaction, apply);
+        if (apply && reacted) setTraits(body, currentTraits);
+        return reacted;
+    }
+
+    private static boolean reactAtmosphere(Map<Class<? extends CelestialBodyTrait>, CelestialBodyTrait> currentTraits,
+                                           AtmosphereRecipes.Reaction reaction, boolean apply) {
+        var atmosphere = (CBT_Atmosphere) currentTraits.get(CBT_Atmosphere.class);
+        if (atmosphere == null) return false;
+        int scale = AtmosphereRecipes.SCALE;
         for (com.hbm.inventory.fluid.FluidStack input : reaction.inputs()) {
             boolean hasInput = false;
             for (CBT_Atmosphere.FluidEntry entry : atmosphere.fluids) {
@@ -508,12 +545,11 @@ public final class CelestialTraits {
             }
             if (!hasInput) return false;
         }
-        // 1.7 FT_Gaseous.capture / release on the world, i.e. on {@code body} (named here so a test can use any body)
-        if (level.isClientSide()) return true;
+        if (!apply) return true;
         for (com.hbm.inventory.fluid.FluidStack input : reaction.inputs()) {
-            if (isGas(input.type)) consumeGas(body, input.type, (double) input.fill * scale);
+            if (isGas(input.type)) consumeGas(currentTraits, input.type, (double) input.fill * scale);
         }
-        if (isGas(reaction.output().type)) emitGas(body, reaction.output().type, (double) reaction.output().fill * scale);
+        if (isGas(reaction.output().type)) emitGas(currentTraits, reaction.output().type, (double) reaction.output().fill * scale);
         return true;
     }
 
@@ -528,13 +564,31 @@ public final class CelestialTraits {
     /** Server tick (1.7 {@code ModEventHandler.onServerTick}, phase START): weather, every trait's update, swarms. */
     static void serverTick(MinecraftServer tickServer) {
         if (server != tickServer) serverStarted(tickServer);
-        CBT_Weather.updateGlobalWeather(tickServer.getTickCount());
+        if (!simulationRunsNormally()) return;
+        CBT_Weather.updateGlobalWeather(tickServer.overworld().getGameTime());
         for (String body : allBodies()) {
             Map<Class<? extends CelestialBodyTrait>, CelestialBodyTrait> saved = savedTraits().get(body);
             if (saved == null) continue; // a body on its defaults has nothing that ticks
-            for (CelestialBodyTrait trait : new ArrayList<>(saved.values())) trait.update(false, body);
+            for (var trait : new ArrayList<>(saved.values())) {
+                if (trait instanceof CBT_Invasion invasion) invasion.simulate(body);
+                else trait.update(false, body);
+            }
         }
         updateSwarms();
+    }
+
+    /** Invasion audiences follow players even while vanilla simulation is frozen. Runs on server END. */
+    static void serverMaintenance(MinecraftServer tickServer) {
+        for (var entry : savedTraits().entrySet()) {
+            if (entry.getValue().get(CBT_Invasion.class) instanceof CBT_Invasion invasion) {
+                invasion.updateBar(tickServer, entry.getKey());
+            }
+        }
+    }
+
+    /** Frozen simulation keeps lifecycle callbacks running; celestial gameplay advances only with simulation. */
+    public static boolean simulationRunsNormally() {
+        return Simulation.runsNormally(server);
     }
 
     /** Client tick: 1.7 ran {@code update(true, body)} on the synced traits. */

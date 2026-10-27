@@ -105,7 +105,7 @@ public final class DysonClient {
         }
         fx.setParticleSpeed(mX, mY, mZ);
         fx.setLife(life / (particleSetting + 1));
-        int color = converter.fluid.getColor();
+        int color = converter.fluid.clientMetadata().getColor();
         fx.setColor((color >> 16 & 0xFF) / 255F, (color >> 8 & 0xFF) / 255F, (color & 0xFF) / 255F);
         Particles.add(fx);
     }

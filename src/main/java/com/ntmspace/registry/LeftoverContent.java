@@ -1,5 +1,9 @@
 package com.ntmspace.registry;
 
+import com.hbm.blocks.ModDecoCrateBlocks;
+import com.hbm.items.ItemFamily;
+import dev.golem.core.dejson.Shape;
+import net.minecraft.world.level.block.LadderBlock;
 import com.hbm.creativetabs.HbmTab;
 import com.hbm.items.block.ItemBlockDecoVariant;
 import com.hbm.registration.Presets;
@@ -12,7 +16,9 @@ import com.ntmspace.block.generic.BlockWildFlower;
 import com.ntmspace.block.generic.BrownBarrel;
 import com.ntmspace.item.MachineDescItem;
 import com.ntmspace.tileentity.machine.TileEntityAlgaeFilm;
+import dev.golem.core.dejson.Model;
 import dev.golem.core.dejson.Models;
+import dev.golem.core.dejson.Slots;
 import dev.golem.core.dejson.Variants;
 import dev.golem.core.registry.BlockEntities;
 import dev.golem.core.registry.BlockTag;
@@ -83,9 +89,10 @@ public final class LeftoverContent {
         return p -> base.apply(p).noOcclusion().isSuffocating((s, w, pos) -> false).isViewBlocking((s, w, pos) -> false);
     }
 
-    /** 1.7: {@code BlockOrrery(Material.iron)}, hardness 10, resistance 20, machine tab, particles {@code block_steel_machine}. */
+    /** 1.7: {@code BlockOrrery(Material.iron)}, hardness 10, resistance 12 (1.7's 20 in 26.x units, x3/5),
+     * machine tab, particles {@code block_steel_machine}. */
     public static final RegistryObject<BlockOrrery> ORRERY = REG.block("orrery", BlockOrrery::new,
-                    rendered(p -> p.strength(10.0F, 20.0F).sound(SoundType.METAL).requiresCorrectToolForDrops()))
+                    rendered(p -> p.strength(10.0F, 12.0F).sound(SoundType.METAL).requiresCorrectToolForDrops()))
             .transform(Presets.rendered(Variants.simple())).loot(Loot.self()).tag(BlockTag.PICKAXE);
     public static final RegistryObject<BlockItem> ORRERY_ITEM = REG.blockItem(ORRERY).tab(HbmTab.MACHINES);
 
@@ -124,6 +131,9 @@ public final class LeftoverContent {
             .transform(Presets.rendered(Variants.uniformRange("rotation", 0, 15))).loot(Loot.nothing());
     /** One item per type, index = type ordinal; the block's own item is the first (Teto, registered last). */
     public static final List<RegistryObject<ItemBlockDecoVariant>> PLUSHIE_ITEMS = plushieItems();
+    public static final ItemFamily<BlockSpacePlushie.Type, ItemBlockDecoVariant> PLUSHIE_FAMILY =
+            ItemFamily.of(BlockSpacePlushie.Type.class, type -> PLUSHIE_ITEMS.get(type.ordinal()))
+                    .joins(ModDecoCrateBlocks.plushie_family);
 
     /** 1.7 {@code plant_flower} STRAWBERRY: "Wild Strawberries", plants, blocks tab; drops a strawberry. */
     public static final RegistryObject<BlockWildFlower> PLANT_FLOWER_STRAWBERRY = flower("plant_flower_strawberry", "ntmspace:strawberry");
@@ -131,6 +141,20 @@ public final class LeftoverContent {
     /** 1.7 {@code plant_flower} MINT: "Wild Mint"; drops mint leaves. */
     public static final RegistryObject<BlockWildFlower> PLANT_FLOWER_MINT = flower("plant_flower_mint", "ntmspace:mint_leaves");
     public static final RegistryObject<BlockItem> PLANT_FLOWER_MINT_ITEM = REG.blockItem(PLANT_FLOWER_MINT).tab(HbmTab.BLOCKS);
+
+    /**
+     * 1.7: the martian/mohobase aluminum ladders ({@code BlockLadder}), stone sound, blocks tab. Vanilla's ladder
+     * shape (one plane at the wall) with this block's texture; vanilla climbing needs no seam.
+     */
+    public static final RegistryObject<LadderBlock> LADDER_ALUMINIUM =
+            REG.block("ladder_aluminium", LadderBlock::new,
+                            p -> p.strength(0.25F, 1.2F).sound(SoundType.STONE).noOcclusion()
+                                    .pushReaction(PushReaction.DESTROY))
+                    .model(d -> d.models(Models.renderType(CUTOUT, ladder("ntmspace:blocks/ladder_aluminium")))
+                            .states(Variants.facing())
+                            .item(Models.blockItem("ntmspace:block/ladder_aluminium")))
+                    .loot(Loot.self()).tag(BlockTag.PICKAXE).tag(BlockTag.CLIMBABLE);
+    public static final RegistryObject<BlockItem> LADDER_ALUMINIUM_ITEM = REG.blockItem(LADDER_ALUMINIUM).tab(HbmTab.BLOCKS);
 
     // ---------------------------------------------------------------- block entities (1.7 TileMappings ids in the comments)
 
@@ -201,5 +225,16 @@ public final class LeftoverContent {
                 .model(d -> d.models(Models.renderType(CUTOUT, Models.cross(texture))).states(Variants.simple())
                         .item(Models.generated(texture)))
                 .loot(Loot.only(drop));
+    }
+
+    /** Vanilla's ladder plane (one textured quad at the wall), rotated per facing by {@link Variants#facing()}. */
+    /** Vanilla's ladder plane (one textured quad at the wall), rotated per facing by {@link Variants#facing()}. */
+    private static Shape ladder(String texture) {
+        return Model.of()
+                .textures(Slots.of("texture", texture, "particle", texture))
+                .ambientOcclusion(false)
+                .elements(Model.Element.box(0, 0, 15.2F, 16, 16, 15.2F).shade(false)
+                        .faces(Model.Face.of("north", "#texture").uv(0, 0, 16, 16),
+                                Model.Face.of("south", "#texture").uv(0, 0, 16, 16)));
     }
 }

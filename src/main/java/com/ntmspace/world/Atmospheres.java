@@ -1,5 +1,8 @@
 package com.ntmspace.world;
 
+import com.ntmspace.trait.CBT_Atmosphere;
+import com.ntmspace.trait.CelestialTraits;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
@@ -64,21 +67,43 @@ public final class Atmospheres {
         return AIR.getOrDefault(body, List.of());
     }
 
+    /** Reads the live trait on the side making the query; absent server atmosphere stays absent. */
+    public static List<Entry> of(String body, boolean client) {
+        if (client) return of(body);
+        var atmosphere = CelestialTraits.getTrait(body, CBT_Atmosphere.class, false);
+        if (atmosphere == null) return List.of();
+        var entries = new ArrayList<Entry>(atmosphere.fluids.size());
+        for (var fluid : atmosphere.fluids) entries.add(new Entry(fluid.fluid.getRegistryName(), fluid.pressure));
+        return List.copyOf(entries);
+    }
+
     /** Whether {@code body} has an atmosphere ({@code getTrait(CBT_Atmosphere.class) != null}). */
     public static boolean has(String body) {
-        return !of(body).isEmpty();
+        return has(body, true);
+    }
+
+    public static boolean has(String body, boolean client) {
+        return !of(body, client).isEmpty();
     }
 
     /** {@code CBT_Atmosphere.getPressure()}: the sum of the partial pressures, 0 without air. */
     public static double pressure(String body) {
+        return pressure(body, true);
+    }
+
+    public static double pressure(String body, boolean client) {
         double total = 0;
-        for (Entry entry : of(body)) total += entry.pressure();
+        for (var entry : of(body, client)) total += entry.pressure();
         return total;
     }
 
     /** {@code CBT_Atmosphere.hasFluid(fluid)}. */
     public static boolean hasFluid(String body, String fluid) {
-        for (Entry entry : of(body)) if (entry.fluid().equals(fluid)) return true;
+        return hasFluid(body, fluid, true);
+    }
+
+    public static boolean hasFluid(String body, String fluid, boolean client) {
+        for (var entry : of(body, client)) if (entry.fluid().equals(fluid)) return true;
         return false;
     }
 

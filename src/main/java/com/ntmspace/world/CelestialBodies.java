@@ -108,6 +108,11 @@ public final class CelestialBodies {
 
     /** The body {@code level} is the surface of, or null. */
     public static Body of(Level level) {
-        return BY_LEVEL.get(level.dimension());
+        return of(level.dimension());
+    }
+
+    /** The same surface lookup without requiring the target level to be loaded. */
+    public static Body of(ResourceKey<Level> dimension) {
+        return BY_LEVEL.get(dimension);
     }
 }

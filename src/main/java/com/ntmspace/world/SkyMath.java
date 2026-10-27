@@ -1,9 +1,15 @@
 package com.ntmspace.world;
 
+import com.hbm.inventory.fluid.Fluids;
+import com.ntmspace.trait.CBT_Destroyed;
+import com.ntmspace.trait.CBT_Water;
+import com.ntmspace.trait.CelestialTraits;
 import net.minecraft.util.Mth;
+import com.ntmspace.trait.CBT_War;
+import org.jspecify.annotations.Nullable;
 
 /**
- * The pure formulas of hbm-space's sky, fog and weather rendering, side-neutral so GameTests can pin them: the fog
+ * Side-neutral formulas and live inputs of hbm-space's sky, fog and weather rendering: the fog
  * densities ({@code WorldProviderCelestial/Duna/Laythe.fogDensity}) and the exponential fog they make ({@code GL_EXP}) and the port's linear stand-in for it,
  * the weather colour ({@code WorldProviderCelestial.getWeatherColor}), the atmosphere style and the storm darkening
  * ({@code AtmosphereRenderUtil}) and Eve's lightning schedule ({@code getEveFlashStrength}).
@@ -11,6 +17,36 @@ import net.minecraft.util.Mth;
 public final class SkyMath {
 
     private SkyMath() {}
+
+    /** WorldProviderThatmo's ordinary sun, before its optional battlefield effects. */
+    public static final float THATMO_SUN_MULTIPLIER = 0.1F;
+
+    /** The pre-impact sun term used by the actual sky-light renderer. */
+    public static float sunBrightness(float base, double eclipse, boolean hasAtmosphere, float pressure, float inside) {
+        return sunBrightness(base, eclipse, hasAtmosphere, pressure, inside, 0.0F);
+    }
+
+    public static float sunBrightness(float base, double eclipse, boolean hasAtmosphere, float pressure, float inside, float dust) {
+        var sun = base;
+        sun *= (float) (1 - eclipse * 0.6D);
+        sun *= 1 - dust;
+        if (hasAtmosphere) sun *= Mth.clamp(1.0F - (pressure - 1.5F) * 0.2F, 0.25F, 1.0F);
+        return sun + inside;
+    }
+
+    public static boolean starDestroyed(SolarSystem.Body body, boolean client) {
+        return CelestialTraits.hasTrait(body.getStar().name, CBT_Destroyed.class, client);
+    }
+
+    /** The live war projectiles' light contribution, shared by rendering and side-neutral sky queries. */
+    public static float insideBrightness(@Nullable CBT_War war) {
+        var add = 0.0F;
+        if (war == null) return add;
+        for (var projectile : war.getProjectiles()) {
+            if (projectile.getAnimtime() > 0) add += 100 - projectile.getFlashtime();
+        }
+        return add;
+    }
 
     /** {@code WorldProviderCelestial.fogDensity}: {@code p * p * 0.002} above 2 atm, else no fog change (0). */
     public static float fogDensity(float pressure) {
@@ -31,11 +67,7 @@ public final class SkyMath {
         return 1.0D - Math.exp(-density * distance);
     }
 
-    /**
-     * The port's linear stand-in for 1.7's {@code GL_EXP} fog of {@code density}: a linear fog from the eye ending where
-     * the exponential one is 95 % opaque, {@code ln 20 / density} (59.9 blocks for Eve's 0.05). Modern shaders know only
-     * linear fog and the vanilla fog include is not overridden (user decision 2026-10-11).
-     */
+    /** Linear fog reaches full opacity at the distance where density-based EXP fog is 95% opaque. */
     public static float linearFogEnd(float density) {
         return (float) (Math.log(20.0D) / density);
     }
@@ -61,6 +93,15 @@ public final class SkyMath {
                 (float) Mth.clamp(luminance + (b - luminance) * saturation, 0.0D, 1.0D)};
     }
 
+    /** The precipitation renderer's live sea tint; snow over water and a missing sea both remain white. */
+    public static float[] precipitationColor(String body, boolean snow, boolean client) {
+        var water = CelestialTraits.getTrait(body, CBT_Water.class, client);
+        if (water == null || water.fluid == null || snow && water.fluid == Fluids.WATER) {
+            return new float[] {1.0F, 1.0F, 1.0F};
+        }
+        return weatherColor(water.fluid.getColor(client));
+    }
+
     /** {@code getAtmosphereStyle} of a body that is no gas giant: 2 (haze) above 3 atm, 1 (clouds) from 0.5, else 0. */
     public static int atmosphereStyle(float pressure) {
         if (pressure > 3.0F) return 2;
@@ -81,6 +122,16 @@ public final class SkyMath {
     private static final float EVE_STRIKE_DELAY_RANGE = 2.4F;
     private static final float EVE_STRIKE_GATE_THRESHOLD = 0.82F;
     private static final double EVE_HASH_MULTIPLIER = 43758.5453123D;
+
+    public static float eveFlashStrength(SolarSystem.Body body, float atmosphereTime) {
+        return body != null && body.name.equals("eve") ? eveFlashStrength(atmosphereTime) : 0.0F;
+    }
+
+    /** Adds lightning before the final sky-colour packing/altitude attenuation; callers retain their precision. */
+    public static double eveSkyChannel(double channel, float flash) { return channel + flash; }
+
+    /** WorldProviderEve caps sky illumination even if terraforming or other light sources raise the base. */
+    public static float eveSunBrightness(float value, float flash) { return Math.min(value + flash * 0.7F, 1.0F); }
 
     /** {@code getEveFlashStrength}: one possible strike every 8 s, delayed and gated by a hash of the window. */
     public static float eveFlashStrength(float atmosphereTime) {

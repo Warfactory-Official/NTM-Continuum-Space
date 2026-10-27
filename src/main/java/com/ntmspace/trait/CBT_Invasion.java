@@ -1,8 +1,21 @@
 package com.ntmspace.trait;
 
+import dev.golem.core.world.Compat;
 import com.mojang.serialization.Codec;
 import com.mojang.serialization.codecs.RecordCodecBuilder;
 import java.util.Map;
+import java.util.HashSet;
+import java.util.List;
+import java.util.UUID;
+import com.hbm.entity.mob.EntityUFO;
+import com.ntmspace.entity.missile.CombatDropPods;
+import com.ntmspace.entity.missile.EntityCombatDropPod;
+import net.minecraft.nbt.CompoundTag;
+import net.minecraft.nbt.NbtOps;
+import net.minecraft.server.MinecraftServer;
+import net.minecraft.server.level.ServerBossEvent;
+import net.minecraft.util.Mth;
+import net.minecraft.world.BossEvent;
 import net.minecraft.ChatFormatting;
 import net.minecraft.network.RegistryFriendlyByteBuf;
 import net.minecraft.network.chat.Component;
@@ -24,9 +37,9 @@ public class CBT_Invasion extends CelestialBodyTrait {
         /** 1.7 {@code spawnCattle}: one drop pod near a random player, payload chosen by {@code wave}. */
         void dropPod(ServerLevel level, CBT_Invasion invasion);
         /** 1.7 {@code spawnAttempt}'s spawn: a siege UFO or craft near a random player. */
-        void ufo(ServerLevel level, CBT_Invasion invasion);
+        @Nullable LivingEntity ufo(ServerLevel level, CBT_Invasion invasion);
         /** 1.7 {@code spawnBoss}: the boss UFO above a random player. */
-        void boss(ServerLevel level, CBT_Invasion invasion);
+        @Nullable EntityUFO boss(ServerLevel level, CBT_Invasion invasion);
     }
 
     /** 1.7 {@code onKill}: how many kills {@code entity} counts for (0: none), and whether it is the final boss. */
@@ -59,6 +72,7 @@ public class CBT_Invasion extends CelestialBodyTrait {
     public int podCooldown = 0;
     public boolean bossSpawned = false;
     public boolean warningPlayed;
+    private @Nullable ServerBossEvent bar;
 
     public CBT_Invasion() {}
 
@@ -86,6 +100,10 @@ public class CBT_Invasion extends CelestialBodyTrait {
     }
 
     public static volatile @Nullable ClientEffects CLIENT;
+    public static Runnable CLIENT_WARNING = () -> {
+        var effects = CLIENT;
+        if (effects != null) effects.warning();
+    };
     /** 1.7 kept a {@code new Random()} per trait object; the client's traits are re-made on every sync, so one is shared. */
     private static final java.util.Random CLIENT_RANDOM = new java.util.Random();
 
@@ -93,17 +111,26 @@ public class CBT_Invasion extends CelestialBodyTrait {
     public void update(boolean remote, String body) {
         if (remote) {
             ClientEffects effects = CLIENT;
-            if (!isInvading && !warningPlayed) {
-                warningPlayed = true;
-                if (effects != null) effects.warning();
-            }
             if (CLIENT_RANDOM.nextInt(Math.max(1, 5 - wave)) == 0 && isInvading && effects != null) {
                 effects.meteor();
             }
             return;
         }
+        serverUpdate(body, true);
+    }
+
+    /** The lifecycle runs simulation before levels and refreshes the audience separately on server END. */
+    public void simulate(String body) {
+        serverUpdate(body, false);
+    }
+
+    private void serverUpdate(String body, boolean maintainBar) {
         prepare();
         CelestialTraits.markChanged();
+        if (maintainBar) {
+            var server = CelestialTraits.server();
+            if (server != null) updateBar(server, body);
+        }
         if (isInvading) {
             ServerLevel level = CelestialTraits.levelOf(body);
             if (level == null || level.players().isEmpty()) return;
@@ -134,8 +161,8 @@ public class CBT_Invasion extends CelestialBodyTrait {
     }
 
     /** 1.7 {@code logicTick} (public for the GameTests). */
-    public void logicTick(ServerLevel level) {
-        if (!isInvading) return;
+    public @Nullable EntityUFO logicTick(ServerLevel level) {
+        if (!isInvading) return null;
         switch (wave) {
             case 0 -> advanceWave(level);
             case 1 -> { killreq = 20; if (kills >= killreq) advanceWave(level); }
@@ -145,12 +172,15 @@ public class CBT_Invasion extends CelestialBodyTrait {
                 killreq = 1;
                 if (!bossSpawned) {
                     Spawner spawner = SPAWNER;
-                    if (spawner != null) spawner.boss(level, this);
-                    bossSpawned = true;
+                    var boss = spawner == null ? null : spawner.boss(level, this);
+                    // port: Peaceful spawn refusal leaves the boss phase pending until spawning is allowed.
+                    bossSpawned = boss != null;
+                    return boss;
                 }
             }
             default -> {}
         }
+        return null;
     }
 
     private void advanceWave(ServerLevel level) {
@@ -159,16 +189,22 @@ public class CBT_Invasion extends CelestialBodyTrait {
         broadcast(level, "Wave " + (wave == 4 ? "FINAL" : wave) + " is starting!", ChatFormatting.GOLD);
     }
 
-    public void spawnAttempt(ServerLevel level) {
-        if (wave > 3) return;
+    public @Nullable EntityCombatDropPod spawnCattle(ServerLevel level) {
+        return CombatDropPods.spawnCattle(level, wave);
+    }
+
+    public @Nullable LivingEntity spawnAttempt(ServerLevel level) {
+        if (wave > 3) return null;
         int timer = 200;
         if (wave == 2) timer = 100;
         if (wave == 3) timer = 80;
         if (level.getGameTime() % timer == 0) {
             Spawner spawner = SPAWNER;
-            if (spawner != null) spawner.ufo(level, this);
-            lastSpawns++;
+            var spawned = spawner == null ? null : spawner.ufo(level, this);
+            if (spawned != null) lastSpawns++;
+            return spawned;
         }
+        return null;
     }
 
     /** 1.7 {@code onKill}, from the death event of any living entity on the body. */
@@ -201,6 +237,51 @@ public class CBT_Invasion extends CelestialBodyTrait {
 
     public float getHealth() {
         return killreq - kills;
+    }
+
+    /** The server keeps the invasion boss bar's audience restricted to the invaded body. */
+    public void updateBar(MinecraftServer server, String body) {
+        if (bar == null) {
+            bar = Compat.bossEvent(UUID.randomUUID(), Component.empty(), BossEvent.BossBarColor.PINK,
+                    BossEvent.BossBarOverlay.PROGRESS);
+        }
+        bar.setName(Component.translatable("invasion.hbmspace.wave", wave));
+        bar.setProgress(killreq > 0 ? Mth.clamp((float) (killreq - kills) / killreq, 0F, 1F) : 1F);
+        var watching = new HashSet<ServerPlayer>();
+        if (isInvading && wave < 4) {
+            for (var player : server.getPlayerList().getPlayers()) {
+                if (CelestialTraits.bodyOf(player.level()).equals(body)) watching.add(player);
+            }
+        }
+        for (var player : List.copyOf(bar.getPlayers())) {
+            if (!watching.contains(player)) bar.removePlayer(player);
+        }
+        for (var player : watching) bar.addPlayer(player);
+    }
+
+    public @Nullable ServerBossEvent bar() {
+        return bar;
+    }
+
+    public void removeBar() {
+        if (bar != null) bar.removeAllPlayers();
+    }
+
+    public void writeToNBT(CompoundTag tag) {
+        tag.merge((CompoundTag) codec().encodeStart(NbtOps.INSTANCE, this).result().orElseThrow());
+    }
+
+    public void readFromNBT(CompoundTag tag) {
+        var loaded = codec().parse(NbtOps.INSTANCE, tag).result().orElseThrow();
+        wave = loaded.wave;
+        kills = loaded.kills;
+        killreq = loaded.killreq;
+        waveTime = loaded.waveTime;
+        isInvading = loaded.isInvading;
+        warningPlayed = loaded.warningPlayed;
+        podBurstCounter = loaded.podBurstCounter;
+        podCooldown = loaded.podCooldown;
+        bossSpawned = loaded.bossSpawned;
     }
 
     @Override
@@ -241,6 +322,7 @@ public class CBT_Invasion extends CelestialBodyTrait {
         podBurstCounter = buf.readInt();
         podCooldown = buf.readInt();
         bossSpawned = buf.readBoolean();
+        if (!isInvading && !warningPlayed) CLIENT_WARNING.run();
     }
 
     private record Saved(int wave, int kills, int killreq, double waveTime, boolean isInvading, boolean warningPlayed,

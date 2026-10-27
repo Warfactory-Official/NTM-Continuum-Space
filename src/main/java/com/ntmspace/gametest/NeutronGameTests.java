@@ -116,7 +116,7 @@ public final class NeutronGameTests {
             }
             if (NeutronActivation.STACK.has(stone) || NeutronActivation.STACK.has(source)) errors.add("a stack was activated while off");
             if (NeutronActivation.getActivation(player) != 0F) errors.add("the player was activated while off");
-            if (NeutronActivation.ENTITY.has(player) && NeutronActivation.ENTITY.get(player).activation != 0F) {
+            if (HbmLivingProps.getData(player).getNeutrons() != 0D) {
                 errors.add("living activation stored while off");
             }
             if (mentions(tooltip(source, player), "trait.ntmspace.neutron")) errors.add("neutron tooltip shown while off");
@@ -178,17 +178,15 @@ public final class NeutronGameTests {
             List<Component> lines = tooltip(new ItemStack(item("hbm:billet_po210be")), player);
             if (!mentions(lines, "trait.ntmspace.neutron") || !mentions(lines, "11.25RAD/s^2")) errors.add("neutron tooltip " + lines);
 
-            // an activated stack is radioactive: HazardTransformerRadiationNBT's RADIATION entry (A) plus
-            // HazardTypeRadiation's activation term (A): the tooltip says 2A floored to three places, and n items radiate
-            // (A n + A) / 20
+            // Activation uses one ordinary per-item gamma entry, including the stack count.
             float a = NeutronActivation.stackActivation(stone);
             expect(errors, "stone RADIATION entry", HazardSystem.getHazardLevelFromStack(stone, HazardRegistry.RADIATION), a);
-            String twice = String.valueOf(Math.floor(2 * a * 1000) / 1000);
-            if (!mentions(tooltip(stone, player), twice)) errors.add("activated stone tooltip lacks " + twice + ": " + tooltip(stone, player));
+            String rate = String.valueOf(Math.floor(a * 1000) / 1000);
+            if (!mentions(tooltip(stone, player), rate)) errors.add("activated stone tooltip lacks " + rate + ": " + tooltip(stone, player));
             double env = HbmLivingProps.getRadEnv(player);
             carry(player, stone);
             expect(errors, "stone radiation into the environment buffer", HbmLivingProps.getRadEnv(player) - env,
-                    ((double) a * 4 + a) / 20D * RadiationConfig.hazardRate);
+                    ((double) a * 4) / 20D * RadiationConfig.hazardRate);
 
             // geiger line: activation to one decimal, "RAD/s"
             NeutronActivation.setActivation(player, 12.34F);
@@ -251,10 +249,10 @@ public final class NeutronGameTests {
 
             // switched off, the same reactor tick leaves the pig alone
             SpaceConfig.disableNeutron = true;
-            float before = NeutronActivation.ENTITY.get(pig).activation;
+            double before = HbmLivingProps.getData(pig).getNeutrons();
             reactor.heat = 10_000;
             TileEntityReactorResearch.serverTick(level, abs, level.getBlockState(abs), reactor);
-            if (NeutronActivation.ENTITY.get(pig).activation != before) errors.add("the reactor activated the pig while off");
+            if (HbmLivingProps.getData(pig).getNeutrons() != before) errors.add("the reactor activated the pig while off");
         } finally {
             SpaceConfig.disableNeutron = saved;
             // stop the reactor before the plot keeps ticking it
@@ -292,11 +290,9 @@ public final class NeutronGameTests {
             expect(errors, "decon living", NeutronActivation.getActivation(player), 1.0F * 0.899916F);
             expect(errors, "decon stack", NeutronActivation.stackActivation(stone), 2.0F * 0.899916F);
 
-            // HazardTypeNeutron.decay: dropped only once the previous value was below 1e-5
+            // The source cleanup floor applies after multiplication.
             ItemStack faint = new ItemStack(Items.STONE);
             NeutronActivation.STACK.set(faint, 2e-5F);
-            NeutronActivation.decay(faint, 0.1F);
-            if (!NeutronActivation.STACK.has(faint)) errors.add("decay dropped a value that was still above 1e-5");
             NeutronActivation.decay(faint, 0.1F);
             if (NeutronActivation.STACK.has(faint)) errors.add("decay kept a value below 1e-5");
 

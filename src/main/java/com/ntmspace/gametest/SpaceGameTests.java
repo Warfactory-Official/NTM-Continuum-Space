@@ -2,6 +2,7 @@ package com.ntmspace.gametest;
 
 import com.ntmspace.NtmSpace;
 import dev.golem.core.gametest.GameTests;
+import java.util.ServiceLoader;
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.gametest.framework.GameTestHelper;
 
@@ -85,10 +86,9 @@ public final class SpaceGameTests {
     private static boolean initialised;
 
     /**
-     * Initialises every GameTest class, so each has declared its tests on {@link #TESTS}. {@code SpaceEntry.declare}
-     * calls it, and so does the legacy Fabric {@code fabric-gametest} generator: Fabric API runs that generator from
-     * its own main entrypoint, which can come before Golem Core's (and so before {@code declare}); it then saw only
-     * this class's four tests. HBM's {@code FabricGameTests.initAll} is the same guard.
+     * Declares the native suites and then development extensions on {@link #TESTS}. Fabric's {@link GameTestEntry}
+     * and the Forge-family GameTestSetup call it before registration closes. The legacy Fabric generator can run
+     * earlier, so it uses the same guard to prevent duplicate declarations and extension registration.
      */
     public static synchronized void initAll() {
         if (initialised) return;
@@ -129,6 +129,8 @@ public final class SpaceGameTests {
         SkyShaderGameTests.init();
         StardarThatmoGameTests.init();
         ThatmoStrikeGameTests.init();
+        ServiceLoader.load(SpaceGameTestExtension.class, SpaceGameTestExtension.class.getClassLoader())
+                .forEach(SpaceGameTestExtension::register);
     }
 
     private static void munGenerator(GameTestHelper helper) {

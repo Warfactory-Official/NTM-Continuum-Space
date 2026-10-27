@@ -1,12 +1,11 @@
 package com.ntmspace.block.atmosphere;
 
+import com.ntmspace.atmosphere.AtmosphereText;
 import com.hbm.api.energymk2.IEnergyConnectorBlock;
 import com.hbm.api.fluidmk2.IFluidConnectorBlockMK2;
 import com.hbm.blocks.multiblock.BlockMultiblockMachine;
 import com.hbm.blocks.multiblock.MultiblockSurface;
 import com.hbm.interfaces.ILookOverlay;
-import com.hbm.inventory.fluid.FluidType;
-import com.hbm.inventory.fluid.trait.FluidTraitSimple;
 import com.hbm.items.machine.IItemFluidId;
 import com.hbm.lib.DirPos;
 import com.hbm.lib.ForgeDirection;
@@ -101,13 +100,8 @@ public class MachineAtmosphericEmitter extends BlockMultiblockMachine implements
             return InteractionResult.SUCCESS;
         }
         BlockPos core = emitter.getBlockPos();
-        FluidType type = identifier.getType(level, core.getX(), core.getY(), core.getZ(), stack);
-        if (type.hasTrait(FluidTraitSimple.FT_Gaseous.class) || type.hasTrait(FluidTraitSimple.FT_Gaseous_ART.class)) {
-            emitter.tank.setTankType(type);
-            emitter.setChanged();
-            player.sendSystemMessage(Component.literal("Changed type to ").withStyle(ChatFormatting.YELLOW)
-                    .append(type.getDisplayName()).append(Component.literal("!")));
-        }
+        var type = identifier.getType(level, core.getX(), core.getY(), core.getZ(), stack);
+        AtmosphereText.retypeGaseous(type, player, emitter.tank, emitter);
         return InteractionResult.SUCCESS;
     }
 

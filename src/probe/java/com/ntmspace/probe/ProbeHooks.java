@@ -1,6 +1,7 @@
 package com.ntmspace.probe;
 
 import com.hbm.api.environment.Environment;
+import com.hbm.hazard.transformer.HazardTransformerRadiationNBT;
 import com.hbm.inventory.fluid.FluidType;
 import dev.golem.core.hook.Hook;
 import dev.golem.core.hook.Verdict;
@@ -115,6 +116,8 @@ public final class ProbeHooks {
         // summed
         com.hbm.hazard.type.HazardTypeRadiation.STACK_RADIATION.register(stack -> number(ProbeMarks.flag("stack_radiation")) > 0
                 ? number(ProbeMarks.flag("stack_radiation")) : 0D);
+        HazardTransformerRadiationNBT.COMPONENT_RADIATION.register(stack ->
+                ProbeMarks.flag("component_radiation") instanceof Number contribution ? contribution.doubleValue() : 0D);
         // first non-empty product: NTM: Space's blood rag comes first
         com.hbm.items.special.ItemRag.USE.register(player ->
                 ProbeMarks.entity("rag", player) != null ? new ItemStack(Items.FEATHER) : ItemStack.EMPTY);

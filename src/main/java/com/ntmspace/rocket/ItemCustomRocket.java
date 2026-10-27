@@ -1,7 +1,9 @@
 package com.ntmspace.rocket;
 
 import com.hbm.items.ISatChip;
+import com.hbm.saveddata.satellites.XSatelliteRegistry;
 import com.ntmspace.registry.RocketItems;
+import com.ntmspace.satellite.SpaceSatellites;
 import dev.golem.core.world.CompatItem;
 import dev.golem.core.world.CompatTooltipContext;
 import java.util.List;
@@ -25,7 +27,16 @@ public class ItemCustomRocket extends CompatItem implements ISatChip {
     public static ItemStack build(RocketStruct rocket) {
         ItemStack stack = new ItemStack(RocketItems.ROCKET_CUSTOM.get());
         RocketItems.ROCKET.set(stack, rocket.toDesign());
-        // 1.7 SatelliteBase.ensureItemData: hbm-space-only satellite settings, which HBM's satellites do not carry
+        if (rocket.satFreq != 0) ISatChip.setFreqS(stack, rocket.satFreq);
+        // 1.7 SatelliteBase.ensureItemData: preserve the payload's settings on the assembled rocket.
+        if (rocket.satOrbit != null) {
+            SpaceSatellites.ORBIT.set(stack, rocket.satOrbit);
+        } else if (rocket.capsule != null) {
+            var payload = new ItemStack(rocket.capsule.item());
+            if (XSatelliteRegistry.typeFor(payload) != null) {
+                SpaceSatellites.ORBIT.set(stack, SpaceSatellites.orbit(payload));
+            }
+        }
         return stack;
     }
 
@@ -38,7 +49,11 @@ public class ItemCustomRocket extends CompatItem implements ISatChip {
     /** The rocket a stack holds, or null for no rocket stack (1.7: or a rocket without NBT). */
     public static @Nullable RocketStruct get(@Nullable ItemStack stack) {
         if (stack == null || !(stack.getItem() instanceof ItemCustomRocket)) return null;
-        return RocketItems.ROCKET.get(stack).map(RocketStruct::fromDesign).orElse(null);
+        return RocketItems.ROCKET.get(stack).map(design -> {
+            var rocket = RocketStruct.fromDesign(design);
+            rocket.satOrbit = SpaceSatellites.ORBIT.get(stack).orElse(null);
+            return rocket;
+        }).orElse(null);
     }
 
     public static boolean hasFuel(@Nullable ItemStack stack) {

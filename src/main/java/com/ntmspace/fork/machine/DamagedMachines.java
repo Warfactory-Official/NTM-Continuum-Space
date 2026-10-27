@@ -1,5 +1,6 @@
 package com.ntmspace.fork.machine;
 
+import dev.golem.core.data.CarriedState;
 import com.hbm.blocks.multiblock.MultiblockSurface;
 import com.hbm.interfaces.ILookOverlay;
 import com.hbm.inventory.RecipesCommon.AStack;
@@ -14,6 +15,9 @@ import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.entity.BlockEntity;
+import net.minecraft.world.level.block.Block;
+import net.minecraft.world.level.block.state.properties.BooleanProperty;
+import com.hbm.interfaces.IRepairable;
 import org.jspecify.annotations.Nullable;
 
 /**
@@ -26,10 +30,12 @@ import org.jspecify.annotations.Nullable;
  */
 public final class DamagedMachines {
 
+    public static final BooleanProperty DAMAGED = BooleanProperty.create("damaged");
+
     private DamagedMachines() {}
 
     /** The block entity side: damaged state, the explosion that last hit it, and its repair. */
-    public interface Damageable {
+    public interface Damageable extends IRepairable {
         boolean isDamaged();
 
         void setDamaged(boolean damaged);
@@ -39,6 +45,26 @@ public final class DamagedMachines {
         void lastExplosion(@Nullable Object explosion);
 
         List<AStack> getRepairMaterials();
+
+        default void damage() { setDamaged(true); }
+
+        @Override default void repair(Player player) { setDamaged(false); }
+
+        @Override default void tryExtinguish(Level level, BlockPos pos, EnumExtinguishType type) {}
+    }
+
+    public static boolean damaged(BlockEntity entity) {
+        return entity.getBlockState().getValue(DAMAGED);
+    }
+
+    /** Detached copies may have a level, but must never update the live entity at the same coordinates. */
+    public static void set(BlockEntity entity, boolean damaged) {
+        if (damaged(entity) == damaged) return;
+        var state = entity.getBlockState().setValue(DAMAGED, damaged);
+        var level = entity.getLevel();
+        if (level == null || level.getBlockEntity(entity.getBlockPos()) != entity) entity.setBlockState(state);
+        else level.setBlock(entity.getBlockPos(), state, Block.UPDATE_CLIENTS | Block.UPDATE_KNOWN_SHAPE);
+        entity.setChanged();
     }
 
     /** 1.7 {@code onBlockExploded}; true when {@code pos} belongs to a damageable machine (which then owns the hit). */
@@ -48,7 +74,7 @@ public final class DamagedMachines {
         if (machine.lastExplosion() == explosion) return true;
         machine.lastExplosion(explosion);
         if (!machine.isDamaged()) {
-            machine.setDamaged(true);
+            machine.damage();
         } else {
             level.removeBlock(core, false);
         }
@@ -59,12 +85,7 @@ public final class DamagedMachines {
     public static boolean repair(Level level, BlockPos pos, Player player) {
         Damageable machine = damaged(level, pos);
         if (machine == null) return false;
-        List<AStack> materials = machine.getRepairMaterials();
-        if (materials.isEmpty() || InventoryUtil.doesPlayerHaveAStacks(player, materials, !level.isClientSide())) {
-            if (!level.isClientSide()) machine.setDamaged(false);
-            return true;
-        }
-        return false;
+        return IRepairable.tryRepairMultiblock(level, ((BlockEntity) machine).getBlockPos(), player);
     }
 
     /**
@@ -100,15 +121,23 @@ public final class DamagedMachines {
             BlockPos pos = BlockPos.containing(params.getParameter(net.minecraft.world.level.storage.loot.parameters.LootContextParams.ORIGIN));
             be = params.getLevel().getBlockEntity(pos);
         }
-        if (!(be instanceof Damageable machine) || !machine.isDamaged()) return;
-        for (ItemStack stack : drops) {
-            if (stack.is(block.asItem())) dev.golem.core.world.ItemStacks.setCarriedBoolean(stack, "damaged", true);
+        if (!(be instanceof Damageable machine)) return;
+        for (var i = 0; i < drops.size(); i++) {
+            var original = drops.get(i);
+            if (!original.is(block.asItem())) continue;
+            var stack = new ItemStack(block.asItem(), original.getCount());
+            CarriedState.writeItemFlag(stack, DAMAGED, "damaged", machine.isDamaged());
+            drops.set(i, stack);
         }
     }
 
     /** 1.7 {@code readNBT} of the dropped item's data: {@code damaged}. */
     public static void applyCarried(Damageable machine, net.minecraft.nbt.CompoundTag data) {
         if (dev.golem.core.data.Tags.getBooleanOr(data, "damaged", false)) machine.setDamaged(true);
+    }
+
+    public static boolean carriedDamage(ItemStack stack) {
+        return CarriedState.readItemFlag(stack, "damaged");
     }
 
     /** The damaged machine {@code pos} belongs to, or null. */

@@ -4,10 +4,15 @@ com.ntmspace.registry.DunaBlocks
 com.ntmspace.registry.PlanetTerrainBlocks
 com.ntmspace.registry.LaytheTektoBlocks
 com.ntmspace.registry.SpaceFluidBlocks
+com.ntmspace.fluid.SpaceFluidTags
+com.ntmspace.fluid.SpaceFluidPropertyData
 com.ntmspace.registry.BodyOreBlocks
+com.ntmspace.registry.RawItems
+com.ntmspace.registry.SpaceOreLoot
 com.ntmspace.registry.PopulateBlocks
 com.ntmspace.registry.AtmosphereContent
 com.ntmspace.registry.FloraBlocks
+com.ntmspace.world.TektoTreeData
 com.ntmspace.registry.SpaceMobs
 com.ntmspace.registry.StationBlocks
 com.ntmspace.registry.StationItemDeclarations
@@ -40,7 +45,10 @@ com.ntmspace.registry.SpaceWasteItems
 com.ntmspace.registry.AtmosphereMachines
 com.ntmspace.registry.AtmosphereMachineItemDeclarations
 com.ntmspace.world.MartianWorld
+com.ntmspace.world.BiomeWaterColorData
 com.ntmspace.registry.LeftoverContent
+com.ntmspace.world.OverworldFloraData
 com.ntmspace.registry.LeftoverDeclarations
 com.ntmspace.fork.ForkBaseChanges
 com.ntmspace.recipe.SpaceCraftingRecipes
+com.ntmspace.inventory.material.SpaceScrapsModels

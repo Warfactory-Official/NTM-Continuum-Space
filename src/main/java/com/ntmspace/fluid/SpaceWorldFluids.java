@@ -1,6 +1,7 @@
 package com.ntmspace.fluid;
 
 import com.hbm.registration.Presets;
+import com.hbm.inventory.fluid.Fluids;
 import com.ntmspace.NtmSpace;
 import com.ntmspace.registry.LaytheTektoBlocks;
 import com.ntmspace.registry.SpaceFluidBlocks;
@@ -57,7 +58,12 @@ public final class SpaceWorldFluids {
             () -> LaytheTektoBlocks.CCL_BLOCK.get(), () -> SpaceFluidBlocks.BUCKET_CCL.get());
 
     /** Loads the declarations; called from {@code SpaceEntry.declare} before the blocks that carry them. */
-    public static void init() {}
+    public static void init() {
+        WorldFluids.enableMilk();
+        Fluids.registerAlias(MERCURY::source, () -> Fluids.MERCURY);
+        Fluids.registerAlias(BROMINE::source, () -> SpaceFluids.BROMINE);
+        Fluids.registerAlias(CCL::source, () -> SpaceFluids.CCL);
+    }
 
     /**
      * Golem Core's world-fluid block properties (1.7 {@code BlockFluidBase}: no collision or shape, hardness 100, no

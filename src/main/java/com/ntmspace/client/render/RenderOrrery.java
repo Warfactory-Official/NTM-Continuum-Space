@@ -47,6 +47,7 @@ public final class RenderOrrery extends GemBER<BlockOrrery.TileEntityOrrery, Ren
     // 1.7 caches the metrics per (world time, partial tick); every orrery in view shares one list
     private static long cachedTime = Long.MIN_VALUE;
     private static float cachedPartial = Float.NaN;
+    private static long cachedMultiplier = Long.MIN_VALUE;
     private static List<SolarSystem.OrreryMetric> metrics = List.of();
 
     @Override
@@ -70,10 +71,12 @@ public final class RenderOrrery extends GemBER<BlockOrrery.TileEntityOrrery, Ren
     protected void submitUndeclared(State state, PoseStack pose, SubmitSink sink, CameraInfo camera) {
         SolarSystem.Body sun = SolarSystem.KERBOL;
         long time = (long) state.worldTime;
-        if (time != cachedTime || state.partialTicks != cachedPartial) {
-            metrics = SolarSystem.calculatePositionsOrrery(state.worldTime, state.partialTicks, sun);
+        long multiplier = SolarSystem.CLIENT_TIME_MULTIPLIER;
+        if (time != cachedTime || state.partialTicks != cachedPartial || multiplier != cachedMultiplier) {
+            metrics = SolarSystem.calculatePositionsOrrery(state.worldTime, state.partialTicks, sun, multiplier);
             cachedTime = time;
             cachedPartial = state.partialTicks;
+            cachedMultiplier = multiplier;
         }
 
         pose.pushPose();

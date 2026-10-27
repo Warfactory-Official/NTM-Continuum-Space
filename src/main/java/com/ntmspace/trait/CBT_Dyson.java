@@ -2,6 +2,7 @@ package com.ntmspace.trait;
 
 import com.mojang.serialization.Codec;
 import com.mojang.serialization.codecs.RecordCodecBuilder;
+import io.netty.handler.codec.DecoderException;
 import java.util.HashMap;
 import java.util.Map.Entry;
 import java.util.stream.IntStream;
@@ -104,6 +105,15 @@ public class CBT_Dyson extends CelestialBodyTrait {
         CelestialTraits.modifyTraits(star, dyson);
     }
 
+    /** Current and pending demand for an existing swarm, without registering a consumer. */
+    public int consumerCount(int id) {
+        return swarms.get(id).consumers;
+    }
+
+    public int pendingConsumerCount(int id) {
+        return swarms.get(id).addedConsumers;
+    }
+
     /** Port-only (tests): a swarm's member count in this trait, 0 if it has none. */
     public int members(int id) {
         Swarm swarm = swarms.get(id);
@@ -141,9 +151,9 @@ public class CBT_Dyson extends CelestialBodyTrait {
 
     @Override
     public void writeToBytes(RegistryFriendlyByteBuf buf) {
-        buf.writeInt(swarms.size() * 2);
+        buf.writeInt(swarms.size());
         for (Entry<Integer, Swarm> entry : swarms.entrySet()) {
-            buf.writeShort(entry.getKey());
+            buf.writeInt(entry.getKey());
             buf.writeInt(entry.getValue().members);
         }
     }
@@ -151,9 +161,12 @@ public class CBT_Dyson extends CelestialBodyTrait {
     @Override
     public void readFromBytes(RegistryFriendlyByteBuf buf) {
         int count = buf.readInt();
-        swarms = new HashMap<>();
-        for (int i = 0; i < count; i += 2) {
-            int id = buf.readShort();
+        if (count < 0 || count > buf.readableBytes() / (Integer.BYTES * 2)) {
+            throw new DecoderException("Invalid Dyson swarm count: " + count);
+        }
+        swarms = new HashMap<>(Math.min(count, 65_536));
+        for (int i = 0; i < count; i++) {
+            int id = buf.readInt();
             int members = buf.readInt();
             swarms.put(id, new Swarm(members));
         }

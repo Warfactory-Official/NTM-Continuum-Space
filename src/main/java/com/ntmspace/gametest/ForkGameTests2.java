@@ -445,8 +445,8 @@ public final class ForkGameTests2 {
     // ------------------------------------------------------------------------------------------------ effects
 
     /**
-     * hbm-space's slide: at rest the ground motion is pulled 10% towards 0.6 east, then slowed 10% and by 2% of its speed
-     * (0 -> 0.05292); moving, only the pull (0.2 -> 0.24). Nitan counts as hazmat.
+     * Slippery's corrected idle rule preserves rest (0 -> 0); moving retains the authored pull (0.2 -> 0.24).
+     * Nitan counts as hazmat.
      */
     private static void slippery(GameTestHelper helper) {
         List<String> errors = new ArrayList<>();
@@ -456,7 +456,7 @@ public final class ForkGameTests2 {
         pig.xxa = 0F;
         pig.setDeltaMovement(0, 0, 0);
         com.ntmspace.fork.Slippery.slide(pig);
-        if (Math.abs(pig.getDeltaMovement().x - 0.05292) > 1e-9 || Math.abs(pig.getDeltaMovement().z) > 1e-12) {
+        if (Math.abs(pig.getDeltaMovement().x) > 1e-12 || Math.abs(pig.getDeltaMovement().z) > 1e-12) {
             errors.add("slide at rest gave " + pig.getDeltaMovement());
         }
         pig.zza = 1F;
@@ -498,6 +498,8 @@ public final class ForkGameTests2 {
         if (!jet.payload().equals("ntmspace:carpet_jet")) errors.add("carpet jet payload " + jet.payload());
         var caller = ForkContent.BOMB_CALLER_AIRLINER.get();
         if (!caller.isFoil(new ItemStack(caller))) errors.add("the airliner designator does not glint");
+        airliner.discard();
+        jet.discard();
         finish(helper, errors);
     }
 

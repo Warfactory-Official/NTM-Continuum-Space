@@ -91,7 +91,7 @@ public final class RecipeChangeMetalGameTests {
         crucibleRow(errors, "crucible.arse", 9, "ntmspace:ingot_gaas",
                 new Object[] {"gallium", 48, "arsenic", 24}, new Object[] {"gaas", 72});
         crucibleRow(errors, "crucible.stainless", 2, "ntmspace:ingot_stainless",
-                new Object[] {"steel", 8, "nickel", 8}, new Object[] {"stainless", 16});
+                new Object[] {"steel", 8, "nickel_pure", 8}, new Object[] {"stainless", 16});
         List<String> names = new ArrayList<>();
         for (GenericRecipe r : CrucibleRecipes.INSTANCE.recipeOrderedList) names.add(r.getInternalName());
         follows(errors, names, "crucible.hss", "crucible.hsss");

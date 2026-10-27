@@ -1,5 +1,6 @@
 package com.ntmspace.registry;
 
+import dev.golem.core.world.BlockBreaks;
 import com.hbm.creativetabs.HbmTab;
 import com.hbm.registration.Presets;
 import com.ntmspace.NtmSpace;
@@ -130,5 +131,8 @@ public final class StationBlocks {
 
     private StationBlocks() {}
 
-    public static void init() {}
+    public static void init() {
+        BlockBreaks.onBeforeBreak((player, level, pos, state) ->
+                !BlockOrbitalStation.refusesRemoval(level, pos, state));
+    }
 }

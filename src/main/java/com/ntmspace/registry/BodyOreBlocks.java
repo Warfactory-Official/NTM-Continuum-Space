@@ -1,12 +1,19 @@
 package com.ntmspace.registry;
 
+import dev.golem.core.Ids;
+import dev.golem.core.registry.Substitutions;
+import dev.golem.core.world.CompatBlockItem;
+import net.minecraft.sounds.SoundEvent;
 import com.hbm.creativetabs.HbmTab;
+import com.hbm.blocks.RawOres;
 import com.ntmspace.NtmSpace;
 import com.ntmspace.block.BlockBodyOre;
+import com.ntmspace.block.BlockBodyFluidOre;
 import com.ntmspace.block.BlockBodyOre.Body;
 import com.ntmspace.block.BlockBodyOreOutgas;
 import com.ntmspace.block.BodyOre;
 import com.ntmspace.block.BodyOreItem;
+import com.ntmspace.block.MorkiteSoundType;
 import dev.golem.core.dejson.Dejson;
 import dev.golem.core.dejson.Models;
 import dev.golem.core.dejson.Slots;
@@ -25,6 +32,7 @@ import java.util.Map;
 import java.util.function.Function;
 import java.util.function.UnaryOperator;
 import net.minecraft.core.registries.BuiltInRegistries;
+import net.minecraft.world.item.Rarity;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.SoundType;
 import net.minecraft.world.level.block.state.BlockBehaviour;
@@ -47,7 +55,9 @@ public final class BodyOreBlocks {
 
     public static final DeferredRegister.Blocks BLOCKS = DeferredRegister.createBlocks(NtmSpace.MOD_ID);
     public static final DeferredRegister.Items ITEMS = DeferredRegister.createItems(NtmSpace.MOD_ID);
-    private static final Registrar REG = Registrar.of(BLOCKS, ITEMS);
+    public static final DeferredRegister.Sounds SOUNDS = DeferredRegister.createSounds(NtmSpace.MOD_ID);
+    private static final Registrar REG = Registrar.of(BLOCKS, ITEMS, SOUNDS);
+    public static final RegistryObject<SoundEvent> STEP_MORKITE = REG.sound("step.morkite");
 
     /** The ores by 1.7 path, and the block standing for each one's Kerbin form (null: the ore's own Kerbin state). */
     private static final Map<String, RegistryObject<? extends Block>> ORES = new LinkedHashMap<>();
@@ -55,52 +65,62 @@ public final class BodyOreBlocks {
 
     // ---------------------------------------------------------------- vanilla reproductions (BlockOre(rock, vanilla))
 
-    public static final RegistryObject<BlockBodyOre> ORE_IRON = ore("ore_iron", 3.0F, 5.0F, Loot.self(), "minecraft:iron_ore", "minecraft:iron_ores");
-    public static final RegistryObject<BlockBodyOre> ORE_GOLD = ore("ore_gold", 3.0F, 5.0F, Loot.self(), "minecraft:gold_ore", "minecraft:gold_ores");
+    public static final RegistryObject<BlockBodyOre> ORE_IRON = ore("ore_iron", 3.0F, 5.0F, Loot.oreMultiplied("minecraft:raw_iron", 1, 1), "minecraft:iron_ore", "minecraft:iron_ores");
+    public static final RegistryObject<BlockBodyOre> ORE_GOLD = ore("ore_gold", 3.0F, 5.0F, Loot.oreMultiplied("minecraft:raw_gold", 1, 1), "minecraft:gold_ore", "minecraft:gold_ores");
     public static final RegistryObject<BlockBodyOre> ORE_REDSTONE = ore("ore_redstone", 3.0F, 5.0F, Loot.oreMultiplied("minecraft:redstone", 4, 5), "minecraft:redstone_ore", "minecraft:redstone_ores");
     public static final RegistryObject<BlockBodyOre> ORE_QUARTZ = ore("ore_quartz", 3.0F, 5.0F, Loot.oreMultiplied("minecraft:quartz", 1, 1), "minecraft:nether_quartz_ore", "c:ores/quartz");
     public static final RegistryObject<BlockBodyOre> ORE_DIAMOND = ore("ore_diamond", 3.0F, 5.0F, Loot.oreMultiplied("minecraft:diamond", 1, 1), "minecraft:diamond_ore", "minecraft:diamond_ores");
+    public static final RegistryObject<BlockBodyOre> ORE_LAPIS = ore("ore_lapis", 3.0F, 3.0F, Loot.oreMultiplied("minecraft:lapis_lazuli", 4, 9), "minecraft:lapis_ore", "c:ores/lapis");
+    public static final RegistryObject<BlockBodyOre> ORE_EMERALD = ore("ore_emerald", 3.0F, 3.0F, Loot.oreMultiplied("minecraft:emerald", 1, 1), "minecraft:emerald_ore", "c:ores/emerald");
 
     // ---------------------------------------------------------------- HBM's ores
 
     /** {@code BlockOreOutgas(rock, true, 5, true)}: radon. */
-    public static final RegistryObject<BlockBodyOreOutgas> ORE_URANIUM = outgas("ore_uranium", 5.0F, 10.0F, Loot.self(), true, "hbm:ore_uranium", "c:ores/uranium");
-    public static final RegistryObject<BlockBodyOre> ORE_THORIUM = ore("ore_thorium", 5.0F, 10.0F, Loot.self(), "hbm:ore_thorium", "c:ores/thorium");
-    public static final RegistryObject<BlockBodyOre> ORE_TITANIUM = ore("ore_titanium", 5.0F, 10.0F, Loot.self(), "hbm:ore_titanium", "c:ores/titanium");
+    public static final RegistryObject<BlockBodyOreOutgas> ORE_URANIUM = outgas("ore_uranium", 5.0F, 10.0F, RawOres.drop("hbm:raw_uranium", Loot.self()), true, "hbm:ore_uranium", "c:ores/uranium");
+    public static final RegistryObject<BlockBodyOre> ORE_PLUTONIUM = ore("ore_plutonium", 5.0F, 6.0F, RawOres.drop("hbm:raw_plutonium", Loot.self()), null, "c:ores/plutonium");
+    public static final RegistryObject<BlockBodyOre> ORE_MORKITE = ore("ore_morkite", 5.0F, 6.0F,
+            p -> p.sound(MorkiteSoundType.INSTANCE), Loot.self(), null, null);
+    public static final RegistryObject<BlockBodyOre> ORE_THORIUM = ore("ore_thorium", 5.0F, 10.0F, RawOres.drop("hbm:raw_thorium", Loot.self()), "hbm:ore_thorium", "c:ores/thorium");
+    public static final RegistryObject<BlockBodyOre> ORE_TITANIUM = ore("ore_titanium", 5.0F, 10.0F, RawOres.drop("hbm:raw_titanium", Loot.self()), "hbm:ore_titanium", "c:ores/titanium");
     public static final RegistryObject<BlockBodyOre> ORE_SULFUR = ore("ore_sulfur", 5.0F, 10.0F, Loot.oreMultiplied("hbm:sulfur", 2, 4), "hbm:ore_sulfur", "c:ores/sulfur");
     /** Light 4/15; drops 1-3 glowstone dust. */
     public static final RegistryObject<BlockBodyOre> ORE_GLOWSTONE = ore("ore_glowstone", 5.0F, 10.0F, p -> p.lightLevel(s -> 4), Loot.oreMultiplied("minecraft:glowstone_dust", 1, 3), null, "c:ores/glowstone");
     public static final RegistryObject<BlockBodyOre> ORE_NITER = ore("ore_niter", 5.0F, 10.0F, Loot.oreMultiplied("hbm:niter", 2, 4), "hbm:ore_niter", "c:ores/niter");
-    public static final RegistryObject<BlockBodyOre> ORE_COPPER = ore("ore_copper", 5.0F, 10.0F, Loot.self(), "minecraft:copper_ore", "c:ores/copper");
-    public static final RegistryObject<BlockBodyOre> ORE_NICKEL = ore("ore_nickel", 5.0F, 10.0F, Loot.self(), null, "c:ores/nickel");
+    public static final RegistryObject<BlockBodyOre> ORE_COPPER = ore("ore_copper", 5.0F, 10.0F, Loot.oreMultiplied("minecraft:raw_copper", 2, 5), "minecraft:copper_ore", "c:ores/copper");
+    public static final RegistryObject<BlockBodyOre> ORE_NICKEL = ore("ore_nickel", 5.0F, 10.0F, RawOres.drop("ntmspace:raw_nickel", Loot.self()), null, "c:ores/nickel_pure");
     public static final RegistryObject<BlockBodyOre> ORE_MINERAL = ore("ore_mineral", 5.0F, 10.0F, Loot.self(), null, "c:ores/mineral");
-    public static final RegistryObject<BlockBodyOre> ORE_ZINC = ore("ore_zinc", 5.0F, 10.0F, Loot.self(), null, "c:ores/zinc");
-    public static final RegistryObject<BlockBodyOre> ORE_LITHIUM = ore("ore_lithium", 5.0F, 10.0F, Loot.self(), null, "c:ores/lithium");
-    public static final RegistryObject<BlockBodyOre> ORE_NIOBIUM = ore("ore_niobium", 5.0F, 10.0F, Loot.self(), null, "c:ores/niobium");
+    public static final RegistryObject<BlockBodyOre> ORE_ZINC = ore("ore_zinc", 5.0F, 10.0F, RawOres.drop("ntmspace:raw_zinc", Loot.self()), null, "c:ores/zinc");
+    public static final RegistryObject<BlockBodyOre> ORE_LITHIUM = ore("ore_lithium", 5.0F, 10.0F, RawOres.drop("hbm:raw_lithium", Loot.self()), null, "c:ores/lithium");
+    public static final RegistryObject<BlockBodyOre> ORE_NIOBIUM = ore("ore_niobium", 5.0F, 10.0F, RawOres.drop("ntmspace:raw_niobium", Loot.self()), null, "c:ores/niobium");
+    public static final RegistryObject<BlockBodyOre> ORE_CADMIUM = ore("ore_cadmium", 5.0F, 6.0F, Loot.self(), null, null);
+    public static final RegistryObject<BlockBodyOre> ORE_PALLADIUM = ore("ore_palladium", 5.0F, 6.0F, Loot.self(), null, null);
+    public static final RegistryObject<BlockBodyOre> ORE_ARSENIC = ore("ore_arsenic", 5.0F, 6.0F, Loot.self(), null, null);
+    public static final RegistryObject<BlockBodyOre> ORE_SILICON = ore("ore_silicon", 5.0F, 6.0F, Loot.self(), null, null);
     public static final RegistryObject<BlockBodyOre> ORE_IODINE = ore("ore_iodine", 5.0F, 10.0F, Loot.self(), null, "c:ores/iodine");
-    public static final RegistryObject<BlockBodyOre> ORE_TUNGSTEN = ore("ore_tungsten", 5.0F, 10.0F, Loot.self(), "hbm:ore_tungsten", "c:ores/tungsten");
-    public static final RegistryObject<BlockBodyOre> ORE_ALUMINIUM = ore("ore_aluminium", 5.0F, 10.0F, Loot.self(), "hbm:ore_aluminium", "c:ores/aluminium");
+    public static final RegistryObject<BlockBodyOre> ORE_TUNGSTEN = ore("ore_tungsten", 5.0F, 10.0F, RawOres.drop("hbm:raw_tungsten", Loot.self()), "hbm:ore_tungsten", "c:ores/tungsten");
+    public static final RegistryObject<BlockBodyOre> ORE_ALUMINIUM = ore("ore_aluminium", 5.0F, 10.0F, RawOres.drop("hbm:raw_aluminium", Loot.self()), "hbm:ore_aluminium", "c:ores/aluminium");
     public static final RegistryObject<BlockBodyOre> ORE_FLUORITE = ore("ore_fluorite", 5.0F, 10.0F, Loot.oreMultiplied("hbm:fluorite", 2, 4), "hbm:ore_fluorite", "c:ores/fluorite");
-    public static final RegistryObject<BlockBodyOre> ORE_LEAD = ore("ore_lead", 5.0F, 10.0F, Loot.self(), "hbm:ore_lead", "c:ores/lead");
-    public static final RegistryObject<BlockBodyOre> ORE_SCHRABIDIUM = ore("ore_schrabidium", 15.0F, 600.0F, Loot.self(), "hbm:ore_schrabidium", "c:ores/schrabidium");
-    public static final RegistryObject<BlockBodyOre> ORE_BERYLLIUM = ore("ore_beryllium", 5.0F, 15.0F, Loot.self(), "hbm:ore_beryllium", "c:ores/beryllium");
+    public static final RegistryObject<BlockBodyOre> ORE_LEAD = ore("ore_lead", 5.0F, 10.0F, RawOres.drop("hbm:raw_lead", Loot.self()), "hbm:ore_lead", "c:ores/lead");
+    public static final RegistryObject<BlockBodyOre> ORE_SCHRABIDIUM = ore("ore_schrabidium", 15.0F, 600.0F, RawOres.drop("hbm:raw_schrabidium", Loot.self()), "hbm:ore_schrabidium", "c:ores/schrabidium");
+    public static final RegistryObject<BlockBodyOre> ORE_BERYLLIUM = ore("ore_beryllium", 5.0F, 15.0F, RawOres.drop("hbm:raw_beryllium", Loot.self()), "hbm:ore_beryllium", "c:ores/beryllium");
     /** {@code BlockOreOutgas(rock, true, 5, true)}: asbestos dust. */
     public static final RegistryObject<BlockBodyOreOutgas> ORE_ASBESTOS = outgas("ore_asbestos", 5.0F, 15.0F, Loot.oreMultiplied("hbm:ingot_asbestos", 1, 1), false, "hbm:ore_asbestos", "c:ores/asbestos");
+    public static final RegistryObject<BlockBodyOre> ORE_LIGNITE = ore("ore_lignite", 5.0F, 9.0F, Loot.oreMultiplied("hbm:lignite", 1, 1), "hbm:ore_lignite", "c:ores/lignite");
     /** Drops red phosphorus one time in ten, else fire powder ({@code getItemDropped}); fortune is not applied here. */
     public static final RegistryObject<BlockBodyOre> ORE_FIRE = ore("ore_fire", 0.4F, 10.0F, Loot.oreOrRare("hbm:powder_fire", 1, 1, "hbm:ingot_phosphorus", 0.1D), null, "c:ores/phosphorus");
     public static final RegistryObject<BlockBodyOre> ORE_SHALE = ore("ore_shale", 1.5F, 10.0F, Loot.self(), null, "c:ores/shale");
-    public static final RegistryObject<BlockBodyOre> ORE_AUSTRALIUM = ore("ore_australium", 5.0F, 10.0F, Loot.self(), "hbm:ore_australium", "c:ores/australium");
+    public static final RegistryObject<BlockBodyOre> ORE_AUSTRALIUM = ore("ore_australium", 5.0F, 10.0F, RawOres.drop("ntmspace:raw_australium", Loot.self()), "hbm:ore_australium", "c:ores/australium");
     public static final RegistryObject<BlockBodyOre> ORE_RARE = ore("ore_rare", 5.0F, 10.0F, Loot.oreMultiplied("hbm:chunk_ore_rare", 1, 1), "hbm:ore_rare", "c:ores/rare");
-    public static final RegistryObject<BlockBodyOre> ORE_COBALT = ore("ore_cobalt", 5.0F, 10.0F, Loot.oreMultiplied("hbm:fragment_cobalt", 4, 9), "hbm:ore_cobalt", "c:ores/cobalt");
+    public static final RegistryObject<BlockBodyOre> ORE_COBALT = ore("ore_cobalt", 5.0F, 10.0F, RawOres.drop("hbm:raw_cobalt", Loot.oreMultiplied("hbm:fragment_cobalt", 4, 9)), "hbm:ore_cobalt", "c:ores/cobalt");
     public static final RegistryObject<BlockBodyOre> ORE_CINNEBAR = ore("ore_cinnebar", 5.0F, 10.0F, Loot.oreMultiplied("hbm:cinnabar", 1, 1), "hbm:ore_cinnabar", "c:ores/cinnabar");
     public static final RegistryObject<BlockBodyOre> ORE_COLTAN = ore("ore_coltan", 15.0F, 10.0F, Loot.oreMultiplied("hbm:fragment_coltan", 1, 1), "hbm:ore_coltan", "c:ores/coltan");
-    public static final RegistryObject<BlockBodyOre> ORE_LANTHANIUM = ore("ore_lanthanium", 15.0F, 10.0F, Loot.self(), null, "c:ores/lanthanum");
+    public static final RegistryObject<BlockBodyOre> ORE_LANTHANIUM = ore("ore_lanthanium", 15.0F, 10.0F, RawOres.drop("ntmspace:raw_lanthanium", Loot.self()), null, "c:ores/lanthanum");
 
     /** {@code BlockCluster}: drops its crystal. */
-    public static final RegistryObject<BlockBodyOre> CLUSTER_IRON = ore("cluster_iron", 5.0F, 15.0F, Loot.oreMultiplied("hbm:crystal_iron", 1, 1), "hbm:cluster_iron", null);
-    public static final RegistryObject<BlockBodyOre> CLUSTER_TITANIUM = ore("cluster_titanium", 5.0F, 15.0F, Loot.oreMultiplied("hbm:crystal_titanium", 1, 1), "hbm:cluster_titanium", null);
-    public static final RegistryObject<BlockBodyOre> CLUSTER_ALUMINIUM = ore("cluster_aluminium", 5.0F, 15.0F, Loot.oreMultiplied("hbm:crystal_aluminium", 1, 1), "hbm:cluster_aluminium", null);
-    public static final RegistryObject<BlockBodyOre> CLUSTER_COPPER = ore("cluster_copper", 5.0F, 15.0F, Loot.oreMultiplied("hbm:crystal_copper", 1, 1), "hbm:cluster_copper", null);
+    public static final RegistryObject<BlockBodyOre> CLUSTER_IRON = ore("cluster_iron", 5.0F, 15.0F, Loot.oreMultiplied("hbm:crystal_iron", 1, 1), "hbm:cluster_iron", "c:ores/iron");
+    public static final RegistryObject<BlockBodyOre> CLUSTER_TITANIUM = ore("cluster_titanium", 5.0F, 15.0F, Loot.oreMultiplied("hbm:crystal_titanium", 1, 1), "hbm:cluster_titanium", "c:ores/titanium");
+    public static final RegistryObject<BlockBodyOre> CLUSTER_ALUMINIUM = ore("cluster_aluminium", 5.0F, 15.0F, Loot.oreMultiplied("hbm:crystal_aluminium", 1, 1), "hbm:cluster_aluminium", "c:ores/aluminum");
+    public static final RegistryObject<BlockBodyOre> CLUSTER_COPPER = ore("cluster_copper", 5.0F, 15.0F, Loot.oreMultiplied("hbm:crystal_copper", 1, 1), "hbm:cluster_copper", "c:ores/copper");
 
     // ---------------------------------------------------------------- fluid ores (BlockOreFluid) and their empties
 
@@ -124,7 +144,14 @@ public final class BodyOreBlocks {
 
     private BodyOreBlocks() {}
 
-    public static void init() {}
+    public static void init() {
+        RawItems.init();
+        SpaceOreLoot.declare();
+        for (var path : List.of("ore_rare", "ore_australium"))
+            Substitutions.item(NtmSpace.MOD_ID, "hbm:" + path, properties ->
+                    new CompatBlockItem(BuiltInRegistries.BLOCK.getOptional(
+                            Ids.of("hbm", path)).orElseThrow(), properties.rarity(Rarity.UNCOMMON)));
+    }
 
     // ---------------------------------------------------------------- lookups for the world generators
 
@@ -139,12 +166,24 @@ public final class BodyOreBlocks {
             return BuiltInRegistries.BLOCK.getOptional(dev.golem.core.Ids.parse(KERBIN.get(path)))
                     .map(Block::defaultBlockState).orElse(null);
         }
-        return ore.get().defaultBlockState().setValue(BlockBodyOre.BODY, body);
+        return bodyState(path, body);
+    }
+
+    /** The family's physical BODY variant, including Kerbin's shared-block state. */
+    public static BlockState bodyState(String path, Body body) {
+        var ore = ORES.get(path);
+        return ore == null ? null : ore.get().defaultBlockState().setValue(BlockBodyOre.BODY, body);
     }
 
     /** The registered ore paths. */
     public static List<String> paths() {
         return new ArrayList<>(ORES.keySet());
+    }
+
+    /** Includes a BODY family registered by another content catalogue without creating another block or item. */
+    public static void registerFamily(String path, RegistryObject<? extends Block> block, String kerbin) {
+        if (ORES.putIfAbsent(path, block) != null) throw new IllegalStateException("Duplicate ore family " + path);
+        KERBIN.put(path, kerbin);
     }
 
     // ---------------------------------------------------------------- registration
@@ -177,7 +216,8 @@ public final class BodyOreBlocks {
     }
 
     private static RegistryObject<BlockBodyOre> fluidOre(String path, String overlay, Loot loot, String kerbin) {
-        RegistryObject<BlockBodyOre> block = REG.block(path, BlockBodyOre::new,
+        RegistryObject<BlockBodyOre> block = REG.<BlockBodyOre>block(path,
+                        path.endsWith("_empty") ? BlockBodyOre::new : BlockBodyFluidOre::new,
                         p -> p.strength(5.0F, 10.0F).sound(SoundType.STONE).requiresCorrectToolForDrops())
                 .model(d -> bodyOre(d, overlay)).loot(loot).tag(BlockTag.PICKAXE);
         family(path, block, kerbin, null);
@@ -190,19 +230,25 @@ public final class BodyOreBlocks {
      * tags ({@code ntmspace:ores/<path>}, which the smelting recipes read, and the common ore tag HBM's machines read).
      */
     private static void family(String path, RegistryObject<? extends Block> block, String kerbin, String oreTag) {
-        ORES.put(path, block);
-        KERBIN.put(path, kerbin);
+        registerFamily(path, block, kerbin);
         List<Body> order = new ArrayList<>(List.of(Body.values()));
         order.remove(Body.KERBIN);
         order.add(Body.KERBIN);
         for (Body body : order) {
-            String id = body == Body.KERBIN ? path : path + "_" + body.getSerializedName();
+            String id = body.itemPath(path);
             Function<net.minecraft.world.item.Item.Properties, BodyOreItem> factory = p -> new BodyOreItem(block.get(), p, body);
-            Registrar.Handle<BodyOreItem> item = REG.item(id, factory, Compat::blockDescription)
+            Registrar.Handle<BodyOreItem> item = REG.item(id, factory, properties -> {
+                        var described = Compat.blockDescription(properties);
+                        return path.equals("ore_rare") || path.equals("ore_australium")
+                                ? described.rarity(Rarity.UNCOMMON) : described;
+                    })
                     .icon(d -> d.shares(NtmSpace.MOD_ID + ":block/" + path + "_" + body.getSerializedName()))
                     .tag(ItemTag.of(NtmSpace.MOD_ID + ":ores/" + path))
-                    .tab(HbmTab.RESOURCES);
+                    .tab(HbmTab.BLOCKS);
             if (oreTag != null) item.tag(ItemTag.of(oreTag));
+            if (path.equals("ore_nickel")) item.tag(ItemTag.of("c:ores/nickel"));
+            // 1.7 P_RED.ore() is the red-phosphorus ore dict, whose members are the fire ores.
+            if (path.equals("ore_fire")) item.tag(ItemTag.of("c:ores/red_phosphorus"));
             BodyOre.register(NtmSpace.MOD_ID + ":" + path, body, item);
         }
     }

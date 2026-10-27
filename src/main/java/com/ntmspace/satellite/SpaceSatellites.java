@@ -1,5 +1,9 @@
 package com.ntmspace.satellite;
 
+import com.hbm.items.machine.ItemSatellite;
+import dev.golem.core.registry.Substitutions;
+import java.util.Locale;
+import net.minecraft.world.item.Item;
 import com.hbm.api.environment.Environment;
 import com.hbm.creativetabs.HbmTab;
 import com.hbm.items.ISatChip;
@@ -49,7 +53,7 @@ import org.jspecify.annotations.Nullable;
  *       by a satellite item in {@link #ORBIT} (defaults with the satellite's registered colour where it has none), copied
  *       onto the satellite when it reaches orbit ({@code XSatelliteRegistry.ORBITED}, into {@code Satellite.extra}) and
  *       from chip to chip by the satellite linker ({@code TileEntityMachineSatLinker.CHIP_COPY}, both satellite items).
- *       The settings screen and the sky drawing of satellites are client work left to the sky port.</li>
+ *       The held settings screen edits these same settings through its hand-bound server menu.</li>
  *   <li><b>The three new satellites</b>: {@link SatelliteDysonRelay} ({@code sat_dyson_relay}), the war base
  *       {@link SatelliteWar} and {@link SatelliteRailgun} ({@code sat_war}), saved by name ({@code ntmspace:dyson_relay},
  *       {@code ntmspace:railgun}); which item launches which is the {@code hbm:satellite} item data map (this mod's
@@ -65,11 +69,11 @@ public final class SpaceSatellites {
 
     /** 1.7 {@code sat_dyson_relay} ({@code ItemSatellite(32_000)}), on the missile tab. */
     public static final RegistryObject<ItemSatChip> SAT_DYSON_RELAY =
-            REG.<ItemSatChip>item("sat_dyson_relay", ItemDysonRelay::new, p -> p.stacksTo(1))
+            REG.<ItemSatChip>item("sat_dyson_relay", ItemDysonRelay::new, p -> orbitProperties(p.stacksTo(1), "ntmspace:dyson_relay"))
                     .transform(Presets.sprite("ntmspace:items/sat_dyson_relay")).tab(HbmTab.MISSILES);
     /** 1.7 {@code sat_war} ({@code ItemSatellite(128_000)}, Gerald's sprite), on no tab. */
     public static final RegistryObject<ItemSatChip> SAT_WAR =
-            REG.item("sat_war", ItemSatChip::new, p -> p.stacksTo(1)).transform(Presets.sprite("hbm:items/sat_gerald"));
+            REG.item("sat_war", ItemSatChip::new, p -> orbitProperties(p.stacksTo(1), "ntmspace:railgun")).transform(Presets.sprite("hbm:items/sat_gerald"));
 
     /** A satellite item's orbit settings ({@code ntmspace:sat_orbit}). */
     public static final GolemComponent<SatelliteOrbit> ORBIT =
@@ -102,6 +106,42 @@ public final class SpaceSatellites {
 
     private SpaceSatellites() {}
 
+    /** Item defaults are applied while the owning mod constructs each original item class. */
+    public static void substitute() {
+        for (var type : ItemSatellite.EnumSatType.values()) {
+            var name = switch (type) {
+                case SPY -> "mapper";
+                case SCANNER -> "scanner";
+                case RADAR -> "radar";
+                case MINER_ASTRO -> "miner";
+                case MINER_LUNAR -> "lunar_miner";
+                case PRECISION_LASER -> "precision_laser";
+                case DEATH_RAY -> "laser";
+                case XENIUM_RESONATOR -> "resonator";
+                case RELAY -> "relay";
+                case DETECTOR -> "detector";
+                case RAY_SCAN -> "ray_scan";
+                default -> null;
+            };
+            if (name == null) continue;
+            var id = "hbm:satellite_" + type.name().toLowerCase(Locale.ROOT);
+            Substitutions.item(NtmSpace.MOD_ID, id,
+                    properties -> new ItemSatellite(orbitProperties(properties, name), type));
+        }
+        for (var entry : Map.of(
+                "sat_mapper", "mapper", "sat_scanner", "scanner", "sat_radar", "radar", "sat_laser", "laser",
+                "sat_resonator", "resonator", "sat_miner", "miner", "sat_lunar_miner", "lunar_miner",
+                "sat_gerald", "horizons").entrySet()) {
+            Substitutions.item(NtmSpace.MOD_ID, "hbm:" + entry.getKey(),
+                    properties -> new ItemSatChip(orbitProperties(properties, entry.getValue())));
+        }
+    }
+
+    private static Item.Properties orbitProperties(
+            Item.Properties properties, String name) {
+        return ORBIT.appliedTo(properties, SatelliteOrbit.defaults(COLORS.get(name)));
+    }
+
     /** At mod construction. */
     public static synchronized void init() {
         if (installed) return;
@@ -113,6 +153,7 @@ public final class SpaceSatellites {
         XSatelliteRegistry.ORBITED.register((level, stack, freq, sat) -> orbit(stack, sat.type()).write(sat.extra));
         TileEntityMachineSatLinker.CHIP_COPY.register(SpaceSatellites::copyItemData);
         CompatCommands.server(SpaceSatellites::registerCommand);
+        SatelliteItems.init();
     }
 
     /**
@@ -147,6 +188,11 @@ public final class SpaceSatellites {
         if (type == SatelliteType.LUNAR_MINER) return "mun";
         if (type == SatelliteType.MINER) return "dres";
         return null;
+    }
+
+    /** Whether Space registered this satellite kind's orbit settings and sky colour. */
+    public static boolean isSpace(SatelliteType type) {
+        return COLORS.containsKey(type.name());
     }
 
     /** 1.7 {@code XSatelliteRegistry.getRegisteredColor}: a satellite type's colour (white for one hbm-space lacked). */

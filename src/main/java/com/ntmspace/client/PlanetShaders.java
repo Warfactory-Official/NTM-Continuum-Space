@@ -52,7 +52,7 @@ public final class PlanetShaders {
     public static final Sky.Shader NIGHT_LIGHTS = Sky.Shader.of(NtmSpace.MOD_ID, "sky_nightlights", 2);
     public static final Sky.Shader LIGHTNING = Sky.Shader.of(NtmSpace.MOD_ID, "sky_lightning", 2);
     public static final Sky.Shader NUKE = Sky.Shader.of(NtmSpace.MOD_ID, "sky_nuke", 0);
-    public static final Sky.Shader BLACK_HOLE = Sky.Shader.of(NtmSpace.MOD_ID, "sky_blackhole", 1);
+    public static final Sky.Shader BLACK_HOLE = Sky.Shader.of(NtmSpace.MOD_ID, "sky_blackhole", 1).premultipliedAlpha();
     public static final Sky.Shader FLESH = Sky.Shader.of(NtmSpace.MOD_ID, "sky_flesh", 1);
 
     /** Every shader, for the harness query. */

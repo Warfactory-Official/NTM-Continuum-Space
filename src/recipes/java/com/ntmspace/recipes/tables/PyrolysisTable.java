@@ -35,6 +35,7 @@ public final class PyrolysisTable extends RecipeSource<Row> {
     /** hbm-space {@code registerSFAuto}, a 60-tick recipe. */
     private void registerSFAuto(FluidType fluid, long tuPerSF, Item fuel) {
         register("solid_fuel_" + fluid.getKey(), new Row(Optional.empty(), Optional.empty(), Optional.empty(),
-                Optional.of(new ItemOut(fuel, 1)), 60, Optional.of(fluid), Optional.of(tuPerSF)));
+                Optional.of(new ItemOut(fuel, 1)), 60, Optional.of(fluid), Optional.of(tuPerSF),
+                loaded("hbm:pyrolysis/solid_fuel_balefire").order()));
     }
 }

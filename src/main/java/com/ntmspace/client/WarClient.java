@@ -14,7 +14,6 @@ import net.minecraft.client.Minecraft;
 import net.minecraft.client.multiplayer.ClientLevel;
 import net.minecraft.client.player.LocalPlayer;
 import net.minecraft.network.chat.Component;
-import net.minecraft.world.BossEvent;
 
 /**
  * The war and invasion family's client (hbm-space {@code ClientProxy}, {@code ModEventHandlerClient} and the client half
@@ -46,10 +45,13 @@ public final class WarClient {
         CBT_Invasion.CLIENT = new CBT_Invasion.ClientEffects() {
             @Override
             public void warning() {
-                LocalPlayer player = Minecraft.getInstance().player;
-                if (player == null) return;
-                player.playSound(WarContent.ALARM_PING.get(), 10F, 1F);
-                player.sendSystemMessage(Component.literal("Incoming Invasion!").withStyle(ChatFormatting.RED));
+                // Trait packets decode on the network thread; chat layout and sounds belong to the client thread.
+                Minecraft.getInstance().execute(() -> {
+                    var player = Minecraft.getInstance().player;
+                    if (player == null) return;
+                    player.playSound(WarContent.ALARM_PING.get(), 10F, 1F);
+                    player.sendSystemMessage(Component.translatable("invasion.hbmspace.incoming").withStyle(ChatFormatting.RED));
+                });
             }
 
             @Override
@@ -119,12 +121,6 @@ public final class WarClient {
         if (level == null || player == null) return;
 
         WarSky.tickMeteors(level);
-
-        CBT_Invasion invasion = CelestialTraits.getTrait(level, CBT_Invasion.class);
-        if (invasion != null && invasion.isInvading && invasion.wave < 4) {
-            com.hbm.client.BossStatus.set(Component.literal("Wave " + invasion.wave), invasion.getHealth(),
-                    invasion.getMaxHealth(), BossEvent.BossBarColor.PINK);
-        }
 
         CBT_War war = CelestialTraits.getTrait(level, CBT_War.class);
         if (war != null) {

@@ -1,5 +1,9 @@
 package com.ntmspace.block.machine;
 
+import com.ntmspace.registry.SpaceMachines;
+import com.hbm.capability.ICapabilityBlock;
+import com.hbm.capability.MachineCaps;
+
 import com.hbm.api.energymk2.IEnergyConnectorBlock;
 import com.hbm.api.fluidmk2.IFluidConnectorBlockMK2;
 import com.hbm.blocks.multiblock.BlockMultiblockMachine;
@@ -32,9 +36,16 @@ import net.minecraft.world.phys.BlockHitResult;
  * connection points take power and both input fluids and send both outputs. Using a fluid identifier on it (not sneaking)
  * sets the primary input's type and says so in chat.
  */
-public class MachineAlkylation extends BlockMultiblockMachine implements IEnergyConnectorBlock, IFluidConnectorBlockMK2, ILookOverlay {
+public class MachineAlkylation extends BlockMultiblockMachine implements IEnergyConnectorBlock, IFluidConnectorBlockMK2, ILookOverlay, ICapabilityBlock {
 
     private static final int[] DIMS = {3, 0, 2, 2, 1, 1};
+
+    @Override
+    public MachineCaps caps() {
+        return MachineCaps.of(SpaceMachines.ALKYLATION_BE).powerIn().fluidIn().fluidOut().fe()
+                .faces(TileEntityMachineAlkylation.class, (be, side) -> side != Direction.DOWN)
+                .fluidFaces(TileEntityMachineAlkylation.class, (be, side) -> side != Direction.DOWN);
+    }
 
     public MachineAlkylation(Properties properties) {
         super(properties);

@@ -8,6 +8,7 @@ import com.hbm.inventory.recipes.DiFurnaceRecipes;
 import com.hbm.inventory.recipes.loader.GenericRecipe;
 import com.hbm.inventory.recipes.loader.GenericTableSource;
 import com.hbm.inventory.recipes.loader.RecipeIngredients;
+import com.ntmspace.inventory.material.SpaceOreMaterials;
 import com.ntmspace.registry.SpaceItems;
 import java.util.List;
 import net.minecraft.world.item.ItemStack;
@@ -20,8 +21,7 @@ import net.minecraft.world.item.ItemStack;
  */
 public final class DiFurnaceTable extends GenericTableSource<GenericRecipe> {
 
-    // hbm-space OreDictManager's NI: the c: nickel tags
-    private static final NTMMaterial NI = new NTMMaterial(-1, "nickel");
+    // hbm-space OreDictManager's NI: Space's pure-nickel material (nickel_pure tags).
     private static final int PROCESSING_SPEED = 400;
 
     public DiFurnaceTable() {
@@ -31,7 +31,7 @@ public final class DiFurnaceTable extends GenericTableSource<GenericRecipe> {
     @Override
     protected void registerDefaults() {
         // after steelWithFlux
-        addRecipe("stainless", 4, NI, STEEL, new ItemStack(SpaceItems.INGOT_STAINLESS.get(), 2));
+        addRecipe("stainless", 4, SpaceOreMaterials.NICKEL, STEEL, new ItemStack(SpaceItems.INGOT_STAINLESS.get(), 2));
     }
 
     /** The row carries the order of the HBM row it follows. */

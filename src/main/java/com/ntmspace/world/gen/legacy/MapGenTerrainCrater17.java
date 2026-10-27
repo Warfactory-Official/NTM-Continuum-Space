@@ -30,7 +30,7 @@ public class MapGenTerrainCrater17 extends MapGen17 {
     }
 
     private double depthFunc(double x, double rad, double depth) {
-        return -Math.pow(x, 2) / Math.pow(rad, 2) * depth + depth;
+        return CraterGeometry.depth(x, rad, depth, 2);
     }
 
     // This function is looped over from -this.range to +this.range on both XZ axes.
@@ -41,7 +41,7 @@ public class MapGenTerrainCrater17 extends MapGen17 {
             int zCoord = -offsetZ + chunkZ;
 
             double radius = rand.nextInt(maxSize - minSize) + minSize;
-            double depth = radius * 0.35D;
+            double depth = CraterGeometry.maximumDepth(radius);
 
             for (int bx = 15; bx >= 0; bx--) { // bx, bz is the coordinate of the block we're modifying, relative to the generating chunk origin
                 for (int bz = 15; bz >= 0; bz--) {

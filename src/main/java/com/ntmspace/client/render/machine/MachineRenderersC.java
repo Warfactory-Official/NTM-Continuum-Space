@@ -30,6 +30,7 @@ import net.minecraft.client.renderer.rendertype.RenderType;
 import net.minecraft.client.renderer.texture.OverlayTexture;
 import net.minecraft.client.renderer.texture.TextureAtlasSprite;
 import net.minecraft.core.BlockPos;
+import net.minecraft.core.Direction;
 import net.minecraft.util.Mth;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.phys.Vec3;
@@ -188,14 +189,13 @@ public final class MachineRenderersC {
         @Override
         public void extract(TileEntityMachineSolarPanel be, SolarState state, float partialTicks, Vec3 cameraPosition) {
             state.yaw = MachineRenderers.yawNWSE(be);
-            Level level = be.getLevel();
-            BlockPos p = be.getBlockPos();
-            state.south = level != null && Library.canConnect(level, p.south(), ForgeDirection.SOUTH);
-            state.north = level != null && Library.canConnect(level, p.north(), ForgeDirection.NORTH);
-            state.east = level != null && Library.canConnect(level, p.east(), ForgeDirection.EAST);
-            state.west = level != null && Library.canConnect(level, p.west(), ForgeDirection.WEST);
-            state.up = level != null && Library.canConnect(level, p.above(), ForgeDirection.UP);
-            state.down = level != null && Library.canConnect(level, p.below(), ForgeDirection.DOWN);
+            var mask = be.getPowerConnectionMask();
+            state.south = (mask & 1 << Direction.SOUTH.ordinal()) != 0;
+            state.north = (mask & 1 << Direction.NORTH.ordinal()) != 0;
+            state.east = (mask & 1 << Direction.EAST.ordinal()) != 0;
+            state.west = (mask & 1 << Direction.WEST.ordinal()) != 0;
+            state.up = (mask & 1 << Direction.UP.ordinal()) != 0;
+            state.down = (mask & 1 << Direction.DOWN.ordinal()) != 0;
         }
     }
 

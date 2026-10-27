@@ -1,5 +1,8 @@
 package com.ntmspace.orbit;
 
+import com.hbm.handler.DroppedItemHooks;
+import com.ntmspace.data.SpaceData;
+import java.util.List;
 import com.hbm.api.environment.Environment;
 import com.hbm.packet.PlayerInformPayload;
 import dev.golem.core.hook.Hook;
@@ -11,7 +14,6 @@ import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.util.RandomSource;
-import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.item.ItemEntity;
 import net.minecraft.world.entity.player.Player;
@@ -29,10 +31,9 @@ import net.minecraft.world.phys.Vec3;
  *   <li>Gravity ({@code CelestialBody.getGravity}): an entity "with gravity" (1.7 {@code HbmLivingProps.hasGravity}:
  *       inside a sealed atmosphere, {@link #HAS_GRAVITY}) has 1.6 times the station's switch, under 0.2 is none; every
  *       other entity floats. Water mobs keep standard gravity, flying mobs are skipped, as 1.7.</li>
- *   <li>Free fall: 1.7's per-tick motion for gravity 0 ({@code motionY = (motionY / 0.98 + 0.08 [+-0.01 jump/sneak])
- *       * 0.91}, chickens 0) - for the local player on the client ({@code OrbitClient}), for other living entities on the
- *       server ({@link Environment#LIVING_TICK}, which runs before the entity moves, as 1.7's LivingUpdateEvent).</li>
- *   <li>Dropped items hover: each server tick start, x/z motion * 0.9 and y motion 0.04 (vanilla's item gravity then
+ *   <li>Living free fall uses the body's transient attributes and vanilla travel hooks in
+ *       {@link com.ntmspace.world.SpaceEnvironment}; it is applied once on both logical sides.</li>
+ *   <li>Dropped items hover: each actual item tick before vanilla physics, x/z motion * 0.9 and y motion 0.04 (vanilla's item gravity then
  *       makes it exactly 0).</li>
  *   <li>The orbit fall: a player who is not riding a craft and comes within {@link OrbitalStation#WARNING_SIZE} of the
  *       buffer is warned ({@code info.orbitfall}); inside the {@link OrbitalStation#BUFFER_SIZE} edge of its square it
@@ -71,10 +72,8 @@ public final class OrbitEnvironment {
         });
         Environment.GRAVITY.register(entity -> Orbit.inOrbit(entity.level()) && entity instanceof LivingEntity living
                 ? gravity(living) / STANDARD_GRAVITY : Double.NaN);
-        Environment.LIVING_TICK.register(entity -> {
-            if (!(entity instanceof Player) && Orbit.inOrbit(entity.level())) freeFall(entity, false, false);
-        });
         Lifecycle.onServerTick(OrbitEnvironment::serverTick);
+        DroppedItemHooks.onBeforeTick(OrbitEnvironment::tickItem);
     }
 
     /**
@@ -92,41 +91,18 @@ public final class OrbitEnvironment {
         return gravity;
     }
 
-    /**
-     * 1.7's free fall for one tick ({@code ModEventHandler.onLivingUpdate}, gravity 0): no-op for flying mobs, a flying
-     * player, or an entity with gravity.
-     */
-    public static void freeFall(LivingEntity entity, boolean jumping, boolean sneaking) {
-        // 1.7 EntityFlying: the ghast
-        if (entity.getType() == net.minecraft.world.entity.EntityType.GHAST) return;
-        if (entity instanceof Player player && player.getAbilities().flying) return;
-        if (gravity(entity) != 0) return;
-        Vec3 motion = entity.getDeltaMovement();
-        double motionY = motion.y;
-        motionY /= 0.98F;
-        motionY += (STANDARD_GRAVITY / 20F);
-        if (entity instanceof Player) {
-            if (sneaking) motionY -= 0.01F;
-            if (jumping) motionY += 0.01F;
-        } else if (entity instanceof net.minecraft.world.entity.animal.chicken.Chicken) {
-            motionY = 0;
-        }
-        motionY *= 0.91F;
-        entity.setDeltaMovement(motion.x, motionY, motion.z);
+    /** Called from ItemEntity.tick so vanilla owns frozen-entity and ticking-chunk eligibility. */
+    public static void tickItem(ItemEntity item) {
+        if (item.level().isClientSide() || !Orbit.inOrbit(item.level())) return;
+        var motion = item.getDeltaMovement();
+        item.setDeltaMovement(motion.x * 0.9D, 0.03999999910593033D, motion.z * 0.9D);
     }
 
     private static void serverTick(MinecraftServer server) {
         ServerLevel orbit = server.getLevel(Orbit.ORBIT);
         if (orbit == null) return;
 
-        for (Entity entity : orbit.getAllEntities()) {
-            if (entity instanceof ItemEntity item) {
-                Vec3 motion = item.getDeltaMovement();
-                item.setDeltaMovement(motion.x * 0.9D, 0.03999999910593033D, motion.z * 0.9D);
-            }
-        }
-
-        for (ServerPlayer player : orbit.players()) orbitFall(player);
+        for (ServerPlayer player : List.copyOf(orbit.players())) orbitFall(player);
     }
 
     /** 1.7: "Check for players attempting to cross over to another orbital grid". */
@@ -149,9 +125,10 @@ public final class OrbitEnvironment {
 
         if (rx < minBuffer || rx > maxBuffer || rz < minBuffer || rz > maxBuffer) {
             OrbitalStation station = OrbitalStation.getStationFromPosition(player.level().getServer(), (int) player.getX(), (int) player.getZ());
+            var range = SpaceData.MAX_PROBE_DISTANCE.get();
             SpaceTeleporter.teleport(player, Orbit.levelOf(station.orbiting),
-                    RAND.nextInt(Orbit.MAX_PROBE_DISTANCE * 2) - Orbit.MAX_PROBE_DISTANCE, 800,
-                    RAND.nextInt(Orbit.MAX_PROBE_DISTANCE * 2) - Orbit.MAX_PROBE_DISTANCE, false);
+                    RAND.nextInt(range * 2) - range, 800,
+                    RAND.nextInt(range * 2) - range, false);
         }
     }
 }

@@ -41,8 +41,8 @@ public final class PlantBreathing {
         register("ntmspace:crop_coffee", earthy);
         register("ntmspace:crop_tea", earthy);
         register("ntmspace:crop_paraffin", tekto);
-        // BlockNTSapling (the PVC sapling, 1.7 block name "sapling"): Tekto air or chlorine
-        register("ntmspace:sapling", tekto);
+        // BlockNTSapling splits (1.7 block name "sapling"): Tekto air or chlorine
+        register("ntmspace:sapling_vinyl", tekto);
         register("ntmspace:sapling_pvc", tekto);
     }
 

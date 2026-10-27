@@ -40,9 +40,10 @@ jobs:
   build:
     runs-on: ubuntu-latest
     timeout-minutes: 300
+    env:
+      ORG_GRADLE_PROJECT_hbmProjectDir: ../new-hbm
     steps:
-      # settings.gradle.kts includes ../Golem-Core and ../new-hbm as composite builds, so the three repos are
-      # checked out side by side exactly as in the development layout.
+      # Override the HBM composite path to match this job's checkout directory.
       - uses: actions/checkout@v4
         with:
           path: new-hbm-space

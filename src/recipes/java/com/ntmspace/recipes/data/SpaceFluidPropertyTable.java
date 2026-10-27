@@ -31,6 +31,11 @@ import com.ntmspace.fluid.trait.FT_Rocket;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.Map;
+import java.util.List;
+import dev.golem.core.Ids;
+import net.minecraft.core.registries.Registries;
+import net.minecraft.tags.TagKey;
+import net.minecraft.world.level.material.Fluid;
 
 /**
  * hbm-space {@code Fluids.init}, the lines of the 60 fluids it adds over 1.7 ({@code SpaceFluids}): colour,
@@ -55,6 +60,7 @@ final class SpaceFluidPropertyTable {
         final FluidHazard hazard;
         int temperature = FluidType.ROOM_TEMPERATURE;
         final Map<Class<?>, Object> traits = new LinkedHashMap<>();
+        List<TagKey<Fluid>> shares = List.of();
 
         Def(int color, int p, int f, int r, Symbol symbol) {
             this.color = color;
@@ -71,8 +77,13 @@ final class SpaceFluidPropertyTable {
             return this;
         }
 
+        Def shares(String tag) {
+            shares = List.of(TagKey.create(Registries.FLUID, Ids.parse(tag)));
+            return this;
+        }
+
         FluidProperties.Properties row() {
-            return new FluidProperties.Properties(color, null, temperature, hazard, new ArrayList<>(traits.values()));
+            return new FluidProperties.Properties(color, null, temperature, hazard, new ArrayList<>(traits.values()), shares);
         }
     }
 
@@ -144,8 +155,8 @@ final class SpaceFluidPropertyTable {
         fluid(KRYPTON, 0x9AC6E6, 0, 0, 0, Symbol.CRYOGENIC).addTraits(GASEOUS);
         fluid(COFFEE, 0x57493D, 0, 0, 0, Symbol.NONE).addTraits(DELICIOUS, LIQUID);
         fluid(TEA, 0x76523C, 0, 0, 0, Symbol.NONE).addTraits(DELICIOUS, LIQUID);
-        fluid(HONEY, 0xD99A02, 0, 0, 0, Symbol.NONE).addTraits(DELICIOUS, LIQUID);
-        fluid(MILK, 0xCFCFCF, 0, 0, 0, Symbol.NONE).addTraits(DELICIOUS, LIQUID);
+        fluid(HONEY, 0xD99A02, 0, 0, 0, Symbol.NONE).addTraits(DELICIOUS, LIQUID).shares("c:honey");
+        fluid(MILK, 0xCFCFCF, 0, 0, 0, Symbol.NONE).addTraits(DELICIOUS, LIQUID).shares("c:milk");
         fluid(SMILK, 0xF5DEE4, 0, 0, 0, Symbol.NONE).addTraits(DELICIOUS, LIQUID);
         fluid(CCL, 0x0C3B2F, 0, 0, 0, Symbol.NONE).addTraits(LIQUID, new FT_Corrosive(10));
         fluid(EVEAIR, 0xDCABF8, 4, 0, 0, Symbol.OXIDIZER).addTraits(GASEOUS, new FT_Corrosive(25), new FT_Poison(true, 1));

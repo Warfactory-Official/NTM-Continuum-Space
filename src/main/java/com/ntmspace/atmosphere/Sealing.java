@@ -6,7 +6,6 @@ import com.hbm.blocks.multiblock.MultiblockHandlerXR;
 import com.hbm.tileentity.TileEntityDoorGeneric;
 import com.ntmspace.NtmSpace;
 import dev.golem.core.Ids;
-import java.util.List;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.core.registries.Registries;
@@ -56,22 +55,22 @@ public final class Sealing {
      * every cell of it (the 1.7 {@code BlockDummyable} box around its core) is reported.
      */
     public static void updateSealedState(Level level, BlockPos pos) {
-        if (!(level instanceof ServerLevel server)) return;
-        List<AtmosphereBlob> nearbyBlobs = AtmosphereHandler.getBlobsWithinRadius(level, pos);
+        if (!(level instanceof ServerLevel server) || !AtmosphereHandler.hasBlobs(level)) return;
         BlockState state = level.getBlockState(pos);
         if (state.getBlock() instanceof BlockMultiblockCore block && state.hasProperty(BlockMultiblockCore.FACING)) {
             Direction facing = state.getValue(BlockMultiblockCore.FACING);
             int[] rot = MultiblockHandlerXR.rotate(block.getDimensions(), facing);
             int x = pos.getX(), y = pos.getY(), z = pos.getZ();
+            var cell = new BlockPos.MutableBlockPos();
             for (int a = x - rot[4]; a <= x + rot[5]; a++) {
                 for (int b = y - rot[1]; b <= y + rot[0]; b++) {
                     for (int c = z - rot[2]; c <= z + rot[3]; c++) {
-                        AtmosphereHandler.onSealableChange(server, new BlockPos(a, b, c), nearbyBlobs);
+                        AtmosphereHandler.topologyChanged(server, cell.set(a, b, c));
                     }
                 }
             }
         } else {
-            AtmosphereHandler.onSealableChange(server, pos, nearbyBlobs);
+            AtmosphereHandler.topologyChanged(server, pos);
         }
     }
 

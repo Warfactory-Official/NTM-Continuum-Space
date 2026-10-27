@@ -1,5 +1,6 @@
 package com.ntmspace.client;
 
+import net.minecraft.resources.ResourceKey;
 import com.hbm.client.model.WavefrontObj;
 import com.mojang.blaze3d.vertex.PoseStack;
 import com.mojang.math.Axis;
@@ -61,7 +62,7 @@ public final class ThatmoSky {
     private ThatmoSky() {}
 
     /** The client's battlefield (1.7: statics of {@code WorldProviderThatmo}, kept when leaving Thatmo). */
-    public static final ThatmoBattlefield STATE = new ThatmoBattlefield();
+    public static final ThatmoBattlefield STATE = ThatmoBattlefield.CLIENT_SKY;
     private static final Random RAND = new Random();
 
     private static final Sky.Texture SHOCKWAVE = Sky.Texture.of("hbm", "textures/particle/shockwave.png");
@@ -82,8 +83,13 @@ public final class ThatmoSky {
         dev.golem.core.harness.HarnessQueryRegistry.register("ntmspace_thatmo", ThatmoSky::query);
     }
 
+    /** The dimension gate shared by the native battlefield render and tick routes. */
+    public static boolean isThatmo(ResourceKey<Level> dimension) {
+        return dimension.equals(SpaceDimensions.THATMO);
+    }
+
     static boolean isThatmo(Level level) {
-        return level != null && level.dimension().equals(SpaceDimensions.THATMO);
+        return level != null && isThatmo(level.dimension());
     }
 
     private static boolean battlefield(Level level) {
@@ -103,7 +109,7 @@ public final class ThatmoSky {
 
     /** {@code WorldProviderThatmo.getSkyColor/getFogColor/getSunBrightness}'s addition: the flash plus the shield glow. */
     static float lightAdd(Level level) {
-        return isThatmo(level) ? STATE.flashAlpha() + STATE.shieldAlpha() : 0.0F;
+        return ThatmoBattlefield.lightAdd(level);
     }
 
     // ------------------------------------------------------------------------------------------------ render3DModel

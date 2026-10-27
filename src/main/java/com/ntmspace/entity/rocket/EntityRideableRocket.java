@@ -1,13 +1,21 @@
 package com.ntmspace.entity.rocket;
 
+import com.hbm.blocks.multiblock.MultiblockSurface;
+import com.ntmspace.tileentity.station.TileEntityOrbitalStationLauncher;
+import dev.golem.core.world.Compat;
+import dev.golem.core.world.Teleports;
 import com.hbm.api.entity.IRadarDetectableNT;
 import com.hbm.entity.logic.EntityChunkLoader;
 import com.hbm.explosion.ExplosionLarge;
 import com.hbm.items.ISatChip;
 import com.hbm.particle.helper.HbmEffectNT;
 import com.hbm.saveddata.satellites.XSatelliteRegistry;
+import com.ntmspace.satellite.SatelliteOrbit;
+import com.ntmspace.satellite.SpaceSatellites;
 import com.hbm.sound.AudioSystem;
 import com.hbm.sound.AudioWrapper;
+import com.hbm.sound.WorldSounds;
+import dev.golem.core.world.Sounds;
 import com.ntmspace.NtmSpace;
 import com.ntmspace.orbit.Orbit;
 import com.ntmspace.orbit.OrbitalStation;
@@ -35,6 +43,7 @@ import dev.golem.core.platform.Platform;
 import java.util.ArrayList;
 import java.util.List;
 import net.minecraft.core.BlockPos;
+import net.minecraft.core.Direction;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.network.syncher.EntityDataAccessor;
 import net.minecraft.network.syncher.EntityDataSerializers;
@@ -84,8 +93,8 @@ import org.jspecify.annotations.Nullable;
  *   <li>The data watcher (state, timer, drive and the rocket packed into short ids) is synched data here: the rocket
  *       travels as a {@code rocket_custom} stack, the drive as its stack, the pitch on its own (from 26.1 {@code xRot}
  *       clamps), the state by ordinal (a packet, never saved: saves name it).</li>
- *   <li>1.7 kept the rider in place with a sneak handler that zeroed the sneak; vanilla now dismounts first, so the
- *       rocket re-boards its pilot (1.7's own re-mount) and counts those attempts as 1.7's {@code forceExitTimer}.</li>
+ *   <li>1.7 kept the rider in place with a sneak handler that zeroed the sneak: held pilot input counts to three
+ *       seconds before a moving capsule lets go. An owner left outside mid-flight is re-boarded.</li>
  *   <li>The rider's tilt with the rocket and the 12-block third-person camera are {@code RocketClient}'s (Golem
  *       {@code PlayerRenderHooks.POSE}, {@code CameraHooks.DISTANCE}).</li>
  * </ul>
@@ -129,9 +138,13 @@ public class EntityRideableRocket extends CompatEntity implements StationDock, I
 
     private RocketState lastState = RocketState.AWAITING;
 
+    private boolean engineSoundActive;
+    private int vibrationDecoupleTimer;
+
     private boolean willExplode = false;
 
     private int satFreq = 0;
+    private @Nullable SatelliteOrbit satOrbit;
 
     private @Nullable TileEntityOrbitalStation targetPort;
 
@@ -162,12 +175,13 @@ public class EntityRideableRocket extends CompatEntity implements StationDock, I
     }
 
     /** 1.7 {@code EntityRideableRocket(world, x, y, z, stack)}. */
-    public static EntityRideableRocket create(Level level, float x, float y, float z, ItemStack stack) {
+    public static EntityRideableRocket create(Level level, double x, double y, double z, ItemStack stack) {
         EntityRideableRocket rocket = new EntityRideableRocket(RocketEntities.RIDEABLE_ROCKET.get(), level);
         rocket.setPos(x, y, z);
         RocketStruct struct = ItemCustomRocket.get(stack);
         if (struct == null) struct = new RocketStruct(RocketParts.get(RocketParts.CAPSULE));
         rocket.satFreq = ISatChip.getFreqS(stack);
+        rocket.satOrbit = SpaceSatellites.ORBIT.get(stack).orElse(null);
         rocket.setRocket(struct);
         return rocket;
     }
@@ -241,11 +255,11 @@ public class EntityRideableRocket extends CompatEntity implements StationDock, I
                     if (orbit != null) OrbitalStation.spawn(orbit, x, z);
                 }
             } else {
-                if (rocket.capsule != null && rocket.capsule.isSatellite() && XSatelliteRegistry.typeFor(new ItemStack(rocket.capsule.item())) != null
+                if (rocket.capsule != null && rocket.capsule.isSatellite() && !RocketParts.STATION_CORE.equals(rocket.capsule.id())
                         && destination.body != DriveBody.ORBIT) {
                     ServerLevel target = server.server().getLevel(targetLevel);
                     if (target != null) {
-                        ItemStack stack = new ItemStack(rocket.capsule.item());
+                        ItemStack stack = payload(rocket);
                         XSatelliteRegistry.orbit(target, stack, satFreq, getX(), getY(), getZ());
                     }
                 } else if (rocket.capsule != null && RocketParts.STATION_CORE.equals(rocket.capsule.id())) {
@@ -259,6 +273,12 @@ public class EntityRideableRocket extends CompatEntity implements StationDock, I
                 discard();
             }
         }
+    }
+
+    private ItemStack payload(RocketStruct rocket) {
+        var stack = new ItemStack(rocket.capsule.item());
+        if (satOrbit != null) SpaceSatellites.ORBIT.set(stack, satOrbit);
+        return stack;
     }
 
     public void beginCelestialTransfer(RocketTarget from, RocketTarget to) {
@@ -351,13 +371,7 @@ public class EntityRideableRocket extends CompatEntity implements StationDock, I
                 thrower = rider instanceof LivingEntity living ? living : null;
             }
 
-            if (thrower != null && rider == null && !canExitCapsule() && forceExitTimer < 60 && thrower.isAlive()
-                    && thrower.level() == level()) {
-                // 1.7's sneak handler counted the ticks a pilot tried to leave a rocket in motion; vanilla lets go first
-                forceExitTimer++;
-                // forced, as 1.7 mountEntity: vanilla's boarding cooldown after the dismount would refuse it
-                dev.golem.core.world.Teleports.remount(thrower, this);
-            }
+            exitControl(rider);
 
             if (state == RocketState.LAUNCHING) {
                 if (isReusable()) {
@@ -602,7 +616,30 @@ public class EntityRideableRocket extends CompatEntity implements StationDock, I
             contrailStarted = true;
         }
 
+        if (!level().isClientSide() && !isRemoved()) tickSoundVibrations();
+        setXRot(pitch);
         setStateTimer(++stateTimer);
+    }
+
+    /** Public rocket sound envelopes on the server, separate from client audio and gameplay clocks. */
+    private void tickSoundVibrations() {
+        var state = getState();
+        var station = state == RocketState.TRANSFER
+                ? OrbitalStation.getStationFromPosition(level().getServer(), (int) getX(), (int) getZ()) : null;
+        var progress = state == RocketState.TRANSFER ? station.getUnscaledProgress(0) : 0.0D;
+        var active = state == RocketState.LAUNCHING
+                || state == RocketState.LANDING && getDeltaMovement().y > -0.4
+                || state == RocketState.TRANSFER && progress <= 0.15;
+        if (active) WorldSounds.entityLoop(this, !engineSoundActive);
+        engineSoundActive = active;
+        if (state == RocketState.TRANSFER && progress > 0.2) {
+            if (vibrationDecoupleTimer == 0 || vibrationDecoupleTimer == 100 && getRocket().stages.size() > 1) {
+                Sounds.entityNoise(this, getX(), getY(), getZ(), 0.5F);
+            }
+            vibrationDecoupleTimer++;
+        } else if (state != RocketState.TRANSFER) {
+            vibrationDecoupleTimer = 0;
+        }
     }
 
     /** 1.7 {@code EntityThrowableNT}'s step: a block ray along {@code motion * motionMult}, then the move. */
@@ -629,6 +666,15 @@ public class EntityRideableRocket extends CompatEntity implements StationDock, I
         RocketState state = getState();
         if (state == RocketState.AWAITING || state == RocketState.LANDED || state == RocketState.NEEDSFUEL) return 0;
         return 4;
+    }
+
+    @Override
+    //? if >=26.1 {
+    public boolean canBeCollidedWith(@Nullable Entity other) {
+    //?} else {
+    /*public boolean canBeCollidedWith() {
+    *///?}
+        return motionMult() == 0;
     }
 
     /**
@@ -678,6 +724,30 @@ public class EntityRideableRocket extends CompatEntity implements StationDock, I
 
     // ---------------------------------------------------------------------------------------- crew
 
+    /** 1.7 world-tick sneak control, before the pilot's own ride tick. */
+    private void exitControl(@Nullable Entity rider) {
+        if (rider instanceof Player player && heldSneak(player)) {
+            if (canExitCapsule() || forceExitTimer >= 60) {
+                player.stopRiding();
+            } else {
+                forceExitTimer++;
+            }
+            // The held input remains available next tick, while vanilla's immediate dismount is spent.
+            player.setShiftKeyDown(false);
+        } else if (rider != null) {
+            forceExitTimer = 0;
+        }
+
+        if (thrower != null && getFirstPassenger() == null && !canExitCapsule() && forceExitTimer < 60
+                && thrower.isAlive() && thrower.level() == level()) {
+            Teleports.remount(thrower, this);
+        }
+    }
+
+    private static boolean heldSneak(Player rider) {
+        return rider instanceof ServerPlayer player && Compat.clientSneakHeld(player);
+    }
+
     /** Does this rocket accept passengers (is a capsule). */
     public boolean canRide() {
         RocketStruct rocket = getRocket();
@@ -698,13 +768,25 @@ public class EntityRideableRocket extends CompatEntity implements StationDock, I
 
     @Override
     protected InteractionResult onInteract(Player player, InteractionHand hand) {
-        if (!canRide()) return InteractionResult.TRY_WITH_EMPTY_HAND;
+        if (!canRide() || level().isClientSide()) return InteractionResult.TRY_WITH_EMPTY_HAND;
 
-        if (!level().isClientSide() && (getFirstPassenger() == null || getFirstPassenger() == player)) {
-            player.startRiding(this);
-            return InteractionResult.SUCCESS;
+        if (player.isSecondaryUseActive()) {
+            if (!player.getItemInHand(hand).isEmpty()) return InteractionResult.TRY_WITH_EMPTY_HAND;
+            var capsule = BlockPos.containing(getX(), getY() + getBbHeight() - 1.0, getZ());
+            var core = MultiblockSurface.coreOfAny(level(), capsule);
+            if (core == null) return InteractionResult.TRY_WITH_EMPTY_HAND;
+            var machine = level().getBlockEntity(core);
+            var docked = machine instanceof TileEntityOrbitalStation port ? port.getDocked()
+                    : machine instanceof TileEntityOrbitalStationLauncher launcher
+                    ? launcher.getDocked() : null;
+            if (docked != this) return InteractionResult.TRY_WITH_EMPTY_HAND;
+            return Compat.useBlockWithoutItem(level().getBlockState(core), level(), player,
+                    new BlockHitResult(Vec3.atCenterOf(core), Direction.UP, core, false));
         }
-        return getFirstPassenger() == null ? InteractionResult.SUCCESS : InteractionResult.TRY_WITH_EMPTY_HAND;
+
+        var rider = getFirstPassenger();
+        if (rider == null) return player.startRiding(this) ? InteractionResult.SUCCESS : InteractionResult.TRY_WITH_EMPTY_HAND;
+        return rider == player ? InteractionResult.SUCCESS : InteractionResult.TRY_WITH_EMPTY_HAND;
     }
 
     /** The capsule dummy's click and hit, forwarded (1.7 {@code parent.interactFirst} / {@code attackEntityFrom}). */
@@ -808,7 +890,7 @@ public class EntityRideableRocket extends CompatEntity implements StationDock, I
         // unless it's just the capsule
         RocketStruct rocket = getRocket();
         if (rocket.stages.size() == 0) {
-            if (rocket.capsule != null) spawnAtLocationCompat(new ItemStack(rocket.capsule.item()));
+            if (rocket.capsule != null) spawnAtLocationCompat(payload(rocket));
         } else {
             // 1.7 rebuilt the item from the data watcher, which carried no satellite frequency: the frequency is lost
             ItemStack stack = ItemCustomRocket.build(rocket, true);
@@ -1039,7 +1121,10 @@ public class EntityRideableRocket extends CompatEntity implements StationDock, I
         stateTimer = input.getIntOr("timer", 0);
         setStateTimer(stateTimer);
 
-        setRocket(input.read("rocket", RocketStruct.CODEC).orElseGet(RocketStruct::new));
+        var rocket = input.read("rocket", RocketStruct.CODEC).orElseGet(RocketStruct::new);
+        satOrbit = input.read("satOrbit", SatelliteOrbit.CODEC).orElse(null);
+        rocket.satOrbit = satOrbit;
+        setRocket(rocket);
 
         navDrive = input.read("drive", ItemStack.CODEC).orElse(null);
         satFreq = input.getIntOr("freq", 0);
@@ -1060,6 +1145,7 @@ public class EntityRideableRocket extends CompatEntity implements StationDock, I
         output.store("rocket", RocketStruct.CODEC, getRocket());
         if (navDrive != null && !navDrive.isEmpty()) output.store("drive", ItemStack.CODEC, navDrive);
         output.putInt("freq", satFreq);
+        if (satOrbit != null) output.store("satOrbit", SatelliteOrbit.CODEC, satOrbit);
         output.putFloat("pitch", pitch);
 
         if (destinationOverride != null) {
@@ -1124,7 +1210,7 @@ public class EntityRideableRocket extends CompatEntity implements StationDock, I
         if (rocket.stages.size() > 0) {
             items.add(ItemCustomRocket.build(rocket, true));
         } else if (rocket.capsule != null) {
-            items.add(new ItemStack(rocket.capsule.item()));
+            items.add(payload(rocket));
         }
         discard();
         return items;

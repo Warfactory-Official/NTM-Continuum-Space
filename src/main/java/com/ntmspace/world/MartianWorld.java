@@ -1,6 +1,11 @@
 package com.ntmspace.world;
 
+import com.hbm.world.gen.nbt.LegacyStructurePalette;
 import com.ntmspace.NtmSpace;
+import com.hbm.world.gen.nbt.NBTStructure;
+import net.minecraft.core.BlockPos;
+import net.minecraft.resources.ResourceKey;
+import net.minecraft.world.level.Level;
 import com.ntmspace.orbit.SpaceTeleporter;
 import com.ntmspace.world.structure.SpaceStructures;
 import dev.golem.core.platform.Lifecycle;
@@ -31,6 +36,13 @@ public final class MartianWorld {
 
     public static final String NAME = "martian";
 
+    /** The real single-origin lifecycle build, also available to previews and metadata inspection. */
+    public record BasePlan(ResourceKey<Level> dimension, BlockPos column, NBTStructure template) {}
+
+    public static BasePlan basePlan() {
+        return new BasePlan(SpaceDimensions.DUNA, BlockPos.ZERO, SpaceStructures.Files.MARTIAN_BASE);
+    }
+
     private MartianWorld() {}
 
     /** Dejson: the world type is listed on the create-world screen (tag {@code minecraft:normal}). */
@@ -52,7 +64,7 @@ public final class MartianWorld {
             if (!is(server)) return;
             // 1.7 respawned in Duna at the world's spawn point (DerivedWorldInfo); queued, it runs once the copy is placed
             var spawn = spawnColumn(server);
-            SpaceTeleporter.teleport(newPlayer, SpaceDimensions.DUNA, spawn[0] + 0.5, 0, spawn[1] + 0.5, true);
+            SpaceTeleporter.teleportAfterRespawn(newPlayer, SpaceDimensions.DUNA, spawn[0] + 0.5, 0, spawn[1] + 0.5, true);
         });
     }
 
@@ -69,15 +81,24 @@ public final class MartianWorld {
     /** The martian base on Duna's (0, 0), once per world. */
     static void buildBase(MinecraftServer server) {
         if (!is(server)) return;
-        ServerLevel duna = server.getLevel(SpaceDimensions.DUNA);
+        var plan = basePlan();
+        ServerLevel duna = server.getLevel(plan.dimension());
         if (duna == null) return;
         BaseData data = CompatSavedData.get(duna, BaseData.ID, BaseData::new, BaseData.CODEC);
         if (data.built) return;
-        // every chunk the centred 40 x 42 base touches, generated in full first
-        for (int cx = -2; cx <= 1; cx++) for (int cz = -2; cz <= 1; cz++) duna.getChunk(cx, cz);
-        // 1.7 getHeightValue(0, 0) - 1: the top block of the column
-        int y = duna.getHeight(Heightmap.Types.WORLD_SURFACE, 0, 0) - 1;
-        com.hbm.world.gen.nbt.LegacyStructurePalette.withSpotlightsWorking(() -> SpaceStructures.Files.MARTIAN_BASE.build(duna, 0, y, 0));
+        var template = plan.template();
+        if (!template.isLoaded()) throw new IllegalStateException("The Martian base template did not load");
+        var x = plan.column().getX();
+        var z = plan.column().getZ();
+        var minX = x - template.getSizeX() / 2;
+        var minZ = z - template.getSizeZ() / 2;
+        // Every chunk the actual centred template touches, generated in full first.
+        for (var cx = minX >> 4; cx <= (minX + template.getSizeX() - 1) >> 4; cx++) {
+            for (var cz = minZ >> 4; cz <= (minZ + template.getSizeZ() - 1) >> 4; cz++) duna.getChunk(cx, cz);
+        }
+        // 1.7 getHeightValue(origin) - 1: the top block of the column.
+        var y = duna.getHeight(Heightmap.Types.WORLD_SURFACE, x, z) - 1;
+        LegacyStructurePalette.withSpotlightsWorking(() -> template.build(duna, x, y, z));
         data.built = true;
         data.setDirty();
         NtmSpace.LOG.info("Built the martian base on Duna at (0, {}, 0)", y);

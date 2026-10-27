@@ -89,7 +89,7 @@ public final class StardarLayers {
         float cloudLightningStrength = AtmosphereRender.cloudLightningStrength(body, weatherPartialTicks);
         int atmosphereStyle = AtmosphereRender.style(body);
         float atmosphereTime = (float) (dayTicks / 20.0D);
-        float patternOffset = StardarMath.patternOffset(rotateBody, textureUOffset, body.getRotationalPeriod(), dayTicks);
+        float patternOffset = StardarMath.patternOffset(rotateBody, textureUOffset, body.getClientRotationalPeriod(), dayTicks);
 
         float[] p = new float[Sky.SHADER_PARAMS];
         p[PlanetShaders.P_PHASE] = phase;

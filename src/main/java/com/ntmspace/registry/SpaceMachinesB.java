@@ -5,6 +5,8 @@ import com.hbm.items.block.DecoBlockItem;
 import com.hbm.registration.Presets;
 import com.ntmspace.NtmSpace;
 import com.ntmspace.block.machine.MachineHydroponic;
+import com.ntmspace.block.machine.HydroponicLampCell;
+import com.hbm.blocks.multiblock.BlockMultiblockCell;
 import com.ntmspace.block.machine.MachineVacuumCircuit;
 import com.ntmspace.inventory.machine.ContainerHydroponic;
 import com.ntmspace.inventory.machine.ContainerVacuumCircuit;
@@ -42,17 +44,15 @@ public final class SpaceMachinesB {
     public static final DeferredRegister.MenuTypes MENUS = DeferredRegister.createMenuTypes(NtmSpace.MOD_ID);
     private static final Registrar REG = Registrar.of(BLOCKS, ITEMS, BLOCK_ENTITIES, MENUS);
 
-    /** {@link SpaceMachines#FOLDED} with the greenhouse lamps' {@code lit} cells. */
-    public static final Presets.BlockModel FOLDED_LIT = Presets.rendered(Variants.product(
-            Variants.uniform("facing", "north", "east", "south", "west"),
-            Variants.uniform("cell", "false", "true"),
-            Variants.uniform("lit", "false", "true")));
-
     public static final RegistryObject<MachineHydroponic> HYDROBAY = REG.<MachineHydroponic>block(
-                    "hydrobay", MachineHydroponic::new, p -> SpaceMachines.machine(p, 5.0F, 10.0F)
-                            // 1.7 dummy_beam: setLightLevel(1.0F)
-                            .lightLevel(state -> state.getValue(MachineHydroponic.LIT) ? 15 : 0))
-            .transform(FOLDED_LIT).loot(Loot.self()).tag(BlockTag.PICKAXE);
+                    "hydrobay", MachineHydroponic::new, p -> SpaceMachines.machine(p, 5.0F, 10.0F))
+            .transform(SpaceMachines.FOLDED).loot(Loot.self()).tag(BlockTag.PICKAXE);
+    /** 1.7 dummy_beam: no item or own loot; breaking it uses the owner's shared-cell path. */
+    public static final RegistryObject<HydroponicLampCell> HYDROBAY_LAMP = REG.block(
+                    "hydrobay_lamp", HydroponicLampCell::new,
+                    p -> SpaceMachines.machine(BlockMultiblockCell.rigid(p), 10.0F, 12.0F).lightLevel(state -> 15))
+            .transform(Presets.rendered(Variants.uniform("facing", "north", "east", "south", "west")))
+            .loot(Loot.nothing()).tag(BlockTag.PICKAXE);
     public static final RegistryObject<MachineVacuumCircuit> MACHINE_VACUUM_CIRCUIT = REG.<MachineVacuumCircuit>block(
                     "machine_vacuum_circuit", MachineVacuumCircuit::new, p -> SpaceMachines.machine(p, 5.0F, 10.0F))
             .transform(SpaceMachines.FOLDED).loot(Loot.self()).tag(BlockTag.PICKAXE);

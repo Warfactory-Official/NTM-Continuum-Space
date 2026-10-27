@@ -1,5 +1,6 @@
 package com.ntmspace.rocket;
 
+import com.ntmspace.data.SpaceData;
 import com.hbm.items.ItemEnumMulti;
 import com.hbm.sound.ModSounds;
 import com.ntmspace.entity.rocket.EntityRideableRocket;
@@ -118,6 +119,10 @@ public class ItemVOTVdrive extends ItemEnumMulti {
         }
     }
 
+    public static void setApproximateDestination(ItemStack stack, int x, int z) {
+        RocketItems.DRIVE.set(stack, data(stack).withApproximate(x, z));
+    }
+
     public static void setCoordinates(ItemStack stack, int x, int z) {
         RocketItems.DRIVE.set(stack, data(stack).withCoordinates(x, z));
     }
@@ -142,8 +147,8 @@ public class ItemVOTVdrive extends ItemEnumMulti {
     public static Destination getApproximateDestination(ItemStack stack, RandomSource random) {
         DriveData data = data(stack);
         if (data.ax().isEmpty() || data.az().isEmpty()) {
-            data = data.withApproximate(random.nextInt(Orbit.MAX_PROBE_DISTANCE * 2) - Orbit.MAX_PROBE_DISTANCE,
-                    random.nextInt(Orbit.MAX_PROBE_DISTANCE * 2) - Orbit.MAX_PROBE_DISTANCE);
+            var range = SpaceData.MAX_PROBE_DISTANCE.get();
+            data = data.withApproximate(random.nextInt(range * 2) - range, random.nextInt(range * 2) - range);
             RocketItems.DRIVE.set(stack, data);
         }
         return new Destination(getBody(stack), data.ax().get(), data.az().get());
@@ -167,7 +172,7 @@ public class ItemVOTVdrive extends ItemEnumMulti {
         boolean onDestination = level.dimension().equals(getBody(stack).level());
 
         // If we're on the body (or in creative), immediately process
-        if (!isProcessed && (player.getAbilities().instabuild || onDestination)) {
+        if (!isProcessed && (player.getAbilities().instabuild || player.isCreative() || onDestination)) {
             isProcessed = true;
             setProcessed(stack, true);
         }
@@ -304,6 +309,20 @@ public class ItemVOTVdrive extends ItemEnumMulti {
             this.body = body;
             this.x = x;
             this.z = z;
+        }
+
+        /** A landing location is the body and exact x/z; drive flags and owning stacks are separate data. */
+        @Override
+        public boolean equals(Object other) {
+            return this == other || other instanceof Destination destination
+                    && body == destination.body && x == destination.x && z == destination.z;
+        }
+
+        @Override
+        public int hashCode() {
+            var hash = body.hashCode();
+            hash = 31 * hash + x;
+            return 31 * hash + z;
         }
     }
 }

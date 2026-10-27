@@ -72,12 +72,11 @@ public abstract class LayeredBodyTerrain17 extends CelestialTerrain17 {
     }
 
     @Override
-    protected void generateBlocks(int x, int z, Block17[] blocks) {
+    protected void prepareGenerationBiomes(int x, int z) {
         // 1.7: biomesForGeneration = getBiomesForGeneration(biomesForGeneration, x * 4 - 2, z * 4 - 2, 10, 10)
         windowX = x * 4 - 2;
         windowZ = z * 4 - 2;
         genWindow = layers.biome.getInts(windowX, windowZ, 10, 10);
-        super.generateBlocks(x, z, blocks);
     }
 
     @Override

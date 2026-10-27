@@ -48,7 +48,7 @@ includeBuild("../Golem-Core") {
     }
 }
 
-includeBuild("../new-hbm") {
+includeBuild(providers.gradleProperty("hbmProjectDir").orElse("../NTM-Continuum").get()) {
     dependencySubstitution {
         nodes.forEach { node ->
             val (mc, loader) = node.split('-', limit = 2)

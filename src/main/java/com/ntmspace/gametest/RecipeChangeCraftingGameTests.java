@@ -80,7 +80,7 @@ public final class RecipeChangeCraftingGameTests {
         expectRarity(errors, "ntmspace:ingot_gaas", Rarity.RARE);
         expectRarity(errors, "ntmspace:ingot_tt", Rarity.UNCOMMON);
         // ore dictionary -> c: tags
-        String[][] tags = {{"ntmspace:ingot_nickel", "c:ingots/nickel"}, {"ntmspace:plate_stainless", "c:plates/stainless"},
+        String[][] tags = {{"ntmspace:ingot_nickel", "c:ingots/nickel_pure"}, {"ntmspace:plate_stainless", "c:plates/stainless"},
                 {"ntmspace:ingot_stainless", "c:ingots/stainless"}, {"ntmspace:nugget_cm244", "c:nuggets/cm244"},
                 {"ntmspace:billet_bk247", "c:billets/bk247"}, {"ntmspace:powder_gallium_tiny", "c:dusts_tiny/gallium"},
                 {"ntmspace:ingot_zinc", "c:ingots/zinc"}, {"ntmspace:powder_coke_coal", "c:dusts/any_coal_coke"},

@@ -1,6 +1,7 @@
 package com.ntmspace.inventory.material;
 
 import com.hbm.inventory.material.Mats;
+import static com.hbm.inventory.material.MaterialShapes.*;
 import com.hbm.inventory.material.NTMMaterial;
 import com.hbm.inventory.material.NTMMaterial.SmeltingBehavior;
 
@@ -37,21 +38,21 @@ public final class SpaceOreMaterials {
     /** Idempotent; from the registration class initialiser and from {@code declare()}. */
     public static synchronized void register() {
         if (NICKEL != null) return;
-        // 1.7 hbm-space Mats, in its order of declaration
-        GLOWSTONE = mat(5, "glowstone", false, 0xFFFF00, 0x535300, 0xFFFF00, "Glowstone");
-        AUSTRALIUM = mat(13800, "australium", true, 0xFFFF00, 0x935B00, 0xFFFF00, "Australium");
-        TASMANITE = mat(13895, "tasmanite", true, 0xFFFF00, 0x935B00, 0xFFFF00, "Tasmanite");
-        AYERITE = mat(13851, "ayerite", true, 0xFFFF00, 0x935B00, 0xFFFF00, "Ayerite");
-        LAPIS = mat(2701, "lapis", false, 0x567DF9, 0x001793, 0x264DC9, "Lapis Lazuli");
-        WHITE_PHOSPHORUS = mat(1501, "white_phosphorus", false, 0xF5F5ED, 0xC4BD9A, 0xC4BD9A, "White Phosphorus");
-        QUARTZ = mat(1402, "quartz", false, 0xF7F5F2, 0x6F5D5A, 0xF7F5F2, "Nether Quartz");
-        NICKEL = mat(2800, "nickel", true, 0xE8D1C7, 0x87756E, 0xAE9572, "Nickel");
-        GALLIUM = mat(3100, "gallium", true, 0x52687F, 0x52687F, 0x52687F, "Gallium");
-        ZINC = mat(3000, "zinc", true, 0xD7CBDA, 0x7A7277, 0xA79DA8, "Zinc");
-        BROMINE = mat(3500, "bromine", false, 0xFF642B, 0x720000, 0xFF642B, "Bromine");
-        IODINE = mat(5300, "iodine", false, 0x7A8796, 0x3F3049, 0x7A8796, "Iodine");
-        HAFNIUM = mat(7200, "hafnium", true, 0xFFF8C7, 0x2E1600, 0xFFF8C7, "Hafnium");
-        SEMTEX = mat(EX + 3, "semtex", false, 0xEDAA28, 0x825D16, 0xF0B090, "Semtex");
+        // 1.7 hbm-space Mats, in its order of declaration (slotted after 1.7 predecessors by SpaceMaterials).
+        GLOWSTONE = mat(5, "glowstone", false, 0xFFFF00, 0x535300, 0xFFFF00, "Glowstone").setAutogen(FRAGMENT).n();
+        AUSTRALIUM = mat(13800, "australium", true, 0xFFFF00, 0x935B00, 0xFFFF00, "Australium").setAutogen(FRAGMENT).m();
+        TASMANITE = mat(13895, "tasmanite", true, 0xFFFF00, 0x935B00, 0xFFFF00, "Tasmanite").setAutogen(FRAGMENT).m();
+        AYERITE = mat(13851, "ayerite", true, 0xFFFF00, 0x935B00, 0xFFFF00, "Ayerite").setAutogen(FRAGMENT).m();
+        LAPIS = mat(2701, "lapis", false, 0x567DF9, 0x001793, 0x264DC9, "Lapis Lazuli").setAutogen(FRAGMENT, DUST, GEM, BLOCK).m();
+        WHITE_PHOSPHORUS = mat(1501, "white_phosphorus", false, 0xF5F5ED, 0xC4BD9A, 0xC4BD9A, "White Phosphorus").setAutogen(FRAGMENT, DUST).n();
+        QUARTZ = mat(1402, "quartz", false, 0xF7F5F2, 0x6F5D5A, 0xF7F5F2, "Nether Quartz").setAutogen(FRAGMENT).n();
+        NICKEL = mat(2800, "nickel_pure", true, 0xE8D1C7, 0x87756E, 0xAE9572, "Nickel").setAutogen(FRAGMENT, NUGGET, DUST, BLOCK).m();
+        GALLIUM = mat(3100, "gallium", true, 0x52687F, 0x52687F, 0x52687F, "Gallium").setAutogen(FRAGMENT, NUGGET, DUST, DUSTTINY).m();
+        ZINC = mat(3000, "zinc", true, 0xD7CBDA, 0x7A7277, 0xA79DA8, "Zinc").setAutogen(FRAGMENT, NUGGET, DUST, WIRE).m();
+        BROMINE = mat(3500, "bromine", false, 0xFF642B, 0x720000, 0xFF642B, "Bromine").setAutogen(FRAGMENT).m();
+        IODINE = mat(5300, "iodine", false, 0x7A8796, 0x3F3049, 0x7A8796, "Iodine").setAutogen(FRAGMENT).m();
+        HAFNIUM = mat(7200, "hafnium", true, 0xFFF8C7, 0x2E1600, 0xFFF8C7, "Hafnium").setAutogen(FRAGMENT, DUST).m();
+        SEMTEX = mat(EX + 3, "semtex", false, 0xEDAA28, 0x825D16, 0xF0B090, "Semtex").setAutogen(FRAGMENT).n();
     }
 
     /** All fourteen, in registration order. */
@@ -64,7 +65,7 @@ public final class SpaceOreMaterials {
     private static NTMMaterial mat(int id, String name, boolean smeltable, int light, int dark, int molten, String display) {
         NTMMaterial existing = Mats.matByName.get(name);
         if (existing != null) return existing;
-        return Mats.register(id, name).colors(light, dark, molten)
+        return Mats.register(id, name).namespace("ntmspace").colors(light, dark, molten)
                 .smelting(smeltable ? SmeltingBehavior.SMELTABLE : SmeltingBehavior.NOT_SMELTABLE)
                 .displayName(display);
     }

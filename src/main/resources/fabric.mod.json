@@ -29,6 +29,7 @@
             "com.ntmspace.platform.fabric.FabricGameTests"
         ]
     },
+    "mixins": [],
     "depends": {
         "fabricloader": ">=${fabric_loader}",
         "fabric-api": "*",

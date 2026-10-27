@@ -35,7 +35,6 @@ import net.minecraft.world.entity.SpawnGroupData;
 import net.minecraft.world.entity.ai.attributes.AttributeSupplier;
 import net.minecraft.world.entity.ai.attributes.Attributes;
 import net.minecraft.world.entity.player.Player;
-import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.ServerLevelAccessor;
 import net.minecraft.world.level.levelgen.Heightmap;
@@ -198,6 +197,14 @@ public class EntitySiegeCraft extends EntityUFOBase implements IRadiationImmune 
 
     public int lifetime() {
         return this.lifetime;
+    }
+
+    public void setLifetime(int ticks) {
+        this.lifetime = ticks;
+    }
+
+    public void setBeamCountdown(int ticks) {
+        this.beamCountdown = ticks;
     }
 
     @Override
@@ -372,22 +379,18 @@ public class EntitySiegeCraft extends EntityUFOBase implements IRadiationImmune 
     protected void saveData(DataOut out) {
         super.saveData(out);
         out.putString("siegeTier", getTier().name);
+        out.putInt("lifetime", this.lifetime);
+        out.putBoolean("isRetreating", this.isRetreating);
     }
 
     @Override
     protected void loadData(DataIn in) {
         super.loadData(in);
         SiegeTier tier = SiegeTier.byName(in.getStringOr("siegeTier", ""));
-        setTier(tier != null ? tier : SiegeTier.DEFAULT_BUFF);
+        // Base loading has already restored attributes and health; setTier would heal it to full.
+        this.entityData.set(TIER, (tier != null ? tier : SiegeTier.DEFAULT_BUFF).id);
+        this.lifetime = in.getIntOr("lifetime", 0);
+        this.isRetreating = in.getBooleanOr("isRetreating", false);
     }
 
-    /** 1.7 {@code dropFewItems(byPlayer, ...)}: every one of the tier's drops, only when a player killed it. */
-    @Override
-    protected void dropCustomDeathLoot(ServerLevel level, DamageSource source, boolean killedByPlayer) {
-        super.dropCustomDeathLoot(level, source, killedByPlayer);
-        if (!killedByPlayer) return;
-        for (ItemStack drop : getTier().dropItems()) {
-            spawnAtLocation(level, drop, 0F);
-        }
-    }
 }

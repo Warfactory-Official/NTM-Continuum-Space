@@ -1,5 +1,9 @@
 package com.ntmspace.world;
 
+import java.util.function.IntUnaryOperator;
+import net.minecraft.core.BlockPos;
+import net.minecraft.util.RandomSource;
+import net.minecraft.world.level.WorldGenLevel;
 import com.ntmspace.block.terrain.BlockLaytheCoral;
 import com.ntmspace.block.terrain.BlockLaytheCoralBlock;
 import com.ntmspace.block.terrain.BlockLaytheKelp;
@@ -48,7 +52,7 @@ import net.minecraft.world.level.block.state.properties.DoubleBlockHalf;
  * <p>hbm-space's other {@code IWorldGenerator}s on these bodies place ores, bedrock ores and NBT structures, which belong
  * to those ports.
  */
-final class LaytheTektoDecoration {
+public final class LaytheTektoDecoration {
 
     private LaytheTektoDecoration() {}
 
@@ -167,28 +171,39 @@ final class LaytheTektoDecoration {
 
     /** hbm-space's {@code WorldGenWaterPlant} with {@code seaLevel} 63. */
     private static void waterPlant(World17 world, Random rand, int x, int y, int z) {
+        waterPlant(world, rand, x, y, z, SEA_LEVEL);
+    }
+
+    public static boolean waterPlant(WorldGenLevel level, RandomSource random,
+                                  BlockPos origin, int seaLevel) {
+        var world = World17.live(level, origin.getX() >> 4, origin.getZ() >> 4);
+        waterPlant(world, new RandomSourceRandom(random), origin.getX(), origin.getY(), origin.getZ(), seaLevel);
+        return world.writes() > 0;
+    }
+
+    private static void waterPlant(World17 world, Random rand, int x, int y, int z, int seaLevel) {
         Block silt = LaytheTektoBlocks.LAYTHE_SILT.get();
         for (int l = 0; l < 128; ++l) {
             int px = x + rand.nextInt(8) - rand.nextInt(8);
             int py = y + rand.nextInt(4) - rand.nextInt(4);
             int pz = z + rand.nextInt(8) - rand.nextInt(8);
 
-            if (py < SEA_LEVEL - 1 && world.is(px, py, pz, Blocks.WATER) && world.is(px, py - 1, pz, silt)) {
+            if (py < seaLevel - 1 && world.is(px, py, pz, Blocks.WATER) && world.is(px, py - 1, pz, silt)) {
                 int type = rand.nextInt(7);
 
                 switch (type) {
                     case 0, 1, 2 -> world.set(px, py, pz, LaytheTektoBlocks.LAYTHE_SEAGRASS.get().defaultBlockState());
                     case 3 -> world.set(px, py, pz, LaytheTektoBlocks.LAYTHE_GLOWGRASS.get().defaultBlockState());
                     case 4, 5 -> {
-                        if (py < SEA_LEVEL - 2) {
+                        if (py < seaLevel - 2) {
                             BlockState tall = LaytheTektoBlocks.PLANT_TALL_LAYTHE.get().defaultBlockState();
                             world.set(px, py, pz, tall.setValue(BlockLaytheTallPlant.HALF, DoubleBlockHalf.LOWER));
                             world.set(px, py + 1, pz, tall.setValue(BlockLaytheTallPlant.HALF, DoubleBlockHalf.UPPER));
                         }
                     }
                     default -> {
-                        if (py < SEA_LEVEL - 4) {
-                            int height = 2 + rand.nextInt(Math.min(8, SEA_LEVEL - py - 2));
+                        if (py < seaLevel - 4) {
+                            int height = 2 + rand.nextInt(Math.min(8, seaLevel - py - 2));
                             BlockState kelp = LaytheTektoBlocks.LAYTHE_KELP.get().defaultBlockState();
                             for (int h = 0; h < height; ++h) {
                                 world.set(px, py + h, pz, kelp.setValue(BlockLaytheKelp.TOP, false));
@@ -215,6 +230,17 @@ final class LaytheTektoDecoration {
 
     /** hbm-space's {@code WorldGenWaterCoral} with {@code seaLevel} 63. */
     private static void coral(World17 world, Random rand, int x, int y, int z) {
+        coral(world, rand, x, y, z, SEA_LEVEL);
+    }
+
+    public static boolean coral(WorldGenLevel level, RandomSource random,
+                                  BlockPos origin, int seaLevel) {
+        var world = World17.live(level, origin.getX() >> 4, origin.getZ() >> 4);
+        coral(world, new RandomSourceRandom(random), origin.getX(), origin.getY(), origin.getZ(), seaLevel);
+        return world.writes() > 0;
+    }
+
+    private static void coral(World17 world, Random rand, int x, int y, int z, int seaLevel) {
         Block silt = LaytheTektoBlocks.LAYTHE_SILT.get();
         for (int l = 0; l < 16; ++l) {
             int px = x + rand.nextInt(8) - rand.nextInt(8);
@@ -223,7 +249,7 @@ final class LaytheTektoDecoration {
 
             if (!world.exists(px, py, pz)) continue;
 
-            if (py < SEA_LEVEL - 1 && isWater(world, px, py, pz) && world.is(px, py - 1, pz, silt)) {
+            if (py < seaLevel - 1 && isWater(world, px, py, pz) && world.is(px, py - 1, pz, silt)) {
                 int meta = rand.nextInt(PlantType.Coral.values().length) + 8;
                 PlantType.Coral type = PlantType.Coral.ofMeta(meta);
                 BlockState block = LaytheTektoBlocks.LAYTHE_CORAL_BLOCK.get().defaultBlockState().setValue(BlockLaytheCoralBlock.TYPE, type);
@@ -235,7 +261,7 @@ final class LaytheTektoDecoration {
                 int ox = 0;
                 int oz = 0;
                 while (oy < 8) {
-                    if (py + oy > SEA_LEVEL - 3) break;
+                    if (py + oy > seaLevel - 3) break;
                     if (rand.nextBoolean()) break;
 
                     if (rand.nextBoolean()) {
@@ -348,9 +374,17 @@ final class LaytheTektoDecoration {
     /** hbm-space's {@code TTree.generate}: a log column and an ellipsoid bulb of leaves, with optional hanging vines. */
     static boolean tree(World17 world, Random rand, int x, int y, int z, int offset, int smallest, int tallest,
                                 int xz, int yRadius, boolean vines, Block logBlock, Block leafBlock) {
-        int height = rand.nextInt(smallest) + tallest;
+        return tree(world, rand::nextInt, x, y, z, offset, smallest, tallest, xz, yRadius, vines,
+                logBlock.defaultBlockState(), leafBlock.defaultBlockState());
+    }
 
-        if (y < 1 || y + height + 1 > 256) {
+    /** The same geometry and bounded draws for both the legacy decorator and configured sapling features. */
+    static boolean tree(World17 world, IntUnaryOperator roll, int x, int y, int z,
+                        int offset, int smallest, int tallest, int xz, int yRadius, boolean vines,
+                        BlockState log, BlockState leaves) {
+        int height = roll.applyAsInt(smallest) + tallest;
+
+        if (y <= world.minY() || y + height + 1 > world.maxY()) {
             return false;
         }
 
@@ -359,13 +393,11 @@ final class LaytheTektoDecoration {
             return false;
         }
 
-        BlockState log = logBlock.defaultBlockState();
         for (int i = 0; i < height; i++) {
             world.set(x, y + i, z, log);
         }
 
         int bulbStartY = y + height - offset;
-        BlockState leaves = leafBlock.defaultBlockState();
         BlockState vine = LaytheTektoBlocks.VINYL_VINE.get().defaultBlockState();
 
         for (int dy = -yRadius; dy <= yRadius; dy++) {
@@ -380,8 +412,8 @@ final class LaytheTektoDecoration {
                                     int vineX = x + dx + (i % 2 == 0 ? (i - 1) : 0);
                                     int vineZ = z + dz + (i % 2 == 1 ? (i - 2) : 0);
 
-                                    if (rand.nextInt(12) == 0) {
-                                        for (int k = 0; k < rand.nextInt(15); k++) {
+                                    if (roll.applyAsInt(12) == 0) {
+                                        for (int k = 0; k < roll.applyAsInt(15); k++) {
                                             int vineY = bulbStartY + dy - k;
                                             if (world.isAir(vineX, vineY, vineZ)) {
                                                 world.set(vineX, vineY, vineZ, vineFaces(vine, vineX, vineZ, x + dx, z + dz));

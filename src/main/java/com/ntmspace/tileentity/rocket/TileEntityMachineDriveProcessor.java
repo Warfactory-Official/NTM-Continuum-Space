@@ -48,20 +48,28 @@ import org.jspecify.annotations.Nullable;
  */
 public class TileEntityMachineDriveProcessor extends TileEntityMachineBase implements MenuProvider, IControlReceiver, IEnergyReceiverMK2 {
 
+    public static final int SLOT_DRIVE = 0;
+    public static final int SLOT_CLONE = 1;
+    public static final int SLOT_CIRCUIT = 2;
+    public static final int SLOT_BATTERY = 3;
+    public static final int SLOT_COUNT = 4;
+    public static final long MAX_POWER = 2_000;
+    public static final int MAX_PROGRESS = 100;
+
     public long power;
-    public long maxPower = 2_000;
+    public long maxPower = MAX_POWER;
 
     public boolean isProcessing;
     public int progress;
-    public int maxProgress = 100; // 5 seconds
+    public int maxProgress = MAX_PROGRESS; // 5 seconds
 
-    public String status = "";
+    public Status status = Status.NONE;
     public boolean hasDrive = false;
 
     private int lastTier;
 
     public TileEntityMachineDriveProcessor(BlockPos pos, BlockState state) {
-        super(DriveProcessorBlocks.DRIVE_PROCESSOR_BE.get(), pos, state, 4);
+        super(DriveProcessorBlocks.DRIVE_PROCESSOR_BE.get(), pos, state, SLOT_COUNT);
     }
 
     @Override
@@ -85,44 +93,44 @@ public class TileEntityMachineDriveProcessor extends TileEntityMachineBase imple
 
     /** 1.7 {@code updateEntity} (server side). */
     void update(Level level) {
-        power = Library.chargeTEFromItems(inventory, 3, power, maxPower);
+        power = Library.chargeTEFromItems(inventory, SLOT_BATTERY, power, maxPower);
         setupAllPorts(getPorts());
         updatePortPIFIFO();
 
         if (power < maxPower * 0.75) {
             isProcessing = false;
-            status = ChatFormatting.RED + "No power ";
-        } else if (!isDrive(getItem(0))) {
+            status = Status.NO_POWER;
+        } else if (!isDrive(getItem(SLOT_DRIVE))) {
             isProcessing = false;
-            status = "";
-        } else if (getProcessingTier() < ItemVOTVdrive.getProcessingTier(getItem(0), Orbit.bodyOf(level))) {
+            status = Status.NONE;
+        } else if (getProcessingTier() < ItemVOTVdrive.getProcessingTier(getItem(SLOT_DRIVE), Orbit.bodyOf(level))) {
             isProcessing = false;
-            status = ChatFormatting.RED + "Low tier ";
+            status = Status.LOW_TIER;
         }
 
         if (lastTier != getProcessingTier()) {
-            status = "";
+            status = Status.NONE;
         }
 
         if (isProcessing) {
             power -= 200;
 
-            status = ChatFormatting.GREEN + "" + ChatFormatting.ITALIC + "Processing  ";
+            status = Status.PROCESSING;
             progress++;
 
             if (progress >= maxProgress) {
                 progress = 0;
                 isProcessing = false;
-                ItemVOTVdrive.setProcessed(getItem(0), true);
+                ItemVOTVdrive.setProcessed(getItem(SLOT_DRIVE), true);
                 setChanged();
-                status = ChatFormatting.GREEN + "Done! ";
+                status = Status.DONE;
             }
         } else {
             progress = 0;
         }
 
         lastTier = getProcessingTier();
-        hasDrive = isDrive(getItem(0));
+        hasDrive = isDrive(getItem(SLOT_DRIVE));
 
         networkPackNT();
     }
@@ -134,7 +142,7 @@ public class TileEntityMachineDriveProcessor extends TileEntityMachineBase imple
 
     /** 1.7 {@code getProcessingTier}: the circuit in slot 2. */
     public int getProcessingTier() {
-        ItemStack circuit = getItem(2);
+        ItemStack circuit = getItem(SLOT_CIRCUIT);
         if (circuit.isEmpty()) return 0;
         if (circuit.getItem() == SpaceMachineItems.circuit("PROCESST1")) return 1;
         if (circuit.getItem() == SpaceMachineItems.circuit("PROCESST2")) return 2;
@@ -149,34 +157,40 @@ public class TileEntityMachineDriveProcessor extends TileEntityMachineBase imple
         }
 
         if (power < maxPower * 0.75) return;
-        if (!isDrive(getItem(0))) return;
-        if (ItemVOTVdrive.getProcessed(getItem(0))) return;
+        if (!isDrive(getItem(SLOT_DRIVE))) return;
+        if (ItemVOTVdrive.getProcessed(getItem(SLOT_DRIVE))) return;
         if (level == null) return;
 
         // Check that our installed upgrade is a high enough tier
-        if (getProcessingTier() >= ItemVOTVdrive.getProcessingTier(getItem(0), Orbit.bodyOf(level))) {
+        if (getProcessingTier() >= ItemVOTVdrive.getProcessingTier(getItem(SLOT_DRIVE), Orbit.bodyOf(level))) {
             isProcessing = true;
         }
     }
 
-    private void cloneDrive() {
+    public void setProcessing(boolean process) {
+        processDrive(process);
+        setChanged();
+    }
+
+    public void cloneDrive() {
         if (power < maxPower * 0.75) return;
-        if (!isDrive(getItem(0))) return;
-        if (getItem(1).isEmpty() || getItem(1).getItem() != RocketItems.HARD_DRIVE.get()) {
-            status = ChatFormatting.RED + "No target ";
+        if (!isDrive(getItem(SLOT_DRIVE))) return;
+        if (getItem(SLOT_CLONE).isEmpty() || getItem(SLOT_CLONE).getItem() != RocketItems.HARD_DRIVE.get()) {
+            status = Status.NO_TARGET;
             return;
         }
 
-        ItemVOTVdrive.markCopied(getItem(0));
-        setItem(1, getItem(0).copy());
+        ItemVOTVdrive.markCopied(getItem(SLOT_DRIVE));
+        setItem(SLOT_CLONE, getItem(SLOT_DRIVE).copy());
 
-        status = ChatFormatting.GREEN + "Drive cloned ";
+        status = Status.CLONED;
+        setChanged();
     }
 
     @Override
     public void receiveControl(CompoundTag data) {
         if (data.contains("process")) {
-            processDrive(Tags.getBooleanOr(data, "process", false));
+            setProcessing(Tags.getBooleanOr(data, "process", false));
         }
 
         if (data.contains("clone")) {
@@ -202,7 +216,7 @@ public class TileEntityMachineDriveProcessor extends TileEntityMachineBase imple
         buf.writeBoolean(isProcessing);
         buf.writeInt(progress);
         buf.writeBoolean(hasDrive);
-        buf.writeUtf(status);
+        buf.writeEnum(status);
     }
 
     @Override
@@ -212,7 +226,7 @@ public class TileEntityMachineDriveProcessor extends TileEntityMachineBase imple
         isProcessing = buf.readBoolean();
         progress = buf.readInt();
         hasDrive = buf.readBoolean();
-        status = buf.readUtf();
+        status = buf.readEnum(Status.class);
     }
 
     @Override
@@ -221,7 +235,7 @@ public class TileEntityMachineDriveProcessor extends TileEntityMachineBase imple
         output.putLong("power", power);
         output.putBoolean("isProcessing", isProcessing);
         output.putInt("progress", progress);
-        output.putString("status", status);
+        output.putString("status", status.name());
         output.putInt("lastTier", lastTier);
     }
 
@@ -231,12 +245,35 @@ public class TileEntityMachineDriveProcessor extends TileEntityMachineBase imple
         power = input.getLongOr("power", 0L);
         isProcessing = input.getBooleanOr("isProcessing", false);
         progress = input.getIntOr("progress", 0);
-        status = input.getStringOr("status", "");
+        status = Status.valueOf(input.getStringOr("status", Status.NONE.name()));
         lastTier = input.getIntOr("lastTier", 0);
     }
 
     public int lastTier() {
         return lastTier;
+    }
+
+    /** The seven states of the processor's status line, independent of its rendered text. */
+    public enum Status {
+        NONE(""),
+        NO_POWER("No power ", ChatFormatting.RED),
+        LOW_TIER("Low tier ", ChatFormatting.RED),
+        PROCESSING("Processing  ", ChatFormatting.GREEN, ChatFormatting.ITALIC),
+        DONE("Done! ", ChatFormatting.GREEN),
+        NO_TARGET("No target ", ChatFormatting.RED),
+        CLONED("Drive cloned ", ChatFormatting.GREEN);
+
+        private final String label;
+        private final ChatFormatting[] style;
+
+        Status(String label, ChatFormatting... style) {
+            this.label = label;
+            this.style = style;
+        }
+
+        public Component text() {
+            return Component.literal(label).withStyle(style);
+        }
     }
 
     @Override public long getPower() { return power; }

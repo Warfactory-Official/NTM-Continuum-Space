@@ -60,7 +60,7 @@ public final class ThatmoStrikes {
         ServerLevel thatmo = server.getLevel(SpaceDimensions.THATMO);
         if (thatmo == null || thatmo.players().isEmpty()) return;
         for (Strike strike : strikes(thatmo, thatmo.players(), thatmo.getGameTime(), battlefield(thatmo))) {
-            thatmo.addFreshEntity(strike.bomber());
+            strike.bomber().addToLevel();
         }
     }
 

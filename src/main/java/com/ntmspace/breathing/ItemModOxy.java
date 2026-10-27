@@ -68,8 +68,7 @@ public class ItemModOxy extends ItemArmorMod implements IFillableItem {
         if (!entity.level().isClientSide()) return;
         BiConsumer<LivingEntity, Boolean> breathing = CLIENT_BREATHING;
         if (breathing == null) return;
-        ItemStack stack = ArmorModHandler.pryMods(armor)[ArmorModHandler.plate_only];
-        breathing.accept(entity, stack.getItem() instanceof ItemModOxy && getInUse(stack));
+        breathing.accept(entity, Breathing.isTankInUse(entity));
     }
 
     /**
@@ -78,12 +77,12 @@ public class ItemModOxy extends ItemArmorMod implements IFillableItem {
      */
     public boolean attemptBreathing(LivingEntity entity, ItemStack stack, @Nullable CBT_Atmosphere atmosphere, boolean forceConsume) {
         if (!forceConsume && AtmosphereHandler.canBreathe(atmosphere)) {
-            setInUse(stack, false);
+            Breathing.setTankInUse(entity, false);
             return true;
         }
         if (entity.tickCount % rate == 0) setFuel(stack, Math.max(getFuel(stack) - consumption, 0));
         boolean hasFuel = getFuel(stack) > 0;
-        setInUse(stack, hasFuel);
+        Breathing.setTankInUse(entity, hasFuel);
         return hasFuel;
     }
 

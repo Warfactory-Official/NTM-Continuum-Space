@@ -52,7 +52,7 @@ import net.minecraft.world.phys.AABB;
  * per tick, shared between every receiver on the swarm (its consumers, counted per tick by {@link CBT_Dyson}).
  *
  * <p>1.7's dummy blocks had light opacity 0, so a receiver's own tower and dish neither shaded its core nor counted in
- * {@code getHeightValue}. HBM's multiblocks have opacity 0 too (ADDON-API-INVENTORY X-24), so the sky light at the core
+ * {@code getHeightValue}. HBM's multiblocks have opacity 0 too, so the sky light at the core
  * is the stored one; 1.7's height value (one above the highest block with any opacity) is a scan, since modern height
  * maps track other things.
  */
@@ -97,6 +97,12 @@ public class TileEntityDysonReceiver extends TileEntityMachineBase {
     @Override
     public String getDefaultName() {
         return "container.machineDysonReceiver";
+    }
+
+    @Override
+    public void setChanged() {
+        super.setChanged();
+        if (level instanceof ServerLevel) swarmId = ISatChip.getFreqS(inventory.getStackInSlot(0));
     }
 
     public static void serverTick(Level level, BlockPos pos, BlockState state, TileEntityDysonReceiver te) {

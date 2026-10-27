@@ -1,5 +1,9 @@
 package com.ntmspace.block.machine;
 
+import com.ntmspace.registry.SpaceMachines;
+import com.hbm.capability.ICapabilityBlock;
+import com.hbm.capability.MachineCaps;
+
 import com.hbm.api.energymk2.IEnergyConnectorBlock;
 import com.hbm.api.fluidmk2.IFluidConnectorBlockMK2;
 import com.hbm.blocks.multiblock.BlockMultiblockMachine;
@@ -14,11 +18,18 @@ import net.minecraft.world.level.block.state.BlockState;
  * corners {@code TileEntityProxyCombo().fluid().power()}; its eight connection points sit beside the corners. Opens the
  * GUI on use.
  */
-public class MachineMilkReformer extends BlockMultiblockMachine implements IEnergyConnectorBlock, IFluidConnectorBlockMK2 {
+public class MachineMilkReformer extends BlockMultiblockMachine implements IEnergyConnectorBlock, IFluidConnectorBlockMK2, ICapabilityBlock {
 
     // music listened to: https://www.youtube.com/watch?v=9imCm6CrNZ8&list=RD9imCm6CrNZ8&index=1 (hbm-space)
 
     private static final int[] DIMS = {6, 0, 1, 1, 1, 1};
+
+    @Override
+    public MachineCaps caps() {
+        return MachineCaps.of(SpaceMachines.MILK_REFORMER_BE).powerIn().fluidIn().fluidOut().items().fe()
+                .faces(TileEntityMachineMilkReformer.class, (be, side) -> side != Direction.DOWN)
+                .fluidFaces(TileEntityMachineMilkReformer.class, (be, side) -> side != Direction.DOWN);
+    }
 
     public MachineMilkReformer(Properties properties) {
         super(properties);

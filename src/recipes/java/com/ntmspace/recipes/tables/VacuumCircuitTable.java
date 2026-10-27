@@ -8,9 +8,7 @@ import com.hbm.items.ModIntermediateItems;
 import com.ntmspace.recipe.VacuumCircuitRecipes;
 import com.ntmspace.recipe.VacuumCircuitRecipes.VacuumCircuitRecipe;
 import com.ntmspace.registry.SpaceMachineItems;
-import java.util.Arrays;
 import java.util.Locale;
-import java.util.stream.Stream;
 import net.minecraft.world.item.ItemStack;
 
 /**
@@ -61,10 +59,9 @@ public final class VacuumCircuitTable extends GenericTableSource<VacuumCircuitRe
      * duration, consumption, wafer, pcb))}, the output given by its circuit type {@code X}.
      */
     private void add(String output, int duration, long consumption, AStack[] wafer, AStack[] pcb) {
-        VacuumCircuitRecipe recipe = new VacuumCircuitRecipe("vacuum." + output.toLowerCase(Locale.ROOT));
-        recipe.wafers = wafer.length;
+        var recipe = new VacuumCircuitRecipe("vacuum." + output.toLowerCase(Locale.ROOT));
+        recipe.inputItems(wafer).setPcb(pcb);
         recipe.setup(duration, consumption)
-                .inputItems(Stream.concat(Arrays.stream(wafer), Arrays.stream(pcb)).toArray(AStack[]::new))
                 .outputItems(new ItemStack(SpaceMachineItems.circuit(output), 1));
         register(recipe);
     }

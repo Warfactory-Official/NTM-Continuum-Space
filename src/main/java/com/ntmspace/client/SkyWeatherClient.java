@@ -1,5 +1,13 @@
 package com.ntmspace.client;
 
+import com.ntmspace.world.SolarSystem;
+import com.ntmspace.world.SpaceSkies;
+import dev.golem.core.harness.HarnessQueryRegistry;
+import dev.golem.core.Ids;
+import com.google.gson.JsonObject;
+import com.ntmspace.orbit.Orbit;
+import dev.golem.core.world.Skies;
+import dev.golem.core.client.Lightmaps;
 import com.ntmspace.registry.SkyWeatherContent;
 import com.ntmspace.satellite.SatelliteSky;
 import com.ntmspace.weather.DustStorm;
@@ -31,24 +39,20 @@ public final class SkyWeatherClient {
 
     private SkyWeatherClient() {}
 
-    /** The strength last sent by the server ({@code dustStormIntensity} on the client). */
-    private static float dustStormIntensity = 0;
     /** {@code dustStormSmoothed}. */
     private static float dustStormSmoothed = 0;
     private static float lastFlashStrength;
     private static ClientLevel lastLevel;
 
     public static void init() {
-        GolemNetwork.registerPlayToClient(DustStorm.CODEC_PAYLOAD, (payload, context) -> dustStormIntensity = payload.intensity());
+        GolemNetwork.registerPlayToClient(DustStorm.CODEC_PAYLOAD, (payload, context) -> DustStorm.acceptSync(payload.intensity()));
         SatelliteSky.initClient();
         ClientTicks.onEndTick(SkyWeatherClient::tick);
-        dev.golem.core.harness.HarnessQueryRegistry.register("ntmspace_sky", SkyWeatherClient::query);
-        // Every body's level (and the orbit) lights its blocks with 1.7's EntityRenderer.updateLightmap, from the sun
-        // brightness hbm-space's providers state (WorldProviderCelestial.getSunBrightness, Thatmo's tenth, Eve's flash):
-        // 26.1's own light map would draw the same brightness several times darker. Kerbin keeps vanilla's.
-        dev.golem.core.client.Lightmaps.useClassicFormula(level -> com.ntmspace.orbit.Orbit.inOrbit(level)
-                || (com.ntmspace.world.SpaceSkies.body(level) != null && !com.ntmspace.world.SpaceSkies.isKerbin(level)));
-        dev.golem.core.client.Lightmaps.register(new dev.golem.core.client.Lightmaps.Modifier() {
+        HarnessQueryRegistry.register("ntmspace_sky", SkyWeatherClient::query);
+        // port: Each node keeps its native lightmap for renderer compatibility, including 26.1's departure from 1.7.
+        Lightmaps.useClassicFormula(level -> Orbit.inOrbit(level)
+                || (SpaceSkies.body(level) != null && !SpaceSkies.isKerbin(level)));
+        Lightmaps.register(new Lightmaps.Modifier() {
             @Override
             public boolean active(ClientLevel level) {
                 return level.dimension().equals(SpaceDimensions.LAYTHE) || level.dimension().equals(SpaceDimensions.IKE);
@@ -71,7 +75,7 @@ public final class SkyWeatherClient {
     static void lightmap(ClientLevel level, int sky, int[] rgb) {
         float l = sky / 15.0F;
         float skyBrightness = l / (4.0F - 3.0F * l);
-        float sun = CelestialSkyColors.sunBrightness(level, com.ntmspace.world.SpaceSkies.sunBrightness(level, 1.0F), 1.0F);
+        float sun = Lightmaps.skyInput(level, 1.0F);
         if (level.dimension().equals(SpaceDimensions.LAYTHE)) {
             float jool = Math.max(skyBrightness - sun, 0);
             rgb[1] += (int) (jool * 60);
@@ -102,7 +106,7 @@ public final class SkyWeatherClient {
 
         if (level.dimension().equals(SpaceDimensions.DUNA)) {
             // BobMathUtil.lerp(0.008, smoothed, intensity)
-            dustStormSmoothed = dustStormSmoothed + (dustStormIntensity - dustStormSmoothed) * 0.008F;
+            dustStormSmoothed = dustStormSmoothed + (DustStorm.clientIntensity - dustStormSmoothed) * 0.008F;
             Entity view = mc.getCameraEntity();
             if (view != null && dustStormSmoothed >= 0.05F && level.getRandom().nextFloat() < dustStormSmoothed) {
                 Vec3 vec = new Vec3(20, 0, 50)
@@ -128,21 +132,29 @@ public final class SkyWeatherClient {
      * Harness query {@code ntmspace_sky}: the client's level weather (rain, thunder), Duna's storm (sent and smoothed),
      * Eve's flash, the fog density NTM: Space applies, and the satellites and stations the sky draws.
      */
-    private static com.google.gson.JsonObject query(Minecraft mc, com.google.gson.JsonObject params) {
-        com.google.gson.JsonObject json = new com.google.gson.JsonObject();
+    private static JsonObject query(Minecraft mc, JsonObject params) {
+        JsonObject json = new JsonObject();
         ClientLevel level = mc.level;
         if (level == null) return json;
         json.addProperty("dimension", dev.golem.core.Ids.keyId(level.dimension()).toString());
         json.addProperty("rain", level.getRainLevel(1.0F));
         json.addProperty("thunder", level.getThunderLevel(1.0F));
-        json.addProperty("dust_storm", dustStormIntensity);
+        json.addProperty("dust_storm", DustStorm.clientIntensity);
         json.addProperty("dust_storm_smoothed", dustStormSmoothed);
         json.addProperty("eve_flash", CelestialSkyColors.eveFlash(level, 0.0F));
         json.addProperty("fog_density", CelestialSkyColors.fogDensity(level));
+        json.addProperty("lightmap_input", Lightmaps.skyInput(level, 1.0F));
+        json.addProperty("raw_sky_factor", Skies.rawSkyLightFactor(level));
+        json.addProperty("classic_lightmap", Lightmaps.classic(level));
+        json.addProperty("lightmap_additions", Lightmaps.additions() != null);
+        if (Orbit.inOrbit(level)) {
+            OrbitSky.appendState(json);
+            json.add("server", serverSky(mc));
+        }
         SatelliteSky.View view = SatelliteSky.client();
         com.google.gson.JsonArray sats = new com.google.gson.JsonArray();
         for (SatelliteSky.Sat sat : view.satellites()) {
-            com.google.gson.JsonObject o = new com.google.gson.JsonObject();
+            JsonObject o = new JsonObject();
             o.addProperty("freq", sat.freq());
             o.addProperty("type", sat.type());
             o.addProperty("altitude", sat.orbit().altitude());
@@ -154,15 +166,33 @@ public final class SkyWeatherClient {
         if (params != null && params.has("pin_ticks")) {
             double pin = params.get("pin_ticks").getAsDouble();
             MunSky.pinnedTicks = pin < 0 ? Double.NaN : pin;
-            com.ntmspace.world.SpaceSkies.clientPinnedTicks = pin < 0 ? Long.MIN_VALUE : (long) pin;
+            SpaceSkies.clientPinnedTicks = pin < 0 ? Long.MIN_VALUE : (long) pin;
         }
-        if (com.ntmspace.world.SpaceSkies.body(level) != null) {
-            json.addProperty("eclipse", com.ntmspace.world.SpaceSkies.eclipse(level));
+        if (SpaceSkies.body(level) != null) {
+            json.addProperty("eclipse", SpaceSkies.eclipse(level));
             json.addProperty("sun_brightness", CelestialSkyColors.sunBrightness(level,
-                    com.ntmspace.world.SpaceSkies.sunBrightness(level, 0.0F), 0.0F));
+                    SpaceSkies.sunBrightness(level, 0.0F), 0.0F));
         }
         json.add("astro", astro(level));
         return json;
+    }
+
+    /** Samples the real integrated-server input on its owner thread, independently of the rendered orbital state. */
+    private static JsonObject serverSky(Minecraft mc) {
+        var server = mc.getSingleplayerServer();
+        if (server == null) return new JsonObject();
+        var playerId = mc.player.getUUID();
+        return server.submit(() -> {
+            var player = server.getPlayerList().getPlayer(playerId);
+            var level = player.level();
+            var json = new JsonObject();
+            json.addProperty("dimension", Ids.keyId(level.dimension()).toString());
+            var input = Skies.lightInput(level, player.blockPosition());
+            json.addProperty("light_input_available", input.isPresent());
+            input.ifPresent(value -> json.addProperty("light_input", value));
+            json.addProperty("raw_sky_factor", Skies.rawSkyLightFactor(level));
+            return json;
+        }).join();
     }
 
     /**
@@ -170,14 +200,14 @@ public final class SkyWeatherClient {
      * the orbits use ({@code sky_ticks}, pinned or the game time), the solar and sidereal angles, and every other body's
      * {@code AstroMetric} (angle, inclination, apparent size, phase, distance in km).
      */
-    private static com.google.gson.JsonObject astro(ClientLevel level) {
-        com.google.gson.JsonObject json = new com.google.gson.JsonObject();
+    private static JsonObject astro(ClientLevel level) {
+        JsonObject json = new JsonObject();
         json.addProperty("game_time", level.getGameTime());
         json.addProperty("time_of_day", dev.golem.core.world.TimeOfDay.get(level));
-        com.ntmspace.world.SolarSystem.Body body = com.ntmspace.world.SpaceSkies.body(level);
+        SolarSystem.Body body = SpaceSkies.body(level);
         if (body == null) return json;
         double ticks = MunSky.skyTicks(level, 0.0F);
-        float solarAngle = com.ntmspace.world.SpaceSkies.angle(level, 0.0F);
+        float solarAngle = SpaceSkies.angle(level, 0.0F);
         json.addProperty("body", body.name);
         json.addProperty("pinned", !Double.isNaN(MunSky.pinnedTicks));
         json.addProperty("sky_ticks", ticks);
@@ -185,9 +215,9 @@ public final class SkyWeatherClient {
         json.addProperty("axial_tilt", body.axialTilt);
         json.addProperty("sidereal_angle", com.ntmspace.world.SolarSystem.calculateSiderealAngle(body, ticks));
         com.google.gson.JsonArray bodies = new com.google.gson.JsonArray();
-        for (com.ntmspace.world.SolarSystem.AstroMetric m : com.ntmspace.world.SolarSystem.calculateMetricsFromBody(ticks, body, solarAngle)) {
+        for (SolarSystem.AstroMetric m : SolarSystem.calculateClientMetricsFromBody(ticks, body, solarAngle)) {
             if (m.distance == 0) continue;
-            com.google.gson.JsonObject o = new com.google.gson.JsonObject();
+            JsonObject o = new JsonObject();
             o.addProperty("body", m.body.name);
             o.addProperty("angle", m.angle);
             o.addProperty("inclination", m.inclination);

@@ -13,7 +13,7 @@ import org.jspecify.annotations.Nullable;
 
 /**
  * hbm-space's {@code MissilePart.registerAllParts} with the part stats of its {@code ModItems} make-calls, transcribed
- * row for row (147 rows: every part hbm-space registered, the satellites included). Rows are keyed by item id:
+ * row for row (147 legacy rows, plus the three science satellite payloads). Rows are keyed by item id:
  * HBM's parts and satellites are {@code hbm:}, the 18 parts hbm-space added are {@code ntmspace:}. Plain data, no
  * Minecraft registry read until a lookup by item.
  *
@@ -214,6 +214,9 @@ public final class RocketParts {
         part("ntmspace:rp_c_20", PartType.WARHEAD, null, "APOLLO", 0.0, 2.0, 0, 8000, 0, 0, 3.5, 2.25, "ntmspace:models/missile_parts/rp_landing_capsule.obj", "ntmspace:textures/models/missile_parts/warheads/rp_landing_capsule.png", null, null, null);
         part("ntmspace:rp_sc_20", PartType.WARHEAD, null, "SATELLITE", 0.0, 2.0, 0, 64000, 0, 0, 7, 5, "ntmspace:models/missile_parts/mp_w_fairing.obj", "ntmspace:textures/models/missile_parts/warheads/mp_w_fairing.png", null, null, null);
         part("ntmspace:rp_pod_20", PartType.WARHEAD, null, "APOLLO", 0.0, 2.0, 0, 4000, 0, 0, 3.0, 2.25, "ntmspace:models/missile_parts/rp_drop_pod.obj", "ntmspace:textures/models/missile_parts/warheads/rp_drop_pod.png", null, null, "RenderDropPod");
+        sat("hbm:satellite_science", 7, 5, 16000, "ntmspace:models/missile_parts/mp_w_fairing.obj", "ntmspace:textures/models/missile_parts/warheads/mp_w_fairing.png", false);
+        sat("hbm:satellite_science_sensor", 7, 5, 16000, "ntmspace:models/missile_parts/mp_w_fairing.obj", "ntmspace:textures/models/missile_parts/warheads/mp_w_fairing.png", false);
+        sat("hbm:satellite_science_assembler", 7, 5, 16000, "ntmspace:models/missile_parts/mp_w_fairing.obj", "ntmspace:textures/models/missile_parts/warheads/mp_w_fairing.png", false);
         sat("hbm:satellite_spy", 7, 5, 16000, "ntmspace:models/missile_parts/mp_w_fairing.obj", "ntmspace:textures/models/missile_parts/warheads/mp_w_fairing.png", false);
         sat("hbm:satellite_scanner", 7, 5, 16000, "ntmspace:models/missile_parts/mp_w_fairing.obj", "ntmspace:textures/models/missile_parts/warheads/mp_w_fairing.png", false);
         sat("hbm:satellite_radar", 7, 5, 16000, "ntmspace:models/missile_parts/mp_w_fairing.obj", "ntmspace:textures/models/missile_parts/warheads/mp_w_fairing.png", false);
