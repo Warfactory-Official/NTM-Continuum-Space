@@ -1,13 +1,16 @@
 package com.ntmspace.tileentity.machine;
 
-import com.ntmspace.data.SpaceData;
+import com.google.gson.JsonObject;
+import com.google.gson.stream.JsonWriter;
 import com.hbm.lib.DirPos;
 import com.hbm.lib.ForgeDirection;
+import com.hbm.tileentity.IConfigurableMachine;
 import com.hbm.tileentity.MachineCore;
 import com.hbm.tileentity.TilePort.PortDef;
 import com.hbm.tileentity.machine.TileEntityCondenser;
 import com.ntmspace.block.machine.MachinePorts;
 import com.ntmspace.registry.SpaceMachinesC;
+import java.io.IOException;
 import net.minecraft.core.BlockPos;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.state.BlockState;
@@ -19,17 +22,29 @@ import net.minecraft.world.phys.AABB;
  * spent steam as the water tank has room for. It takes steam and gives water at the four corner cells, through the faces
  * behind them (1.7 {@code subscribeToAllAround} / {@code sendFluidToAll} at core - dir +/- rot, one up and one down).
  *
- * <p>New radiators read both tank capacities from the server datapack's radiator group.
+ * <p>Both tank capacities are 1.7's {@code radiator} entry of {@code hbmMachines.json}.
  */
 public class TileEntityRadiator extends TileEntityCondenser {
 
-    public static final int inputTankSize = 500;
-    public static final int outputTankSize = 500;
+    public static int inputTankSize = 500;
+    public static int outputTankSize = 500;
+
+    public static final IConfigurableMachine CONFIG = new IConfigurableMachine() {
+        @Override public String getConfigName() { return "radiator"; }
+
+        @Override public void readIfPresent(JsonObject obj) {
+            inputTankSize = IConfigurableMachine.grab(obj, "I:inputTankSize", inputTankSize);
+            outputTankSize = IConfigurableMachine.grab(obj, "I:outputTankSize", outputTankSize);
+        }
+
+        @Override public void writeConfig(JsonWriter writer) throws IOException {
+            writer.name("I:inputTankSize").value(inputTankSize);
+            writer.name("I:outputTankSize").value(outputTankSize);
+        }
+    };
 
     public TileEntityRadiator(BlockPos pos, BlockState state) {
-        super(SpaceMachinesC.RADIATOR_BE.get(), pos, state,
-                SpaceData.RADIATOR_INPUT_TANK_SIZE.get(),
-                SpaceData.RADIATOR_OUTPUT_TANK_SIZE.get());
+        super(SpaceMachinesC.RADIATOR_BE.get(), pos, state, inputTankSize, outputTankSize);
         vacuumOptimised = true;
     }
 

@@ -1,6 +1,6 @@
 package com.ntmspace.entity.mob;
 
-import com.ntmspace.data.SpaceData;
+import com.ntmspace.config.SpaceConfig;
 import dev.golem.core.Ids;
 import net.minecraft.core.registries.Registries;
 import net.minecraft.resources.ResourceKey;
@@ -48,7 +48,7 @@ public class EntityMoonCow extends CompatCow implements IRadiationImmune {
      */
     @Override
     public boolean checkSpawnRules(LevelAccessor level, EntitySpawnReason reason) {
-        if (!SpaceData.ENABLE_MUN_COWS.get() && level.getBiome(blockPosition()).is(
+        if (!SpaceConfig.enableMunCows && level.getBiome(blockPosition()).is(
                 ResourceKey.create(Registries.BIOME,
                         Ids.of("ntmspace", "mun")))) return false;
         if (reason == EntitySpawnReason.NATURAL) {

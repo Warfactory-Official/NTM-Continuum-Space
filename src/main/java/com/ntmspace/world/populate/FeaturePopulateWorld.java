@@ -19,11 +19,7 @@ public final class FeaturePopulateWorld extends PopulateWorld {
         super(origin.getX() >> 4, origin.getZ() >> 4);
         this.level = level;
         this.random = new RandomSourceRandom(random);
-        //? if >=1.21.2 {
         minY = level.getMinY();
-        //?} else {
-        /*minY = level.getMinY();
-        *///?}
         maxY = minY + level.getHeight();
     }
     @Override public boolean exists(int x, int y, int z) {

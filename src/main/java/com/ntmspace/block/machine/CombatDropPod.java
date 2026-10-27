@@ -1,6 +1,6 @@
 package com.ntmspace.block.machine;
 
-import com.ntmspace.data.SpaceData;
+import com.ntmspace.config.SpaceConfig;
 import com.ntmspace.tileentity.machine.storage.TileEntityCombatDropPod;
 import dev.golem.core.registry.TickingBlock;
 import dev.golem.core.world.CompatBlock;
@@ -30,7 +30,7 @@ public class CombatDropPod extends CompatBlock implements TickingBlock {
 
     @Override
     public void tick(BlockState state, ServerLevel level, BlockPos pos, RandomSource random) {
-        if (SpaceData.COMBAT_POD_DESPAWN.get()) level.removeBlock(pos, false);
+        if (SpaceConfig.combatPodDespawn) level.removeBlock(pos, false);
     }
 
     @Override

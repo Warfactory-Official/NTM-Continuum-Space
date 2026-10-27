@@ -65,7 +65,7 @@ legacyForge {
     }
 }
 
-// Same reasons as new-hbm's Forge buildscript: every GameTest run starts from an empty flat world.
+// Same reasons as NTM-Continuum's Forge buildscript: every GameTest run starts from an empty flat world.
 tasks.matching { it.name == "runGameTestServer" }.configureEach {
     doFirst {
         delete(layout.projectDirectory.dir("runs/gametest/world"))
@@ -142,7 +142,7 @@ tasks.processResources { dependsOn(tasks.named("stonecutterGenerate")) }
 
 extra["mc_version"] = mcVersion
 extra["java_version"] = javaVersion.toString()
-// Forge 1.20.1's convention tag namespace is `forge:`; see new-hbm's Forge buildscript.
+// Forge 1.20.1's convention tag namespace is `forge:`; see NTM-Continuum's Forge buildscript.
 extra["convention_namespace"] = "forge"
 apply(from = rootProject.file("../Golem-Core/gradle/mod/run-toolchain.gradle.kts"))
 apply(from = rootProject.file("../Golem-Core/gradle/mod/harness-spec.gradle.kts"))

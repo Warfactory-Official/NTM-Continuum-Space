@@ -10,11 +10,19 @@ final class MobVariants {
     private MobVariants() {}
 
     static void load(SynchedEntityData data, EntityDataAccessor<Byte> field, Enum<?>[] variants, DataIn input) {
-        var ordinal = input.getByteOr("type", data.get(field));
-        data.set(field, (byte) variants[ordinal].ordinal());
+        var name = input.getStringOr("variant", "");
+        for (var variant : variants) {
+            if (variant.name().equals(name)) {
+                data.set(field, (byte) variant.ordinal());
+                return;
+            }
+        }
+        // Older saves kept the ordinal as "type".
+        int ordinal = input.getByteOr("type", data.get(field));
+        if (ordinal >= 0 && ordinal < variants.length) data.set(field, (byte) ordinal);
     }
 
-    static void save(SynchedEntityData data, EntityDataAccessor<Byte> field, DataOut output) {
-        output.putByte("type", data.get(field));
+    static void save(SynchedEntityData data, EntityDataAccessor<Byte> field, Enum<?>[] variants, DataOut output) {
+        output.putString("variant", variants[data.get(field)].name());
     }
 }

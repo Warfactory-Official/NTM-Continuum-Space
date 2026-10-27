@@ -323,7 +323,6 @@
   "body.polta": "Polta",
   "body.priax": "Priax",
   "body.wal": "Wal",
-  "block.hbm.machine_lpw2": "LPW-2 Station Thruster",
   "block.ntmspace.combat_drop": "Combat Drop Pod",
   "entity.ntmspace.entity_combat_pod": "Combat Drop Pod",
   "block.ntmspace.machine_cryo_distill": "Cryogenic Distillation Machine",
@@ -639,7 +638,6 @@
   "effect.ntmspace.run": "GOD WATCHES YOU",
   "death.attack.run": "%1$s atoned for their sins.",
   "trait.rbmx.flux.slow_linear": "§eMEDIUM / SLOW LINEAR",
-  "armor.fastFall": "Fast Fall",
   "wavelengths.name.xray": "X-Ray",
   "wavelengths.waveRange.xray": "10nm-10pm",
   "item.ntmspace.watz_pellet_pu241": "Plutonium-241 Watz Pellet",
@@ -764,5 +762,8 @@
   "gui.ntmspace.satellite_settings.invalid": "Enter finite numbers and whole RGB channels.",
   "chat.ntmspace.satellite.launched": "Satellite launched.",
   "chat.hbmspace.surveyScanner.foundGas": "Found NATURAL GAS!",
-  "chat.hbmspace.surveyScanner.foundBrine": "Found BRINE!"
+  "chat.hbmspace.surveyScanner.foundBrine": "Found BRINE!",
+  "ntmspace.rename.block.hbm.machine_lpw2": "LPW-2 Station Thruster",
+  "ntmspace.rename.block.hbm.fissure_bomb": "Fissure bomb",
+  "ntmspace.rename.block.hbm.moon_turf": "Mun Turf"
 }

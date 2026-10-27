@@ -44,7 +44,7 @@ repositories {
     }
 }
 
-// Below 26.1 Fabric remaps mod dependencies, and needs an explicit Mojmap layer (see new-hbm's Fabric buildscript).
+// Below 26.1 Fabric remaps mod dependencies, and needs an explicit Mojmap layer (see NTM-Continuum's Fabric buildscript).
 val obfuscated = mcVersion.substringBefore('.').toInt() < 26
 val modernRendering = mcVersion.substringBefore('.').toInt() >= 26
 val packFormatEntry = if (modernRendering)
@@ -52,7 +52,7 @@ val packFormatEntry = if (modernRendering)
 else
     "\"pack_format\": ${prop("pack_format")}"
 
-// LWJGL pinned to what the target Minecraft ships (see new-hbm's Fabric buildscript).
+// LWJGL pinned to what the target Minecraft ships (see NTM-Continuum's Fabric buildscript).
 propOrNull("deps.lwjgl")?.let { pinned ->
     configurations.configureEach {
         resolutionStrategy.eachDependency {

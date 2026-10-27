@@ -1,13 +1,12 @@
 package com.ntmspace.fork;
 
-import com.hbm.blocks.multiblock.MultiblockPlacementEscape;
 import com.hbm.entity.mob.EntityQuackos;
 import com.hbm.entity.projectile.EntityChemical;
 import com.hbm.items.armor.ArmorDNT;
 import com.hbm.items.machine.ItemMold;
 import com.hbm.items.machine.ModMoldItems;
 import com.ntmspace.breathing.Breathing;
-import com.ntmspace.data.SpaceData;
+import com.ntmspace.config.SpaceConfig;
 import com.ntmspace.inventory.material.SpaceAlloyMaterials;
 import com.ntmspace.registry.SpaceItems;
 import net.minecraft.world.item.ItemStack;
@@ -118,14 +117,13 @@ public final class ForkBaseChanges {
                 source.is(Breathing.OXYPRIME));
         BlockMultiblockCore.wallPlacement = true;
         BlockMultiblockCore.walkOutAfterPlacing = true;
-        MultiblockPlacementEscape.init();
         TileEntityCranePartitioner.inputCount = 96;
         TileEntityCranePartitioner.outputCount = 8;
         TileEntityPneumoTube.anyGas = true;
         MachineElectrolyser.sidePorts = true;
         EntityTntNtm.spin = true;
         EntityGhost.watchPlayers = true;
-        EntityQuackos.serverSafety = SpaceData.SERVER_SAFETY::get;
+        EntityQuackos.serverSafety = () -> SpaceConfig.serverSafety;
         TileEntityGeiger.probabilisticClicks = true;
         // hbm-space ItemDosimeter: below 1 RAD/s a click only as likely as the dose (V-186)
         com.hbm.items.tool.ItemDosimeter.probabilisticClicks = true;

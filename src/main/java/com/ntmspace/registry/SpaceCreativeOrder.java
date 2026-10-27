@@ -166,9 +166,7 @@ public final class SpaceCreativeOrder {
         // 1.7 ModItems:6109: the angel spawner follows the duck in consumables (the duck lists on weapons).
         ModTabs.addStacksTo(HbmTab.CONSUMABLES, () -> List.of(stack("hbm:spawn_duck")));
         ModTabs.insertAfter(HbmTab.CONSUMABLES, "hbm:spawn_duck", "ntmspace:spawn_angel");
-        // 1.7 ModBlocks registers gas, vent and scrubber before algae; suppliers resolve before anchored ordering.
-        ModTabs.remove(HbmTab.RESOURCES, "hbm:gas_explosive");
-        ModTabs.addStacksTo(HbmTab.MACHINES, () -> List.of(stack("hbm:gas_explosive")));
+        // 1.7 ModBlocks registers gas, vent and scrubber before algae.
         ModTabs.insertBefore(HbmTab.MACHINES, "ntmspace:algae_film", "hbm:gas_explosive");
         ModTabs.insertAfter(HbmTab.MACHINES, "hbm:gas_explosive", "ntmspace:air_vent", "ntmspace:air_scrubber");
         ModTabs.insertAfter(HbmTab.MATERIALS, "hbm:crystal_charred", "ntmspace:swarm_member");

@@ -2,69 +2,94 @@ package com.ntmspace.fork;
 
 import com.hbm.api.data.DepositDataMaps;
 import com.ntmspace.block.BlockBodyOre;
-import com.ntmspace.data.SpaceData;
+import com.ntmspace.config.SpaceConfig;
 import com.ntmspace.rocket.DriveBody;
-import dev.golem.core.data.DataGroups;
+import java.util.function.DoubleSupplier;
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.util.RandomSource;
 import net.minecraft.world.level.block.state.BlockState;
 import org.jspecify.annotations.Nullable;
 
 /**
- * A fluid reserve bound to an actual BODY state. SpaceData supplies independent absolute amounts and ranges.
+ * A fluid reserve bound to an actual BODY state. ntmspace.cfg supplies independent absolute amounts and ranges.
  * The resolved data-map metadata remains authoritative for fluids, empty blocks and fracking requirements;
  * changes to its yield coefficients apply relative to SpaceDeposits' authored default coefficients.
  */
 public final class SpaceReserve implements DepositDataMaps.Reserve {
     private final DepositDataMaps.Deposit metadata;
     private final DriveBody body;
-    private final DataGroups.Param<Integer> primary;
-    private final DataGroups.Param<Integer> minimum;
-    private final DataGroups.Param<Integer> maximum;
-    private final DataGroups.@Nullable Param<Double> chance;
+    private final Setting primary;
+    private final Setting minimum;
+    private final Setting maximum;
+    private final @Nullable Setting chance;
+
+    /** A {@code ntmspace.cfg} value and its hbm-space default, which the data-map coefficients are relative to. */
+    private record Setting(DoubleSupplier value, double defaultValue) {
+        double get() {
+            return value.getAsDouble();
+        }
+    }
 
     private SpaceReserve(DriveBody body, DepositDataMaps.Deposit metadata, boolean bedrock) {
         this.body = body;
         this.metadata = metadata;
         if (bedrock) {
-            primary = body == DriveBody.TEKTO ? SpaceData.TEKTO_BEDROCK_OIL_PER_DEPOSIT : SpaceData.BEDROCK_OIL_PER_DEPOSIT;
-            minimum = body == DriveBody.TEKTO ? SpaceData.TEKTO_BEDROCK_GAS_MIN : SpaceData.BEDROCK_GAS_MIN;
-            maximum = body == DriveBody.TEKTO ? SpaceData.TEKTO_BEDROCK_GAS_MAX : SpaceData.BEDROCK_GAS_MAX;
+            var tekto = body == DriveBody.TEKTO;
+            primary = tekto ? new Setting(() -> SpaceConfig.tektoBedrockOilPerDeposit, 100)
+                    : new Setting(() -> SpaceConfig.bedrockOilPerDeposit, 100);
+            minimum = tekto ? new Setting(() -> SpaceConfig.tektoBedrockGasPerDepositMin, 10)
+                    : new Setting(() -> SpaceConfig.bedrockGasPerDepositMin, 10);
+            maximum = tekto ? new Setting(() -> SpaceConfig.tektoBedrockGasPerDepositMax, 50)
+                    : new Setting(() -> SpaceConfig.bedrockGasPerDepositMax, 50);
             chance = null;
             return;
         }
+        Setting earthMin = new Setting(() -> SpaceConfig.earthGasPerDepositMin, 100);
+        Setting earthMax = new Setting(() -> SpaceConfig.earthGasPerDepositMax, 500);
         switch (body) {
             case DUNA -> {
-                primary = SpaceData.DUNA_OIL_PER_DEPOSIT;
-                minimum = SpaceData.DUNA_GAS_MIN; maximum = SpaceData.DUNA_GAS_MAX; chance = SpaceData.DUNA_OIL_DRAIN;
+                primary = new Setting(() -> SpaceConfig.dunaOilPerDeposit, 200);
+                minimum = new Setting(() -> SpaceConfig.dunaGasPerDepositMin, 100);
+                maximum = new Setting(() -> SpaceConfig.dunaGasPerDepositMax, 500);
+                chance = new Setting(() -> SpaceConfig.dunaOilDrainChance, 0.1D);
             }
             case LAYTHE -> {
-                primary = SpaceData.LAYTHE_OIL_PER_DEPOSIT;
-                minimum = SpaceData.LAYTHE_GAS_MIN; maximum = SpaceData.LAYTHE_GAS_MAX; chance = SpaceData.LAYTHE_OIL_DRAIN;
+                primary = new Setting(() -> SpaceConfig.laytheOilPerDeposit, 500);
+                minimum = new Setting(() -> SpaceConfig.laytheGasPerDepositMin, 100);
+                maximum = new Setting(() -> SpaceConfig.laytheGasPerDepositMax, 500);
+                chance = new Setting(() -> SpaceConfig.laytheOilDrainChance, 0.05D);
             }
             case EVE -> {
-                primary = SpaceData.EVE_GAS_PER_DEPOSIT;
-                minimum = SpaceData.EVE_PET_MIN; maximum = SpaceData.EVE_PET_MAX; chance = SpaceData.EVE_GAS_DRAIN;
+                primary = new Setting(() -> SpaceConfig.eveGasPerDeposit, 500);
+                minimum = new Setting(() -> SpaceConfig.evePetPerDepositMin, 20);
+                maximum = new Setting(() -> SpaceConfig.evePetPerDepositMax, 100);
+                chance = new Setting(() -> SpaceConfig.eveGasDrainChance, 0.05D);
             }
             case TEKTO -> {
-                primary = SpaceData.TEKTO_OIL_PER_DEPOSIT;
-                minimum = SpaceData.TEKTO_GAS_MIN; maximum = SpaceData.TEKTO_GAS_MAX; chance = SpaceData.TEKTO_OIL_DRAIN;
+                primary = new Setting(() -> SpaceConfig.tektoOilPerDeposit, 500);
+                minimum = new Setting(() -> SpaceConfig.tektoGasPerDepositMin, 100);
+                maximum = new Setting(() -> SpaceConfig.tektoGasPerDepositMax, 500);
+                chance = new Setting(() -> SpaceConfig.tektoOilDrainChance, 0.05D);
             }
             case MUN -> {
-                primary = SpaceData.MUN_BRINE_PER_DEPOSIT;
-                minimum = SpaceData.EARTH_GAS_MIN; maximum = SpaceData.EARTH_GAS_MAX; chance = SpaceData.MUN_BRINE_DRAIN;
+                primary = new Setting(() -> SpaceConfig.munBrinePerDeposit, 300);
+                minimum = earthMin; maximum = earthMax;
+                chance = new Setting(() -> SpaceConfig.munBrineDrainChance, 0.05D);
             }
             case MINMUS -> {
-                primary = SpaceData.MINMUS_BRINE_PER_DEPOSIT;
-                minimum = SpaceData.EARTH_GAS_MIN; maximum = SpaceData.EARTH_GAS_MAX; chance = SpaceData.MINMUS_BRINE_DRAIN;
+                primary = new Setting(() -> SpaceConfig.minmusBrinePerDeposit, 300);
+                minimum = earthMin; maximum = earthMax;
+                chance = new Setting(() -> SpaceConfig.minmusBrineDrainChance, 0.05D);
             }
             case IKE -> {
-                primary = SpaceData.IKE_BRINE_PER_DEPOSIT;
-                minimum = SpaceData.EARTH_GAS_MIN; maximum = SpaceData.EARTH_GAS_MAX; chance = SpaceData.IKE_BRINE_DRAIN;
+                primary = new Setting(() -> SpaceConfig.ikeBrinePerDeposit, 300);
+                minimum = earthMin; maximum = earthMax;
+                chance = new Setting(() -> SpaceConfig.ikeBrineDrainChance, 0.05D);
             }
             default -> {
-                primary = SpaceData.EARTH_OIL_PER_DEPOSIT;
-                minimum = SpaceData.EARTH_GAS_MIN; maximum = SpaceData.EARTH_GAS_MAX; chance = SpaceData.EARTH_OIL_DRAIN;
+                primary = new Setting(() -> SpaceConfig.earthOilPerDeposit, 500);
+                minimum = earthMin; maximum = earthMax;
+                chance = new Setting(() -> SpaceConfig.earthOilDrainChance, 0.05D);
             }
         }
     }
@@ -80,8 +105,8 @@ public final class SpaceReserve implements DepositDataMaps.Reserve {
     @Override
     public int secondaryAmount(RandomSource random) {
         if (secondaryFluid() == null) return 0;
-        var min = minimum.get();
-        var max = maximum.get();
+        var min = (int) minimum.get();
+        var max = (int) maximum.get();
         // Space Reserve.between / BobMathUtil.randIntBetween has an exclusive upper bound.
         var sampled = min >= max ? min : min + random.nextInt(max - min);
         var configuredScale = metadata.secondaryYield().orElse(metadata.yield()) / (minimum.defaultValue() / 100D);

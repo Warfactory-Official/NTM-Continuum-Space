@@ -1,6 +1,6 @@
 package com.ntmspace.orbit;
 
-import com.ntmspace.data.SpaceData;
+import com.ntmspace.config.SpaceConfig;
 import com.mojang.serialization.Codec;
 import com.mojang.serialization.codecs.RecordCodecBuilder;
 import com.ntmspace.NtmSpace;
@@ -109,7 +109,7 @@ public final class StationData extends CompatSavedData<StationData> {
      * reserved but never launched square is accepted too.
      */
     public int[] findFreeSpace() {
-        int size = SpaceData.MAX_STATION_DISTANCE.get() / OrbitalStation.STATION_SIZE;
+        int size = SpaceConfig.maxStationDistance / OrbitalStation.STATION_SIZE;
 
         int[] pos = null;
         for (int i = 0; i < 512; i++) {

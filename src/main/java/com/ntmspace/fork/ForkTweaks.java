@@ -6,7 +6,6 @@ import com.hbm.handler.ArmorModEvents;
 import com.hbm.interfaces.ILookOverlay;
 import com.hbm.items.ModArmorModItems;
 import com.hbm.items.ModConsumableTailItems;
-import com.hbm.registration.Reg;
 import com.hbm.tileentity.machine.TileEntityRefueler;
 import com.ntmspace.registry.SpaceItems;
 import com.ntmspace.registry.SpaceSpecialItems;
@@ -15,13 +14,6 @@ import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.item.ItemEntity;
 import net.minecraft.world.entity.player.Player;
-//? if >=1.21.1 {
-import net.minecraft.core.component.DataComponents;
-//?}
-//? if >=26.1 {
-import net.minecraft.world.item.ItemStackTemplate;
-import net.minecraft.world.item.component.UseRemainder;
-//?}
 //? if forge {
 /*import net.minecraftforge.common.MinecraftForge;
 import net.minecraftforge.event.entity.living.LivingDropsEvent;
@@ -49,6 +41,7 @@ import dev.golem.core.Ids;
 import dev.golem.core.registry.Substitutions;
 import dev.golem.core.world.Compat;
 import dev.golem.core.world.CompatConsumables;
+import dev.golem.core.world.Remainders;
 import java.util.List;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.entity.npc.villager.Villager;
@@ -121,16 +114,8 @@ public final class ForkTweaks {
         *///?}
         ItemEnergy.EMPTY.register(id -> id.equals("coffee")
                 ? BuiltInRegistries.ITEM.getOptional(Ids.of("ntmspace", "cmug_empty")).orElse(null) : null);
-        //? if >=26.1 {
-        // 1.7 ItemEnergy.onEaten: coffee leaves its mug; declared where the test reads it (USE_REMAINDER).
-        // Handles resolve when the loader builds components, not here: nothing is registered yet.
-        Reg.of(ModConsumableTailItems.ITEMS).modifyDefaultComponents(
-                ModConsumableTailItems.coffee,
-                components -> components.set(DataComponents.USE_REMAINDER,
-                        new UseRemainder(
-                                new ItemStackTemplate(
-                                        SpaceItems.CMUG_EMPTY.get()))));
-        //?}
+        // hbm-space ItemEnergy: setContainerItem(cmug_empty), the mug machines and recipes hand back.
+        Remainders.add(ModConsumableTailItems.coffee, SpaceItems.CMUG_EMPTY);
     }
 
     /** hbm-space {@code TileEntityFileCabinet.updateEntity}'s soyuz check. */

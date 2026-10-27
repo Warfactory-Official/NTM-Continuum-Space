@@ -21,6 +21,8 @@ import net.minecraft.world.level.block.state.properties.SlabType;
 import org.jspecify.annotations.Nullable;
 
 import java.util.Set;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 /**
  * One neighbour's Space 1.7 {@code SchrabidicBlock.getReaction} chemistry. The Schrabidic block calls it on every
@@ -80,15 +82,14 @@ public final class SchrabidicReactions {
             Blocks.DEEPSLATE_TILES, Blocks.DEEPSLATE_TILE_STAIRS, Blocks.DEEPSLATE_TILE_SLAB,
             Blocks.DEEPSLATE_TILE_WALL, Blocks.CHISELED_DEEPSLATE, Blocks.CRACKED_DEEPSLATE_BRICKS,
             Blocks.CRACKED_DEEPSLATE_TILES, Blocks.TUFF,
-            //? if >=1.21 {
-            Blocks.TUFF_STAIRS,
-            Blocks.TUFF_SLAB, Blocks.TUFF_WALL, Blocks.POLISHED_TUFF,
-            Blocks.POLISHED_TUFF_STAIRS, Blocks.POLISHED_TUFF_SLAB, Blocks.POLISHED_TUFF_WALL,
-            Blocks.TUFF_BRICKS, Blocks.TUFF_BRICK_STAIRS, Blocks.TUFF_BRICK_SLAB,
-            Blocks.TUFF_BRICK_WALL, Blocks.CHISELED_TUFF, Blocks.CHISELED_TUFF_BRICKS,
-            //?}
             Blocks.CALCITE,
             Blocks.DRIPSTONE_BLOCK, Blocks.POINTED_DRIPSTONE);
+    // The 1.21 tuff family, by id: 1.20.1 has none of them.
+    private static final Set<Block> TUFF_FAMILY = Stream.of("tuff_stairs", "tuff_slab", "tuff_wall", "polished_tuff",
+                    "polished_tuff_stairs", "polished_tuff_slab", "polished_tuff_wall", "tuff_bricks", "tuff_brick_stairs",
+                    "tuff_brick_slab", "tuff_brick_wall", "chiseled_tuff", "chiseled_tuff_bricks")
+            .flatMap(id -> BuiltInRegistries.BLOCK.getOptional(Ids.of("minecraft", id)).stream())
+            .collect(Collectors.toUnmodifiableSet());
 
     private SchrabidicReactions() { }
 
@@ -141,7 +142,8 @@ public final class SchrabidicReactions {
     private static @Nullable BlockState erosion(BlockState state) {
         Block block = state.getBlock();
         if (block == Blocks.STONE || block == Blocks.STONE_BRICK_STAIRS || LEGACY_STONE_BRICKS.contains(block)
-                || legacySingleSlab(state) || NEW_STONE_FAMILIES.contains(block)) {
+                || legacySingleSlab(state) || NEW_STONE_FAMILIES.contains(block)
+                || TUFF_FAMILY.contains(block)) {
             return Blocks.COBBLESTONE.defaultBlockState();
         }
         if (block == Blocks.COBBLESTONE) return Blocks.GRAVEL.defaultBlockState();

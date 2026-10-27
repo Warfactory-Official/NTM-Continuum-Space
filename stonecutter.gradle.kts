@@ -44,7 +44,7 @@ stonecutter parameters {
     constants["jei"] = !(node.project.findProperty("deps.jei") as String?).isNullOrBlank()
     // True only where the node declares KubeJS coordinates (an optional peer; dev.golem.core.kubejs in Golem Core).
     constants["kubejs"] = !(node.project.findProperty("deps.kubejs") as String?).isNullOrBlank()
-    // Mechanical renames, declared 26.1 -> older because 26.1 is the source of truth. The same set as new-hbm's
+    // Mechanical renames, declared 26.1 -> older because 26.1 is the source of truth. The same set as NTM-Continuum's
     // stonecutter.gradle.kts, so addon code reads like HBM's on every node; keep the two in step.
     replacements {
         // Id construction changed twice across the supported range. Keep it behind Golem Core so

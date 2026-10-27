@@ -1,6 +1,6 @@
 package com.ntmspace.rocket;
 
-import com.ntmspace.data.SpaceData;
+import com.ntmspace.config.SpaceConfig;
 import com.hbm.items.ItemEnumMulti;
 import com.hbm.sound.ModSounds;
 import com.ntmspace.entity.rocket.EntityRideableRocket;
@@ -147,7 +147,7 @@ public class ItemVOTVdrive extends ItemEnumMulti {
     public static Destination getApproximateDestination(ItemStack stack, RandomSource random) {
         DriveData data = data(stack);
         if (data.ax().isEmpty() || data.az().isEmpty()) {
-            var range = SpaceData.MAX_PROBE_DISTANCE.get();
+            var range = SpaceConfig.maxProbeDistance;
             data = data.withApproximate(random.nextInt(range * 2) - range, random.nextInt(range * 2) - range);
             RocketItems.DRIVE.set(stack, data);
         }

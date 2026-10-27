@@ -1,7 +1,7 @@
 package com.ntmspace.orbit;
 
 import com.hbm.handler.DroppedItemHooks;
-import com.ntmspace.data.SpaceData;
+import com.ntmspace.config.SpaceConfig;
 import java.util.List;
 import com.hbm.api.environment.Environment;
 import com.hbm.packet.PlayerInformPayload;
@@ -125,7 +125,7 @@ public final class OrbitEnvironment {
 
         if (rx < minBuffer || rx > maxBuffer || rz < minBuffer || rz > maxBuffer) {
             OrbitalStation station = OrbitalStation.getStationFromPosition(player.level().getServer(), (int) player.getX(), (int) player.getZ());
-            var range = SpaceData.MAX_PROBE_DISTANCE.get();
+            var range = SpaceConfig.maxProbeDistance;
             SpaceTeleporter.teleport(player, Orbit.levelOf(station.orbiting),
                     RAND.nextInt(range * 2) - range, 800,
                     RAND.nextInt(range * 2) - range, false);

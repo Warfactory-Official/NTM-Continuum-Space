@@ -41,7 +41,7 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 300
     env:
-      ORG_GRADLE_PROJECT_hbmProjectDir: ../new-hbm
+      ORG_GRADLE_PROJECT_hbmProjectDir: ../NTM-Continuum
     steps:
       # Override the HBM composite path to match this job's checkout directory.
       - uses: actions/checkout@v4
@@ -59,7 +59,7 @@ jobs:
         with:
           repository: Warfactory-Official/NTM-Continuum
           ref: ${{ inputs.hbm_ref || 'main' }}
-          path: new-hbm
+          path: NTM-Continuum
           token: ${{ secrets.HBM_TOKEN || github.token }}
 
       # Each node compiles on its own toolchain (1.20.1 -> 17, 1.21.1 -> 21, 26.1 -> 25). The last
@@ -88,7 +88,7 @@ jobs:
       - name: Build NTM - Continuum
         env:
           CI: "false"
-        working-directory: new-hbm
+        working-directory: NTM-Continuum
         run: bash ./gradlew chiseledBuild --no-daemon --stacktrace
 
       - name: Build NTM Space
@@ -118,7 +118,7 @@ jobs:
         run: |
           mkdir -p dist
           # build/libs holds the release jar per node (remapJar/reobfJar/jar); devlibs is not shipped.
-          for repo in new-hbm-space new-hbm Golem-Core; do
+          for repo in new-hbm-space NTM-Continuum Golem-Core; do
             find $repo/versions/*/build/libs -maxdepth 1 -name '*.jar' ! -name '*-sources.jar' -exec cp {} dist/ \;
           done
           # Tag every jar with this build's number, so jars from different builds never share a file name:
@@ -132,7 +132,7 @@ jobs:
           echo "tag=v${version}-build.${{ steps.build.outputs.number }}" >> "$GITHUB_OUTPUT"
           echo "version=${version}" >> "$GITHUB_OUTPUT"
           echo "golem=$(git -C Golem-Core rev-parse --short HEAD)" >> "$GITHUB_OUTPUT"
-          echo "hbm=$(git -C new-hbm rev-parse --short HEAD)" >> "$GITHUB_OUTPUT"
+          echo "hbm=$(git -C NTM-Continuum rev-parse --short HEAD)" >> "$GITHUB_OUTPUT"
 
       - name: Create pre-release
         uses: softprops/action-gh-release@v2

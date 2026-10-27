@@ -1,19 +1,5 @@
 package com.ntmspace.satellite;
 
-//? if <26.1 {
-/*import net.minecraft.world.InteractionResultHolder;
-*///?}
-//? if fabric {
-/*import net.fabricmc.fabric.api.event.player.UseItemCallback;
-*///?}
-//? if forge {
-/*import net.minecraftforge.common.MinecraftForge;
-import net.minecraftforge.event.entity.player.PlayerInteractEvent;
-*///?}
-//? if neoforge {
-import net.neoforged.neoforge.common.NeoForge;
-import net.neoforged.neoforge.event.entity.player.PlayerInteractEvent;
-//?}
 import com.hbm.items.ISatChip;
 import com.hbm.items.machine.ItemSatellite;
 import com.hbm.saveddata.SatelliteSavedData;
@@ -24,6 +10,7 @@ import com.hbm.saveddata.satellites.XSatelliteRegistry;
 import com.ntmspace.orbit.Orbit;
 import com.ntmspace.orbit.OrbitalStation;
 import com.ntmspace.rocket.RocketParts;
+import dev.golem.core.world.ItemClicks;
 import net.minecraft.network.chat.Component;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
@@ -45,41 +32,10 @@ public final class SatelliteItems {
         if (installed) return;
         installed = true;
         SatelliteSettings.init();
-        //? if fabric && >=26.1 {
-        /*UseItemCallback.EVENT.register((player, level, hand) -> {
+        ItemClicks.register((player, hand) -> {
             var stack = player.getItemInHand(hand);
-            return use(stack, XSatelliteRegistry.typeFor(stack), level, player, hand);
+            return use(stack, XSatelliteRegistry.typeFor(stack), player.level(), player, hand);
         });
-        *///?} elif fabric {
-        /*UseItemCallback.EVENT.register((player, level, hand) -> {
-            var stack = player.getItemInHand(hand);
-            var result = use(stack, XSatelliteRegistry.typeFor(stack), level, player, hand);
-            return result.consumesAction() ? InteractionResultHolder.success(stack)
-                    : InteractionResultHolder.pass(stack);
-        });
-        *///?} elif neoforge {
-        NeoForge.EVENT_BUS.addListener(
-                (PlayerInteractEvent.RightClickItem event) -> {
-                    var player = event.getEntity();
-                    var stack = player.getItemInHand(event.getHand());
-                    var result = use(stack, XSatelliteRegistry.typeFor(stack), event.getLevel(), player, event.getHand());
-                    if (result.consumesAction()) {
-                        event.setCanceled(true);
-                        event.setCancellationResult(result);
-                    }
-                });
-        //?} elif forge {
-        /*MinecraftForge.EVENT_BUS.addListener(
-                (PlayerInteractEvent.RightClickItem event) -> {
-                    var player = event.getEntity();
-                    var stack = player.getItemInHand(event.getHand());
-                    var result = use(stack, XSatelliteRegistry.typeFor(stack), event.getLevel(), player, event.getHand());
-                    if (result.consumesAction()) {
-                        event.setCanceled(true);
-                        event.setCancellationResult(result);
-                    }
-                });
-        *///?}
     }
 
     public static boolean byHand(SatelliteType type) {

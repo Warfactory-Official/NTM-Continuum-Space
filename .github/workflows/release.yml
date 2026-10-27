@@ -51,7 +51,7 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 330
     env:
-      ORG_GRADLE_PROJECT_hbmProjectDir: ../new-hbm
+      ORG_GRADLE_PROJECT_hbmProjectDir: ../NTM-Continuum
       MODRINTH_TOKEN: ${{ secrets.MODRINTH_TOKEN }}
       CURSEFORGE_TOKEN: ${{ secrets.CURSEFORGE_TOKEN }}
       # ModDevGradle builds Minecraft through its binary pipeline whenever CI=true (GitHub always sets it).
@@ -75,7 +75,7 @@ jobs:
         with:
           repository: Warfactory-Official/NTM-Continuum
           ref: ${{ inputs.hbm_ref || 'main' }}
-          path: new-hbm
+          path: NTM-Continuum
           token: ${{ secrets.HBM_TOKEN || github.token }}
 
       - uses: actions/setup-java@v4
@@ -98,7 +98,7 @@ jobs:
           prop() { grep -E "^$2=" "$1/gradle.properties" | cut -d= -f2- | tr -d '[:space:]'; }
           version=$(prop new-hbm-space mod.version)
           golem_version=$(prop Golem-Core mod.version)
-          hbm_version=$(prop new-hbm mod.version)
+          hbm_version=$(prop NTM-Continuum mod.version)
           changelog="$RUNNER_TEMP/changelog.md"
           : > "$changelog"
 
@@ -139,7 +139,7 @@ jobs:
             fi
           }
           check_released "Golem Core" "$(prop Golem-Core golem.build.publish.modrinthProject)" "$golem_version"
-          check_released "NTM - Continuum" "$(prop new-hbm golem.build.publish.modrinthProject)" "$hbm_version"
+          check_released "NTM - Continuum" "$(prop NTM-Continuum golem.build.publish.modrinthProject)" "$hbm_version"
 
           {
             echo "version=$version"; echo "tag=$tag"; echo "type=$type"
@@ -153,7 +153,7 @@ jobs:
         run: bash ./gradlew chiseledBuild --no-daemon --stacktrace
 
       - name: Build NTM - Continuum
-        working-directory: new-hbm
+        working-directory: NTM-Continuum
         run: bash ./gradlew chiseledBuild --no-daemon --stacktrace
 
       - name: Build NTM Space

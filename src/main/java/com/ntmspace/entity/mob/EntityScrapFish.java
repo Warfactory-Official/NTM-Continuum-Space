@@ -54,7 +54,7 @@ public class EntityScrapFish extends EntityFish implements IEntityEnumMulti {
     @Override
     protected void saveData(DataOut output) {
         super.saveData(output);
-        MobVariants.save(entityData, VARIANT, output);
+        MobVariants.save(entityData, VARIANT, VARIANTS, output);
     }
 
 }

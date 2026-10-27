@@ -13,6 +13,7 @@ import net.neoforged.neoforge.common.NeoForge;
 //?}
 import com.ntmspace.trait.CelestialTimeSync;
 import dev.golem.core.net.GolemNetwork;
+import dev.golem.core.world.Skies;
 
 /** Receives the server's celestial rate and retires that client state when its connection closes. */
 public final class CelestialTimeClient {
@@ -27,9 +28,7 @@ public final class CelestialTimeClient {
         GolemNetwork.registerPlayToClient(CelestialTimeSync.CODEC, (payload, context) -> {
             if (context.level() == null) return;
             if (!CelestialTimeSync.applyClient(payload.multiplier())) return;
-            //? if >=26.1 {
-            context.level().environmentAttributes().invalidateTickCache();
-            //?}
+            Skies.invalidateEnvironment(context.level());
         });
         //? if fabric {
         /*ClientPlayConnectionEvents.DISCONNECT.register(

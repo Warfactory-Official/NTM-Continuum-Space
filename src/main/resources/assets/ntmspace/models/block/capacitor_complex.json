@@ -8,7 +8,7 @@
     "inner_side": "ntmspace:blocks/capacitor_complex_inner_side",
     "particle": "hbm:blocks/block_cadmium"
   },
-  "model": "hbm:models/blocks/capacitor.obj",
+  "model": "ntmspace:models/blocks/capacitor.obj",
   "offset_y": 0.5,
   "skins": {
     "top": [

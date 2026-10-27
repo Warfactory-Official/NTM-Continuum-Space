@@ -669,11 +669,7 @@ public class EntityRideableRocket extends CompatEntity implements StationDock, I
     }
 
     @Override
-    //? if >=26.1 {
-    public boolean canBeCollidedWith(@Nullable Entity other) {
-    //?} else {
-    /*public boolean canBeCollidedWith() {
-    *///?}
+    protected boolean isSolidTo(@Nullable Entity other) {
         return motionMult() == 0;
     }
 

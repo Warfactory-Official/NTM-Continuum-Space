@@ -43,3 +43,4 @@ Thumbs.db
 ### Harness
 harness/out/
 .harness/
+logs/

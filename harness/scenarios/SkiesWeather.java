@@ -23,7 +23,7 @@ import dev.golem.harness.api.*;
  *   <li>Clouds ({@code CloudProviderCelestial} through Golem {@code Clouds}, fancy clouds switched on for the check):
  *       Eve's three purple layers, Laythe's and Tekto's one tinted layer, none on the Mun and on Duna (0.1 atm), one white
  *       layer on a terraformed Duna; query {@code ntmspace_clouds} plus {@code <body>-clouds-below/-horizon/-above}. Kerbin
- *       keeps vanilla's clouds.</li>
+ *       keeps vanilla's clouds and adds the upper decks its atmosphere gives.</li>
  *   <li>Kerbin at night: a mapper satellite launched on frequency 4711 and a station launched over Kerbin show in the
  *       client's sky cache (query {@code ntmspace_sky}: satellite 4711 at 100 km, at least one station) and in the sky with
  *       the "Bobmazon" delivery satellite: {@code kerbin-satellites-*}. Holding a satellite shows its orbit line:
@@ -234,7 +234,8 @@ public final class SkiesWeather implements Scenario {
         c.cmd("execute in minecraft:overworld run tp @s 0 " + (Y + 1) + " 0");
         c.waitTicks(40);
         com.google.gson.JsonObject kerbinClouds = c.query("ntmspace_clouds", new com.google.gson.JsonObject());
-        Expect.that(!kerbinClouds.get("custom").getAsBoolean(), "Kerbin (the overworld) keeps vanilla's clouds: " + kerbinClouds);
+        Expect.that("additive".equals(kerbinClouds.get("mode").getAsString()),
+                "Kerbin (the overworld) keeps vanilla's clouds and adds hbm-space's upper decks: " + kerbinClouds);
         Fixtures.platform(c, 0, Y, 0, 4, "minecraft:smooth_stone");
         c.cmd("time set 18000");
         c.cmd("weather clear");

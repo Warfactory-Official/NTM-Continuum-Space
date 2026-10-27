@@ -1,6 +1,5 @@
 package com.ntmspace.client;
 
-import com.hbm.blocks.multiblock.MultiblockPlacementEscape;
 import com.ntmspace.tileentity.machine.StardarHeightmap;
 import com.hbm.client.model.ObjBlockModels;
 /** NTM: Space's client start-up, the same on every loader (each loader's client init calls it). */
@@ -12,7 +11,6 @@ public final class SpaceClient {
         ObjBlockModels.install();
         MunSky.init();
         SkyWeatherClient.init();
-        MultiblockPlacementEscape.initClient();
         SkyShaderClient.init();
         SpaceClouds.init();
         OrbitClient.init();
@@ -45,6 +43,7 @@ public final class SpaceClient {
         StardarLayers.init();
         StardarHeightmap.initClient();
         LeftoverClient.init();
+        SpaceNames.init();
         com.ntmspace.fork.client.ForkClient.init();
         // the droplet sprites of NTM: Space's fluids (ntmspace:items/fluid_icon_<key>), before the first resource load
         com.hbm.client.FluidSprites.install(com.ntmspace.NtmSpace.MOD_ID);

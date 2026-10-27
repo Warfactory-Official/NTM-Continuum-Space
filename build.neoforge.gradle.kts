@@ -129,7 +129,7 @@ val modProps = mapOf(
 /** The node's resource templating, shared by the mod's resources and the recipe generator's copy of them. */
 fun ProcessResources.expandModResources() {
     inputs.properties(modProps)
-    filesMatching(listOf("META-INF/neoforge.mods.toml", "pack.mcmeta", "*.mixins.json")) { expand(modProps) }
+    filesMatching(listOf("META-INF/neoforge.mods.toml", "pack.mcmeta")) { expand(modProps) }
     exclude("fabric.mod.json", "data/$modId/forge/**", "META-INF/mods.toml")
 }
 

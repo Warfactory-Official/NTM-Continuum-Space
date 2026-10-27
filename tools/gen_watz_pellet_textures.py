@@ -18,7 +18,7 @@ import sys
 from PIL import Image
 
 ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", ".."))
-BASE = os.path.join(ROOT, "new-hbm", "src", "main", "resources", "assets", "hbm", "textures", "items", "watz_pellet.png")
+BASE = os.path.join(ROOT, "NTM-Continuum", "src", "main", "resources", "assets", "hbm", "textures", "items", "watz_pellet.png")
 OUT = os.path.join(ROOT, "new-hbm-space", "src", "main", "resources", "assets", "ntmspace", "textures", "items")
 
 # hbm-space EnumWatzType additions: (light, dark)

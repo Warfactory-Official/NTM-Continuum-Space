@@ -19,11 +19,7 @@ public final class OilSurfaceScarring {
     public static void addBedrockOilSpot(WorldGenLevel level, RandomSource random, int x, int z, int width, int count,
                                         List<OreConfiguration.TargetBlockState> scars) {
         var pos = new BlockPos.MutableBlockPos();
-        //? if >=1.21.2 {
         int bottom = level.getMinY();
-        //?} else {
-        /*int bottom = level.getMinY();
-        *///?}
         int top = bottom + level.getHeight() - 1;
         var surface = new MapGenBedrockOil17.Surface() {
             @Override public boolean fullCube(int x, int y, int z) {

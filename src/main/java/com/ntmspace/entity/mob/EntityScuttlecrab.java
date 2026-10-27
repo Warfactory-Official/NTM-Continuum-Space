@@ -76,7 +76,7 @@ public class EntityScuttlecrab extends CompatWaterAnimal implements IEntityEnumM
     @Override
     protected void saveData(DataOut output) {
         super.saveData(output);
-        MobVariants.save(entityData, VARIANT, output);
+        MobVariants.save(entityData, VARIANT, VARIANTS, output);
     }
 
     /** 1.7 {@code EntityWaterMob.allowLeashing()} was false. */

@@ -43,7 +43,7 @@ WATZ = {
 # installed HBM's own twelve pellets get hbm-space's yield too, so they are restated here (a value-map patch replaces a
 # whole entry) from HBM's own map, whose other values equal hbm-space's (EnumWatzType differs only in the yield line).
 WATZ_YIELD = 1_000_000_000.0
-HBM_WATZ = os.path.join(ROOT, "new-hbm", "src", "main", "resources", "data", "hbm", "value_maps", "item", "watz_pellet.json")
+HBM_WATZ = os.path.join(ROOT, "NTM-Continuum", "src", "main", "resources", "data", "hbm", "value_maps", "item", "watz_pellet.json")
 
 
 def watz():

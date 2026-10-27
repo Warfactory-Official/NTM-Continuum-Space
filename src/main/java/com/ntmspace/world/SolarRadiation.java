@@ -1,7 +1,7 @@
 package com.ntmspace.world;
 
 import com.hbm.api.environment.Environment;
-import com.ntmspace.data.SpaceData;
+import com.ntmspace.config.SpaceConfig;
 import com.ntmspace.orbit.Orbit;
 import com.ntmspace.orbit.OrbitalStation;
 import com.ntmspace.trait.CBT_Atmosphere;
@@ -29,7 +29,7 @@ public final class SolarRadiation {
         var exposure = body.getSunPower();
         var atmosphere = orbital ? null : CelestialTraits.getTrait(level, CBT_Atmosphere.class);
         if (atmosphere != null) exposure -= (float) atmosphere.getPressure() * 4.0F;
-        exposure *= SpaceData.CELESTIAL_RAD_MULTIPLIER.get().floatValue();
+        exposure *= (float) SpaceConfig.celestialRadMultiplier;
         return Math.max(existing, exposure);
     }
 }

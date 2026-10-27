@@ -115,7 +115,8 @@ public final class ForkContent implements Scenario {
         for (int dx = -4; dx <= 4; dx++) {
             for (int dz = -4; dz <= 4; dz++) {
                 JsonObject be = c.blockEntity(x + dx, y, z + dz);
-                if (be != null && be.has("nbt") && !be.get("nbt").isJsonNull() && be.toString().contains("machine_chungus")) {
+                if (be != null && be.has("nbt") && !be.get("nbt").isJsonNull() && be.toString().contains("machine_chungus")
+                        && !be.toString().contains("TileEntityProxyCell")) {
                     return new int[] {x + dx, y, z + dz};
                 }
             }

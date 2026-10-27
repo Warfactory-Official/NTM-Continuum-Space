@@ -18,7 +18,7 @@ versionRange = "[${neoforge_version},)"
 ordering = "NONE"
 side = "BOTH"
 
-# AFTER both: this mod's constructor uses Golem Core's mod bus and HBM's registries (see new-hbm's neoforge.mods.toml).
+# AFTER both: this mod's constructor uses Golem Core's mod bus and HBM's registries (see NTM-Continuum's neoforge.mods.toml).
 [[dependencies.${mod_id}]]
 modId = "golemcore"
 type = "required"

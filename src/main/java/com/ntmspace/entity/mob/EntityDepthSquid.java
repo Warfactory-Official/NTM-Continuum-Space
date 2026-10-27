@@ -67,7 +67,7 @@ public class EntityDepthSquid extends CompatSquid implements IEntityEnumMulti {
     @Override
     protected void saveData(DataOut output) {
         super.saveData(output);
-        MobVariants.save(entityData, VARIANT, output);
+        MobVariants.save(entityData, VARIANT, VARIANTS, output);
     }
 
     /** 1.7 {@code EntitySquid.setSize(0.95F, 0.95F)}; the modern squid is 0.8. */

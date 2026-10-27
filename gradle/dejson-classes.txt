@@ -46,6 +46,7 @@ com.ntmspace.registry.AtmosphereMachines
 com.ntmspace.registry.AtmosphereMachineItemDeclarations
 com.ntmspace.world.MartianWorld
 com.ntmspace.world.BiomeWaterColorData
+com.ntmspace.world.BodyClockData
 com.ntmspace.registry.LeftoverContent
 com.ntmspace.world.OverworldFloraData
 com.ntmspace.registry.LeftoverDeclarations
