@@ -1,6 +1,5 @@
 package com.ntmspace.gametest;
 
-import com.hbm.config.GeneralConfig;
 import com.hbm.inventory.FluidContainerStack;
 import com.hbm.inventory.RecipesCommon.AStack;
 import com.hbm.inventory.RecipesCommon.ComparableStack;
@@ -15,16 +14,18 @@ import com.hbm.inventory.recipes.loader.GenericRecipeCodec;
 import com.hbm.inventory.recipes.loader.RecipeIngredients;
 import dev.golem.core.gametest.GameTests;
 import dev.golem.core.world.RecipeTables;
+
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
+
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.gametest.framework.GameTestHelper;
 import net.minecraft.world.item.ItemStack;
 
 /**
  * hbm-space's changes to HBM's assembly machine table ({@code AssemblyMachineRecipes}), checked against values written
- * down from hbm-space's source: every added or changed row as loaded from its file (name, output and count, duration,
+ * down from hbm-space's source: every enabled added or changed row as loaded from its file (name, output and count, duration,
  * power, item inputs, fluid inputs, expensive-mode inputs, 528 pool, condition), the row the table's own lookup
  * ({@link AssemblyMachineRecipes#getRecipe}) returns for each name under the current 528 mode, the changed rows at HBM's
  * display position, and the absence of the rows hbm-space dropped (the old custom-missile thruster and fuselage rows,
@@ -100,8 +101,8 @@ public final class RecipeChangeAssemblyGameTests {
             "mp_thruster_20_solid_multier|ass.mp_thruster_20_solid_multier|hbm:mp_thruster_20_solid_multier|1|400|100|hbm:seg_20x1,hbm:coil_tungstenx16,#c:ingots/dura_steelx20,#c:plates/steelx1|-|-|-|-",
             "orbitalstationcomputer|ass.orbitalstationcomputer|ntmspace:orbital_station_computer|1|200|100|mat:aluminium/castplatex4,#c:plates/stainlessx4,#c:ingots/any_hardplasticx2,#c:dusts/quartzx4,ntmspace:circuit_molychipx4,ntmspace:circuit_aerox4|-|mat:aluminium/castplatex4,#c:plates_cast/stainlessx4,hbm:item_expensive_plasticx2,#c:dusts/quartzx16,ntmspace:item_expensive_astrox2|528.stainless|-",
             "orbitalstationport|ass.orbitalstationport|ntmspace:orbital_station_port|1|400|100|mat:titanium/weldedplatex6,hbm:motorx4,#c:glass_blocks/colorlessx8,#c:ingots/any_plasticx8,hbm:circuit_basicx4,#c:plates/stainlessx4|-|ntmspace:item_expensive_stainless_beamx8,hbm:motorx4,#c:glass_blocks/colorlessx8,#c:ingots/any_plasticx8,hbm:item_expensive_circuitx2|528.stainless|-",
-            "platenickel|ass.platenickel|ntmspace:plate_nickel|1|60|100|#c:ingots/nickelx1|-|-|-|-",
-            "platestainless|ass.platestainless|ntmspace:plate_stainless|1|60|100|#c:ingots/stainlessx1|-|-|-|-",
+            "platenickel|ass.platenickel|ntmspace:plate_nickel|1|60|100|#c:ingots/nickel_purex1|-|-|-|-",
+            "platestainless|ass.platestainless|ntmspace:plate_stainless|1|60|100|#c:ingots/stainless_steelx1|-|-|-|-",
             "radiator|ass.radiator|ntmspace:machine_radiator|1|400|100|mat:aluminium/castplatex6,#c:plates/stainlessx6,mat:copper/pipex4,hbm:thermo_elementx3|-|-|-|-",
             "satdysonrelay|ass.satdysonrelay|ntmspace:sat_dyson_relay|1|600|100|#c:plates/saturnitex24,hbm:motor_bismuthx2,hbm:circuit_advancedx8,fi:hbm:fluid_barrel/hbm:kerosenex1,hbm:thruster_smallx1,mat:bscco/densewirex64,hbm:battery_lithiumx1|-|-|-|-",
             "solarpanel|ass.solarpanel|ntmspace:machine_solar|1|100|100|#c:plates/stainlessx4,hbm:photo_panelx4,#c:ingots/any_plasticx2,mat:red_copper/wirex8|-|-|-|-",
@@ -109,7 +110,9 @@ public final class RecipeChangeAssemblyGameTests {
             "vacuumcircuit|ass.vacuumcircuit|ntmspace:machine_vacuum_circuit|1|200|100|mat:steel/weldedplatex4,mat:tungsten/wirex16,hbm:turbine_titaniumx1,hbm:circuit_advancedx2|-|-|-|-",
     };
 
-    /** HBM rows hbm-space comments out ("we keep the old recipes for these": the old mpt/mpf parts) or drops. */
+    /**
+     * HBM rows hbm-space comments out ("we keep the old recipes for these": the old mpt/mpf parts) or drops.
+     */
     private static final String[] REMOVED = {
             "ass.mpt10kero", "ass.mpt10solid", "ass.mpt10xenon", "ass.mpt15kero", "ass.mpt15kerodual",
             "ass.mpt15kerotriple", "ass.mpt15solid", "ass.mpt15solid16", "ass.mpt15hydro", "ass.mpt15hydrodual",
@@ -120,9 +123,11 @@ public final class RecipeChangeAssemblyGameTests {
             "ass.mpf15solid", "ass.mpf15hydro", "ass.mpf1520kero", "ass.mpf1520solid", "ass.lunarminer",
     };
 
-    private RecipeChangeAssemblyGameTests() {}
+    private RecipeChangeAssemblyGameTests() {
+    }
 
-    public static void init() {}
+    public static void init() {
+    }
 
     private static void rows(GameTestHelper helper) {
         AssemblyMachineRecipes table = AssemblyMachineRecipes.INSTANCE;
@@ -132,6 +137,10 @@ public final class RecipeChangeAssemblyGameTests {
             String[] f = line.split("\\|", -1);
             String file = "ntmspace:assembly_machine/" + f[0];
             GenericRecipe recipe = entry(table, file);
+            if (!inForce(f, file)) {
+                if (recipe != null) errors.add(file + " loaded while its requirements fail");
+                continue;
+            }
             if (recipe == null) {
                 errors.add(file + " not loaded");
                 continue;
@@ -145,17 +154,20 @@ public final class RecipeChangeAssemblyGameTests {
             check(errors, file, "inputs", f[6], stacks(recipe.normalInputItems()));
             check(errors, file, "fluids", f[7], fluids(recipe.normalInputFluids()));
             check(errors, file, "expensive", f[8], recipe.inputItemEx == null ? "-" : stacks(recipe.inputItemEx));
-            check(errors, file, "528 pool", f[9], recipe.blueprintPools528 == null ? "-" : String.join(",", recipe.blueprintPools528));
+            check(errors, file, "528 pool", f[9],
+                    recipe.blueprintPools528 == null ? "-" : String.join(",", recipe.blueprintPools528));
             check(errors, file, "requires", f[10], recipe.requires == null ? "-" : String.join(",", recipe.requires));
         }
         // the table's lookup: each name resolves to the row in force under the current 528 mode
         for (String line : EXPECTED) {
             String[] f = line.split("\\|", -1);
-            boolean inForce = "-".equals(f[10]) || (f[10].equals("enable_528") == GeneralConfig.enable528);
-            if (!inForce) continue;
+            if (!inForce(f, f[0])) continue;
             GenericRecipe row = table.getRecipe(f[1]);
-            if (row == null || !stacks(row.normalInputItems()).equals(f[6]) || !fluids(row.normalInputFluids()).equals(f[7])) {
-                errors.add(f[1] + " in the table is not " + f[0] + ": " + (row == null ? "missing" : GenericRecipeCodec.describe(row)));
+            if (row == null || !stacks(row.normalInputItems()).equals(f[6]) || !fluids(row.normalInputFluids()).equals(
+                    f[7])) {
+                errors.add(
+                        f[1] + " in the table is not " + f[0] + ": " + (row == null ? "missing" : GenericRecipeCodec.describe(
+                                row)));
             }
         }
         // a replacing row takes the position of HBM's row it replaces (orderOf in the addon's source), 1.7's line order
@@ -167,7 +179,13 @@ public final class RecipeChangeAssemblyGameTests {
         RecipeChangeGameTests.finish(helper, errors);
     }
 
-    /** The loaded row of one file, whether or not its condition holds now. */
+    private static boolean inForce(String[] fields, String file) {
+        return RecipeTables.holds("-".equals(fields[10]) ? List.of() : List.of(fields[10].split(",")), file);
+    }
+
+    /**
+     * The loaded row of an enabled file.
+     */
     private static GenericRecipe entry(AssemblyMachineRecipes table, String id) {
         for (RecipeTables.Entry<GenericRecipe> entry : table.table.entries()) {
             if (entry.id().equals(id)) {
@@ -181,7 +199,8 @@ public final class RecipeChangeAssemblyGameTests {
 
     private static void checkOrder(List<String> errors, AssemblyMachineRecipes table, String name, int order) {
         GenericRecipe row = table.getRecipe(name);
-        if (row == null || row.order != order) errors.add(name + " order " + (row == null ? "missing" : row.order) + ", HBM's is " + order);
+        if (row == null || row.order != order)
+            errors.add(name + " order " + (row == null ? "missing" : row.order) + ", HBM's is " + order);
     }
 
     private static void check(List<String> errors, String file, String what, String expected, String actual) {
@@ -206,7 +225,8 @@ public final class RecipeChangeAssemblyGameTests {
         if (stack instanceof RecipeIngredients.FluidItem item) {
             return "fi:" + BuiltInRegistries.ITEM.getKey(item.item) + "/" + fluid(item.fluid);
         }
-        if (stack instanceof ComparableStack comparable) return String.valueOf(BuiltInRegistries.ITEM.getKey(comparable.item));
+        if (stack instanceof ComparableStack comparable)
+            return String.valueOf(BuiltInRegistries.ITEM.getKey(comparable.item));
         return "?" + stack.getClass().getSimpleName();
     }
 

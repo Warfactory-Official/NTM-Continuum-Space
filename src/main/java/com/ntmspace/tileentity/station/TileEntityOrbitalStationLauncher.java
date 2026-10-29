@@ -25,8 +25,10 @@ import com.ntmspace.tileentity.rocket.TileEntityLaunchPadRocket;
 import com.ntmspace.tileentity.rocket.TileEntityLaunchPadRocket.SolidFuelTank;
 import dev.golem.core.data.DataIn;
 import dev.golem.core.data.DataOut;
+
 import java.util.ArrayList;
 import java.util.List;
+
 import net.minecraft.core.BlockPos;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.network.RegistryFriendlyByteBuf;
@@ -61,7 +63,9 @@ public class TileEntityOrbitalStationLauncher extends TileEntityMachineBase impl
     public static final int SLOT_FUEL_OUT = 2;
     public static final int SLOT_PAYLOAD = 3;
     public static final int SLOT_STAGES = 4;
-    /** launch: drive + fuel in + fuel out; construction: capsule + stages + program drives */
+    /**
+     * launch: drive + fuel in + fuel out; construction: capsule + stages + program drives
+     */
     public static final int SLOT_COUNT = 1 + 1 + 1 + 1 + RocketStruct.MAX_STAGES * 3 + RocketStruct.MAX_STAGES * 2;
     public static final int SLOT_DRIVES = SLOT_COUNT - RocketStruct.MAX_STAGES * 2;
 
@@ -93,7 +97,9 @@ public class TileEntityOrbitalStationLauncher extends TileEntityMachineBase impl
         return "container.orbitalStationLauncher";
     }
 
-    /** The "from" and "to" drives of the stage the screen shows. */
+    /**
+     * The "from" and "to" drives of the stage the screen shows.
+     */
     public ItemStack fromDrive() {
         return getItem(SLOT_DRIVES + currentStage * 2);
     }
@@ -119,11 +125,13 @@ public class TileEntityOrbitalStationLauncher extends TileEntityMachineBase impl
         }
     }
 
-    /** 1.7 {@code updateEntity}'s server half (the orbit check is the caller's; GameTests call it directly). */
+    /**
+     * 1.7 {@code updateEntity}'s server half (the orbit check is the caller's; GameTests call it directly).
+     */
     public void updateServer() {
         // ROCKET CONSTRUCTION //
         // updates the orbital station information and syncs it to the client, if necessary
-        ItemVOTVdrive.getTarget(getItem(SLOT_DRIVE), level);
+        ItemVOTVdrive.publishStation(getItem(SLOT_DRIVE), level);
         ItemVOTVdrive.getTarget(fromDrive(), level);
         ItemVOTVdrive.getTarget(toDrive(), level);
 
@@ -138,7 +146,8 @@ public class TileEntityOrbitalStationLauncher extends TileEntityMachineBase impl
         if (rocket.validate()) receiveFluid(tanks);
 
         for (FluidTankNTM tank : tanks) {
-            if (tank.getTankType() != Fluids.NONE) MachineFluidContainerIO.load(tank, inventory, SLOT_FUEL_IN, SLOT_FUEL_OUT);
+            if (tank.getTankType() != Fluids.NONE)
+                MachineFluidContainerIO.load(tank, inventory, SLOT_FUEL_IN, SLOT_FUEL_OUT);
         }
         ItemStack fuelIn = getItem(SLOT_FUEL_IN);
         if (!fuelIn.isEmpty() && fuelIn.getItem() == ModFuelItems.rocket_fuel.get() && solidFuel.level < solidFuel.max) {
@@ -159,19 +168,18 @@ public class TileEntityOrbitalStationLauncher extends TileEntityMachineBase impl
     }
 
     /**
-     * The rocket in the slots; an empty stage takes the one above it. 1.7's shift test is {@code i + 3 < MAX_STAGES * 3}
-     * with {@code i} starting at slot 4 (copied from the VAB, whose stages start at slot 1), so a lone fifth stage is
-     * never pulled down into an empty fourth: kept.
+     * The rocket in the slots; an empty stage takes the one above it, through the final stage before program drives.
      */
     RocketStruct buildRocket() {
         RocketStruct built = new RocketStruct(getItem(SLOT_PAYLOAD));
         if (!getItem(SLOT_PAYLOAD).isEmpty() && getItem(SLOT_PAYLOAD).getItem() instanceof ISatChip) {
             built.satFreq = ISatChip.getFreqS(getItem(SLOT_PAYLOAD));
         }
-        for (int i = SLOT_STAGES; i < RocketStruct.MAX_STAGES * 3 + 3; i += 3) {
+        for (int i = SLOT_STAGES; i < SLOT_DRIVES; i += 3) {
             if (getItem(i).isEmpty() && getItem(i + 1).isEmpty() && getItem(i + 2).isEmpty()) {
                 // Check for later stages and shift them up into empty stages
-                if (i + 3 < RocketStruct.MAX_STAGES * 3 && (!getItem(i + 3).isEmpty() || !getItem(i + 4).isEmpty() || !getItem(i + 5).isEmpty())) {
+                if (i + 3 < SLOT_DRIVES && (!getItem(i + 3).isEmpty() || !getItem(i + 4).isEmpty() || !getItem(
+                        i + 5).isEmpty())) {
                     setItem(i, getItem(i + 3));
                     setItem(i + 1, getItem(i + 4));
                     setItem(i + 2, getItem(i + 5));
@@ -192,6 +200,17 @@ public class TileEntityOrbitalStationLauncher extends TileEntityMachineBase impl
         docked.board(player);
     }
 
+    public boolean retrieveDockedCraft(Player player) {
+        if (docked == null || docked.getFirstPassenger() != null) return false;
+        var returned = docked.stow();
+        undockRocket();
+        for (var stack : returned) {
+            if (!player.getInventory().add(stack)) player.drop(stack, false);
+        }
+        player.inventoryMenu.broadcastChanges();
+        return true;
+    }
+
     public void dockRocket(EntityRideableRocket rocket) {
         docked = rocket;
     }
@@ -209,7 +228,8 @@ public class TileEntityOrbitalStationLauncher extends TileEntityMachineBase impl
     }
 
     private boolean areTanksFull() {
-        for (FluidTankNTM tank : tanks) if (tank.getTankType() != Fluids.NONE && tank.getFill() < tank.getMaxFill()) return false;
+        for (FluidTankNTM tank : tanks)
+            if (tank.getTankType() != Fluids.NONE && tank.getFill() < tank.getMaxFill()) return false;
         if (solidFuel.level < solidFuel.max) return false;
         return true;
     }
@@ -223,7 +243,8 @@ public class TileEntityOrbitalStationLauncher extends TileEntityMachineBase impl
         String capsule = rocket.capsule != null ? rocket.capsule.id() : "";
 
         DriveBody target = ItemVOTVdrive.getBody(getItem(SLOT_DRIVE));
-        if (target == DriveBody.ORBIT && !RocketParts.CAPSULE.equals(capsule) && !RocketParts.STATION_CORE.equals(capsule))
+        if (target == DriveBody.ORBIT && !RocketParts.CAPSULE.equals(capsule) && !RocketParts.STATION_CORE.equals(
+                capsule))
             return false;
 
         RocketTarget from = RocketTarget.of(level, worldPosition.getX(), worldPosition.getZ());
@@ -245,7 +266,8 @@ public class TileEntityOrbitalStationLauncher extends TileEntityMachineBase impl
 
         ItemStack stack = ItemCustomRocket.build(rocket);
 
-        EntityRideableRocket entity = EntityRideableRocket.create(level, worldPosition.getX() + 0.5, worldPosition.getY() + 1.5,
+        EntityRideableRocket entity = EntityRideableRocket.create(level, worldPosition.getX() + 0.5,
+                worldPosition.getY() + 1.5,
                 worldPosition.getZ() + 0.5, stack).withProgram(getItem(SLOT_DRIVE)).launchedBy(player);
         entity.setPos(entity.getX(), entity.getY() - entity.getBbHeight(), entity.getZ());
         level.addFreshEntity(entity);
@@ -260,7 +282,9 @@ public class TileEntityOrbitalStationLauncher extends TileEntityMachineBase impl
         dockRocket(entity);
     }
 
-    /** 1.7 {@code getInventoryStackLimit}. */
+    /**
+     * 1.7 {@code getInventoryStackLimit}.
+     */
     @Override
     public int getMaxStackSize() {
         return 8;
@@ -274,7 +298,9 @@ public class TileEntityOrbitalStationLauncher extends TileEntityMachineBase impl
         return true;
     }
 
-    /** 1.7 {@code isBreaking}: the drive slots hold ghost copies, which are not dropped. */
+    /**
+     * 1.7 {@code isBreaking}: the drive slots hold ghost copies, which are not dropped.
+     */
     @Override
     public void preRemoveSideEffects(BlockPos pos, BlockState state) {
         for (int i = SLOT_DRIVES; i < SLOT_COUNT; i++) setItem(i, ItemStack.EMPTY);
@@ -359,7 +385,8 @@ public class TileEntityOrbitalStationLauncher extends TileEntityMachineBase impl
     }
 
     @Override
-    public void receiveControl(CompoundTag data) {}
+    public void receiveControl(CompoundTag data) {
+    }
 
     @Override
     public void receiveControl(Player player, CompoundTag data) {
@@ -373,7 +400,9 @@ public class TileEntityOrbitalStationLauncher extends TileEntityMachineBase impl
         return tanks;
     }
 
-    /** 1.7 subscribed the rim to each typed tank only while the rocket is valid. */
+    /**
+     * 1.7 subscribed the rim to each typed tank only while the rocket is valid.
+     */
     @Override
     public FluidTankNTM[] getReceivingTanks() {
         if (!rocket.validate()) return new FluidTankNTM[0];

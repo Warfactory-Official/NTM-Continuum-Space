@@ -51,9 +51,18 @@ legacyForge {
         }
         register("gameTestServer") {
             type = "gameTestServer"
+            jvmArgument("-Dgolem.gametest.datapackDimensions=true")
             gameDirectory = file("runs/gametest")
-            jvmArgument("-Dntmprobe.doubleSubstitution=${providers.gradleProperty("probe.doubleSubstitution").orElse("false").get()}")
-            jvmArgument("-Dgolem.gametest.filter=${providers.gradleProperty("gametest.filter").orElse("(ntmspace|ntmprobe):.*").get()}")
+            jvmArgument(
+                "-Dntmprobe.doubleSubstitution=${
+                    providers.gradleProperty("probe.doubleSubstitution").orElse("false").get()
+                }"
+            )
+            jvmArgument(
+                "-Dgolem.gametest.filter=${
+                    providers.gradleProperty("gametest.filter").orElse("(ntmspace|ntmprobe):.*").get()
+                }"
+            )
         }
     }
     mods {
@@ -74,8 +83,10 @@ tasks.matching { it.name == "runGameTestServer" }.configureEach {
         val lines = if (properties.exists()) properties.readLines().filterNot {
             it.startsWith("level-type=") || it.startsWith("level-seed=") || it.startsWith("max-tick-time=")
         } else emptyList()
-        properties.writeText((lines + listOf("level-type=minecraft:flat", "level-seed=0", "max-tick-time=-1"))
-            .joinToString(System.lineSeparator()) + System.lineSeparator())
+        properties.writeText(
+            (lines + listOf("level-type=minecraft:flat", "level-seed=0", "max-tick-time=-1"))
+                .joinToString(System.lineSeparator()) + System.lineSeparator()
+        )
     }
 }
 
@@ -83,6 +94,9 @@ repositories {
     mavenCentral()
     maven("https://maven.blamejared.com") { name = "BlameJared" }
 }
+
+extra["golem.build.gemrender.runtimeConfiguration"] = "modRuntimeOnly"
+apply(from = rootProject.file("gradle/gemrender-runtime.gradle.kts"))
 
 dependencies {
     modImplementation("dev.golem:golemcore-forge-$mcVersion:${prop("deps.golemcore")}+$mcVersion")
@@ -125,7 +139,13 @@ tasks.named<ProcessResources>("processProbeResources") {
 }
 
 tasks.jar {
-    from(files(rootProject.file("LICENSE"), rootProject.file("LICENSE.LESSER"), rootProject.file("CREDITS.txt"))) { rename { "${it}_${prop("mod.id")}" } }
+    from(
+        files(
+            rootProject.file("LICENSE"),
+            rootProject.file("LICENSE.LESSER"),
+            rootProject.file("CREDITS.txt")
+        )
+    ) { rename { "${it}_${prop("mod.id")}" } }
 }
 
 tasks.compileJava {
@@ -191,7 +211,12 @@ if (kubejsRun) dependencies {
         propOrNull("deps.kubejs_architectury")?.let { "dev.architectury:architectury-forge:$it" },
     )) modRuntimeOnly(mod) { isTransitive = false }
 }
-for ((run, tasksOfRun) in listOf("client" to listOf("runClient", "prepareClientRun"), "harness" to listOf("runClient", "prepareClientRun"), "server" to listOf("runServer", "prepareServerRun"), "gametest" to listOf("runGameTestServer", "prepareGameTestServerRun"))) {
+for ((run, tasksOfRun) in listOf(
+    "client" to listOf("runClient", "prepareClientRun"),
+    "harness" to listOf("runClient", "prepareClientRun"),
+    "server" to listOf("runServer", "prepareServerRun"),
+    "gametest" to listOf("runGameTestServer", "prepareGameTestServerRun")
+)) {
     if (!kubejsRun) break
     val copy = tasks.register<Copy>("copyKubeJsScripts${run.replaceFirstChar { it.uppercase() }}") {
         description = "Copies harness/kubejs into the $run run's kubejs folder (-Pkubejs.run)."

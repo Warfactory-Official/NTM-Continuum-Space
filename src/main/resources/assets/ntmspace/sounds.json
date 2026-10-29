@@ -1,4 +1,30 @@
 {
+  "block.squeaky_pain": {
+    "sounds": [
+      {
+        "name": "ntmspace:block/squeaky_pain",
+        "stream": false
+      }
+    ]
+  },
+  "player.dash": {
+    "category": "player",
+    "sounds": [
+      {
+        "name": "ntmspace:player/dash",
+        "stream": false
+      }
+    ]
+  },
+  "player.dash_recharge": {
+    "category": "player",
+    "sounds": [
+      {
+        "name": "ntmspace:player/dash_recharge",
+        "stream": false
+      }
+    ]
+  },
   "entity.beep": {
     "category": "hostile",
     "sounds": [

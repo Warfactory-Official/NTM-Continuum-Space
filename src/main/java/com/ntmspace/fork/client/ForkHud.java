@@ -17,13 +17,14 @@ import net.minecraft.world.entity.player.Player;
  */
 public final class ForkHud {
 
-    private ForkHud() {}
+    private ForkHud() {
+    }
 
     private static final Identifier FLASHBANG = Ids.of("ntmspace", "textures/misc/overlay_flashbang.png");
     private static final Identifier TAINT_BAR = Ids.of("ntmspace", "textures/misc/overlay_taint_bar.png");
 
     public static void init() {
-        Hud.addLast("ntmspace", "fork_effects", ForkHud::render);
+        Hud.addBeforeChat("ntmspace", "fork_effects", ForkHud::render);
     }
 
     private static void render(GuiGraphicsExtractor graphics) {

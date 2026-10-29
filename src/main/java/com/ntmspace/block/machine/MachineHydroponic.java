@@ -9,8 +9,10 @@ import com.hbm.interfaces.ILookOverlay;
 import com.hbm.lib.ForgeDirection;
 import com.hbm.util.BobMathUtil;
 import com.ntmspace.tileentity.machine.TileEntityHydroponic;
+
 import java.util.ArrayList;
 import java.util.List;
+
 import net.minecraft.ChatFormatting;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
@@ -68,7 +70,9 @@ public class MachineHydroponic extends BlockMultiblockMachine implements IEnergy
             {{0, 0, 0}, {0, 0, 0, 0, 2, 2}},
     };
 
-    /** The 1.7 {@code bounding} boxes, in the core's frame before 1.7's {@code getAABBRotationOffset}. */
+    /**
+     * The 1.7 {@code bounding} boxes, in the core's frame before 1.7's {@code getAABBRotationOffset}.
+     */
     private static final AABB[] BOUNDS = {
             // Middle
             new AABB(-0.5, 0, -1.5, 0.5, 3, 1.5),
@@ -81,7 +85,9 @@ public class MachineHydroponic extends BlockMultiblockMachine implements IEnergy
     };
 
     public MachineHydroponic(Properties properties) {
-        super(properties);
+        // Vanilla must query the hollow's live shape: its collision extends into adjacent air cells, while the
+        // placement-time cube would cause the world collision scan to skip those carriers.
+        super(properties.dynamicShape());
         for (AABB box : BOUNDS) bounding.add(box);
     }
 
@@ -90,18 +96,28 @@ public class MachineHydroponic extends BlockMultiblockMachine implements IEnergy
         return new TileEntityHydroponic(pos, state);
     }
 
-    @Override public int[] getDimensions() { return new int[] {2, 0, 0, 0, 2, 2}; }
-    @Override public int getOffset() { return 0; }
+    @Override
+    public int[] getDimensions() {
+        return new int[]{2, 0, 0, 0, 2, 2};
+    }
 
-    /** 1.7 {@code checkRequirement}: the standard space and the hollow's {@code {2, -1, 1, 1, 2, 2}}. */
+    @Override
+    public int getOffset() {
+        return 0;
+    }
+
+    /**
+     * 1.7 {@code checkRequirement}: the standard space and the hollow's {@code {2, -1, 1, 1, 2, 2}}.
+     */
     @Override
     protected boolean checkRequirement(Level level, BlockPos core, Direction facing, BlockPos clicked) {
         if (!super.checkRequirement(level, core, facing, clicked)) return false;
-        return MultiblockHandlerXR.checkSpace(level, core, new int[] {2, -1, 1, 1, 2, 2}, clicked, facing);
+        return MultiblockHandlerXR.checkSpace(level, core, new int[]{2, -1, 1, 1, 2, 2}, clicked, facing);
     }
 
     static BlockPos origin(BlockPos core, Direction facing, int[] offset) {
-        return MachinePorts.offset(core, MachinePorts.dir(facing), offset[0], MachinePorts.rot(facing), offset[1], offset[2]);
+        return MachinePorts.offset(core, MachinePorts.dir(facing), offset[0], MachinePorts.rot(facing), offset[1],
+                offset[2]);
     }
 
     static boolean isCell(BlockPos core, Direction facing, BlockPos pos) {
@@ -121,27 +137,35 @@ public class MachineHydroponic extends BlockMultiblockMachine implements IEnergy
         MachinePorts.ports(core, facing, cells, ports.power(), ROLE_POWER_IN, visitor);
     }
 
-    /** The three {@code makeExtra} cells: {@code TileEntityProxyCombo(true, true, true)} (items, power, fluid). */
+    /**
+     * The three {@code makeExtra} cells: {@code TileEntityProxyCombo(true, true, true)} (items, power, fluid).
+     */
     @Override
     protected void visitPassiveCells(BlockPos core, Direction facing, PassiveCellVisitor visitor) {
         for (BlockPos extra : extras(core, facing)) visitor.passiveCell(extra, MASK_ALL, PASSIVE_ANY);
     }
 
-    /** 1.7 {@code fillSpace}'s {@code makeExtra} positions. */
+    /**
+     * 1.7 {@code fillSpace}'s {@code makeExtra} positions.
+     */
     public static List<BlockPos> extras(BlockPos core, Direction facing) {
         ForgeDirection rot = MachinePorts.rot(facing);
-        return List.of(core.offset(rot.offsetX * 2, 0, rot.offsetZ * 2), core.offset(-rot.offsetX * 2, 0, -rot.offsetZ * 2),
+        return List.of(core.offset(rot.offsetX * 2, 0, rot.offsetZ * 2),
+                core.offset(-rot.offsetX * 2, 0, -rot.offsetZ * 2),
                 core.above(2));
     }
 
     @Override
     public int[][] getAllDimensions() {
-        return new int[][] {getDimensions(), {2, -1, 1, 1, 2, 2}};
+        return new int[][]{getDimensions(), {2, -1, 1, 1, 2, 2}};
     }
 
-    /** 1.7 {@code canSustainPlant}: yes next to the core ({@link #sustainsPlant}), no anywhere else on the machine. */
+    /**
+     * 1.7 {@code canSustainPlant}: yes next to the core ({@link #sustainsPlant}), no anywhere else on the machine.
+     */
     @Override
-    protected dev.golem.core.hook.Verdict onSustainPlant(BlockGetter level, BlockPos soilPos, BlockState soil, BlockState plant) {
+    protected dev.golem.core.hook.Verdict onSustainPlant(BlockGetter level, BlockPos soilPos, BlockState soil,
+                                                         BlockState plant) {
         return sustainsPlant(level, soilPos) ? dev.golem.core.hook.Verdict.ALLOW : dev.golem.core.hook.Verdict.DENY;
     }
 
@@ -150,14 +174,16 @@ public class MachineHydroponic extends BlockMultiblockMachine implements IEnergy
      * plants, so we do a 4 block search in all cardinals" (meta >= 12 is the core).
      */
     public static boolean sustainsPlant(BlockGetter level, BlockPos pos) {
-        for (BlockPos at : new BlockPos[] {pos, pos.east(), pos.west(), pos.south(), pos.north()}) {
+        for (BlockPos at : new BlockPos[]{pos, pos.east(), pos.west(), pos.south(), pos.north()}) {
             BlockState state = level.getBlockState(at);
             if (state.getBlock() instanceof MachineHydroponic && !state.getValue(CELL)) return true;
         }
         return false;
     }
 
-    /** 1.7 inventory proxies: the core and the three extras. */
+    /**
+     * 1.7 inventory proxies: the core and the three extras.
+     */
     @Override
     public @Nullable WorldlyContainer getContainer(BlockState state, LevelAccessor level, BlockPos pos) {
         if (!(MultiblockSurface.coreEntity(level, pos) instanceof TileEntityHydroponic hydro)) return null;
@@ -167,7 +193,9 @@ public class MachineHydroponic extends BlockMultiblockMachine implements IEnergy
         return extras(core, facing).contains(pos) ? hydro : null;
     }
 
-    /** 1.7 {@code printHook}. */
+    /**
+     * 1.7 {@code printHook}.
+     */
     @Override
     public ILookOverlay.Data getLookOverlay(Level level, BlockPos pos, Player player) {
         BlockPos core = MultiblockSurface.coreOfAny(level, pos);
@@ -175,9 +203,11 @@ public class MachineHydroponic extends BlockMultiblockMachine implements IEnergy
         List<String> text = new ArrayList<>();
         text.add((hydro.getPower() <= 200 ? ChatFormatting.RED : ChatFormatting.GREEN) + "Power: "
                 + BobMathUtil.getShortNumber(hydro.getPower()) + "HE");
-        text.add(ChatFormatting.GREEN + "-> " + ChatFormatting.RESET + hydro.tanks[0].getTankType().getDisplayNameString() + ": "
+        text.add(ChatFormatting.GREEN + "-> " + ChatFormatting.RESET + hydro.tanks[0].getTankType()
+                                                                                     .getDisplayNameString() + ": "
                 + hydro.tanks[0].getFill() + "/" + hydro.tanks[0].getMaxFill() + "mB");
-        text.add(ChatFormatting.RED + "<- " + ChatFormatting.RESET + hydro.tanks[1].getTankType().getDisplayNameString() + ": "
+        text.add(ChatFormatting.RED + "<- " + ChatFormatting.RESET + hydro.tanks[1].getTankType()
+                                                                                   .getDisplayNameString() + ": "
                 + hydro.tanks[1].getFill() + "/" + hydro.tanks[1].getMaxFill() + "mB");
         return new ILookOverlay.Data(getName().getString(), 0xffff00, 0x404000, text);
     }

@@ -1,12 +1,17 @@
 package com.ntmspace.block.atmosphere;
 
 import com.hbm.blocks.machine.MachineDeuteriumTower;
+import com.hbm.capability.ICapabilityBlock;
+import com.hbm.capability.MachineCaps;
 import com.hbm.blocks.multiblock.MultiblockSurface;
 import com.hbm.interfaces.ILookOverlay;
 import com.hbm.util.BobMathUtil;
 import com.ntmspace.tileentity.atmosphere.TileEntityAtmoTower;
+import com.ntmspace.registry.AtmosphereMachines;
+
 import java.util.ArrayList;
 import java.util.List;
+
 import net.minecraft.ChatFormatting;
 import net.minecraft.core.BlockPos;
 import net.minecraft.world.entity.player.Player;
@@ -19,7 +24,14 @@ import net.minecraft.world.level.block.state.BlockState;
  * ({@code getDimensions} {6, 0, 1, 0, 0, 1}, offset 0, the same 2x2 base, three {@code TileEntityProxyCombo(false, true,
  * true)} base cells and eight ports), so the frame, cells and ports are HBM's {@link MachineDeuteriumTower}'s.
  */
-public class AtmoTower extends MachineDeuteriumTower {
+public class AtmoTower extends MachineDeuteriumTower implements ICapabilityBlock {
+    private static final MachineCaps CAPS = MachineCaps.of(AtmosphereMachines.ATMO_TOWER_BE)
+                                                       .powerIn().fluidIn().fluidOut().fe();
+
+    @Override
+    public MachineCaps caps() {
+        return CAPS;
+    }
 
     public AtmoTower(Properties properties) {
         super(properties);
@@ -32,7 +44,7 @@ public class AtmoTower extends MachineDeuteriumTower {
 
     @Override
     public int[] getDimensions() {
-        return new int[] {6, 0, 1, 0, 0, 1};
+        return new int[]{6, 0, 1, 0, 0, 1};
     }
 
     @Override

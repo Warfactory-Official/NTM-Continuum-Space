@@ -5,14 +5,20 @@ import com.hbm.api.data.FluidDataMaps.Container;
 import com.hbm.api.data.FluidDataMaps.Containers;
 import com.ntmspace.block.BlockBodyOre.Body;
 import dev.golem.core.data.DataMapSource;
+
 import java.util.Optional;
 
-/** NTM: Space's fluid containers, as patches of HBM's maps. */
+/**
+ * NTM: Space's fluid containers, as patches of HBM's maps.
+ */
 public final class SpaceFluidContainers {
 
-    private SpaceFluidContainers() {}
+    private SpaceFluidContainers() {
+    }
 
-    /** hbm-space {@code Fluids.init()}: {@code addContainers(new CD_Canister(c))} and {@code new CD_Gastank(bottle, label)}. */
+    /**
+     * hbm-space {@code Fluids.init()}: {@code addContainers(new CD_Canister(c))} and {@code new CD_Gastank(bottle, label)}.
+     */
     public static final class Colors extends DataMapSource<Containers> {
 
         public Colors() {
@@ -47,7 +53,9 @@ public final class SpaceFluidContainers {
         }
     }
 
-    /** hbm-space {@code FluidContainerRegistry.register()}: the fixed containers NTM: Space adds. */
+    /**
+     * hbm-space {@code FluidContainerRegistry.register()}: the fixed containers NTM: Space adds.
+     */
     public static final class Items extends DataMapSource<Container> {
 
         public Items() {
@@ -59,6 +67,9 @@ public final class SpaceFluidContainers {
             // 1.7 FluidContainerRegistry registers the same consumed item contents for every body.
             ore("ore_oil", "hbm:oil", 250);
             ore("ore_gas", "hbm:gas", 100);
+            for (var body : Body.values())
+                put("ntmspace:" + body.itemPath("ore_shale"),
+                        new Container("hbm:gas", 250, Optional.empty(), Optional.of(50)));
             container("ntmspace:bucket_mercury", "hbm:mercury", 1000, "minecraft:bucket");
             container("ntmspace:bucket_bromine", "ntmspace:bromine", 1000, "minecraft:bucket");
             container("ntmspace:bucket_ccl", "ntmspace:ccl", 1000, "minecraft:bucket");

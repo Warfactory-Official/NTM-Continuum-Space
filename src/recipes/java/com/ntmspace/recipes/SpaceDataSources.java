@@ -4,6 +4,7 @@ import com.ntmspace.recipes.tables.*;
 import dev.golem.core.world.DataSource;
 import dev.golem.core.world.RecipeSource;
 import dev.golem.core.world.DataSources;
+
 import java.util.ArrayList;
 import java.util.List;
 
@@ -56,6 +57,7 @@ public final class SpaceDataSources implements DataSources {
                 new CrackingTable(),
                 new LiquefactionTable(),
                 new SawmillTable(),
+                new PedestalTable(),
                 new SolderingTable(),
                 new ElectrolyserFluidTable(),
                 new MaterialDistributionTable(),

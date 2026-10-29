@@ -3,10 +3,14 @@ package com.ntmspace.trait;
 import dev.golem.core.world.Compat;
 import com.mojang.serialization.Codec;
 import com.mojang.serialization.codecs.RecordCodecBuilder;
+
 import java.util.Map;
 import java.util.HashSet;
 import java.util.List;
 import java.util.UUID;
+import java.util.Optional;
+
+import net.minecraft.core.UUIDUtil;
 import com.hbm.entity.mob.EntityUFO;
 import com.ntmspace.entity.missile.CombatDropPods;
 import com.ntmspace.entity.missile.EntityCombatDropPod;
@@ -22,6 +26,8 @@ import net.minecraft.network.chat.Component;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.entity.LivingEntity;
+import net.minecraft.world.entity.Entity;
+import net.minecraft.world.Difficulty;
 import org.jetbrains.annotations.Nullable;
 
 /**
@@ -31,20 +37,34 @@ import org.jetbrains.annotations.Nullable;
  * reached through {@link #SPAWNER} and {@link #KILLS}, which do nothing until a mob family sets them.
  */
 public class CBT_Invasion extends CelestialBodyTrait {
+    private static final String COUNTED_DEATH = "ntmspace:invasion_kill";
 
-    /** What the invasion spawns; the mob port supplies it. */
+    /**
+     * What the invasion spawns; the mob port supplies it.
+     */
     public interface Spawner {
-        /** 1.7 {@code spawnCattle}: one drop pod near a random player, payload chosen by {@code wave}. */
+        /**
+         * 1.7 {@code spawnCattle}: one drop pod near a random player, payload chosen by {@code wave}.
+         */
         void dropPod(ServerLevel level, CBT_Invasion invasion);
-        /** 1.7 {@code spawnAttempt}'s spawn: a siege UFO or craft near a random player. */
+
+        /**
+         * 1.7 {@code spawnAttempt}'s spawn: a siege UFO or craft near a random player.
+         */
         @Nullable LivingEntity ufo(ServerLevel level, CBT_Invasion invasion);
-        /** 1.7 {@code spawnBoss}: the boss UFO above a random player. */
+
+        /**
+         * 1.7 {@code spawnBoss}: the boss UFO above a random player.
+         */
         @Nullable EntityUFO boss(ServerLevel level, CBT_Invasion invasion);
     }
 
-    /** 1.7 {@code onKill}: how many kills {@code entity} counts for (0: none), and whether it is the final boss. */
+    /**
+     * 1.7 {@code onKill}: how many kills {@code entity} counts for (0: none), and whether it is the final boss.
+     */
     public interface KillValue {
         int kills(LivingEntity entity);
+
         boolean endsInvasion(LivingEntity entity, int wave);
     }
 
@@ -55,10 +75,13 @@ public class CBT_Invasion extends CelestialBodyTrait {
      */
     public static volatile @Nullable DropPod DROP_POD;
 
-    /** The drop-pod part of {@link Spawner}. */
+    /**
+     * The drop-pod part of {@link Spawner}.
+     */
     public interface DropPod {
         void dropPod(ServerLevel level, CBT_Invasion invasion);
     }
+
     public static volatile @Nullable KillValue KILLS;
 
     public int wave;
@@ -71,10 +94,12 @@ public class CBT_Invasion extends CelestialBodyTrait {
     public int podBurstCounter = 0;
     public int podCooldown = 0;
     public boolean bossSpawned = false;
+    public @Nullable UUID bossUUID;
     public boolean warningPlayed;
     private @Nullable ServerBossEvent bar;
 
-    public CBT_Invasion() {}
+    public CBT_Invasion() {
+    }
 
     public CBT_Invasion(int wave, double waveTime, boolean isInvading) {
         this.wave = wave;
@@ -91,11 +116,18 @@ public class CBT_Invasion extends CelestialBodyTrait {
         }
     }
 
-    /** The client half of 1.7 {@code update}: the warning and the meteors (the war family's client installs it). */
+    /**
+     * The client half of 1.7 {@code update}: the warning and the meteors (the war family's client installs it).
+     */
     public interface ClientEffects {
-        /** 1.7: {@code hbm:alarm.ping} at volume 10 and "Incoming Invasion!" in red to the player. */
+        /**
+         * 1.7: {@code hbm:alarm.ping} at volume 10 and "Incoming Invasion!" in red to the player.
+         */
         void warning();
-        /** 1.7 {@code WorldProviderCelestial.Meteor.addMeteor()}. */
+
+        /**
+         * 1.7 {@code WorldProviderCelestial.Meteor.addMeteor()}.
+         */
         void meteor();
     }
 
@@ -104,7 +136,9 @@ public class CBT_Invasion extends CelestialBodyTrait {
         var effects = CLIENT;
         if (effects != null) effects.warning();
     };
-    /** 1.7 kept a {@code new Random()} per trait object; the client's traits are re-made on every sync, so one is shared. */
+    /**
+     * 1.7 kept a {@code new Random()} per trait object; the client's traits are re-made on every sync, so one is shared.
+     */
     private static final java.util.Random CLIENT_RANDOM = new java.util.Random();
 
     @Override
@@ -119,7 +153,9 @@ public class CBT_Invasion extends CelestialBodyTrait {
         serverUpdate(body, true);
     }
 
-    /** The lifecycle runs simulation before levels and refreshes the audience separately on server END. */
+    /**
+     * The lifecycle runs simulation before levels and refreshes the audience separately on server END.
+     */
     public void simulate(String body) {
         serverUpdate(body, false);
     }
@@ -133,14 +169,16 @@ public class CBT_Invasion extends CelestialBodyTrait {
         }
         if (isInvading) {
             ServerLevel level = CelestialTraits.levelOf(body);
-            if (level == null || level.players().isEmpty()) return;
+            if (level == null || level.players().isEmpty() || level.getDifficulty() == Difficulty.PEACEFUL) return;
             logicTick(level);
             handleBurstSpawning(level);
             spawnAttempt(level);
         }
     }
 
-    /** 1.7 {@code handleBurstSpawning} (public for the GameTests). */
+    /**
+     * 1.7 {@code handleBurstSpawning} (public for the GameTests).
+     */
     public void handleBurstSpawning(ServerLevel level) {
         if (wave > 3) return;
         if (podCooldown > 0) {
@@ -160,14 +198,25 @@ public class CBT_Invasion extends CelestialBodyTrait {
         }
     }
 
-    /** 1.7 {@code logicTick} (public for the GameTests). */
+    /**
+     * 1.7 {@code logicTick} (public for the GameTests).
+     */
     public @Nullable EntityUFO logicTick(ServerLevel level) {
         if (!isInvading) return null;
         switch (wave) {
             case 0 -> advanceWave(level);
-            case 1 -> { killreq = 20; if (kills >= killreq) advanceWave(level); }
-            case 2 -> { killreq = 100; if (kills >= killreq) advanceWave(level); }
-            case 3 -> { killreq = 150; if (kills >= killreq) advanceWave(level); }
+            case 1 -> {
+                killreq = 20;
+                if (kills >= killreq) advanceWave(level);
+            }
+            case 2 -> {
+                killreq = 100;
+                if (kills >= killreq) advanceWave(level);
+            }
+            case 3 -> {
+                killreq = 150;
+                if (kills >= killreq) advanceWave(level);
+            }
             case 4 -> {
                 killreq = 1;
                 if (!bossSpawned) {
@@ -175,10 +224,12 @@ public class CBT_Invasion extends CelestialBodyTrait {
                     var boss = spawner == null ? null : spawner.boss(level, this);
                     // port: Peaceful spawn refusal leaves the boss phase pending until spawning is allowed.
                     bossSpawned = boss != null;
+                    bossUUID = boss == null ? null : boss.getUUID();
                     return boss;
                 }
             }
-            default -> {}
+            default -> {
+            }
         }
         return null;
     }
@@ -207,21 +258,62 @@ public class CBT_Invasion extends CelestialBodyTrait {
         return null;
     }
 
-    /** 1.7 {@code onKill}, from the death event of any living entity on the body. */
+    /**
+     * 1.7 {@code onKill}, from the death event of any living entity on the body.
+     */
     public void onKill(LivingEntity entity, String body) {
         KillValue value = KILLS;
         if (value == null) return;
         int worth = value.kills(entity);
+        boolean boss = value.endsInvasion(entity, wave) && entity.getUUID().equals(bossUUID);
+        if ((worth == 0 && !boss) || !entity.addTag(COUNTED_DEATH)) return;
         if (worth > 0) {
             kills += worth;
             CelestialTraits.modifyTraits(body, this);
         }
-        if (value.endsInvasion(entity, wave)) {
+        if (boss) {
             Map<Class<? extends CelestialBodyTrait>, CelestialBodyTrait> traits = CelestialTraits.getTraits(body);
             traits.remove(CBT_Invasion.class);
-            if (entity.level() instanceof ServerLevel level) broadcast(level, "The Invasion Is Over!", ChatFormatting.YELLOW);
+            if (entity.level() instanceof ServerLevel level)
+                broadcast(level, "The Invasion Is Over!", ChatFormatting.YELLOW);
             CelestialTraits.setTraits(body, traits);
         }
+    }
+
+    public static void onDeath(LivingEntity entity) {
+        String body = invasionBody(entity);
+        if (body == null) return;
+        var invasion = CelestialTraits.getTrait(body, CBT_Invasion.class, false);
+        if (invasion != null) invasion.onKill(entity, body);
+    }
+
+    public static void onRemoval(Entity entity) {
+        var level = (ServerLevel) entity.level();
+        if (CelestialTraits.server() != level.getServer()) return;
+        var reason = entity.getRemovalReason();
+        if (reason != Entity.RemovalReason.KILLED && reason != Entity.RemovalReason.DISCARDED
+                && reason != Entity.RemovalReason.UNLOADED_TO_CHUNK) return;
+        if (entity instanceof LivingEntity living && living.isDeadOrDying()) {
+            onDeath(living);
+        } else if (reason != Entity.RemovalReason.UNLOADED_TO_CHUNK && entity instanceof EntityUFO ufo) {
+            String body = invasionBody(ufo);
+            if (body == null) return;
+            var invasion = CelestialTraits.getTrait(body, CBT_Invasion.class, false);
+            invasion.bossSpawned = false;
+            invasion.bossUUID = null;
+            CelestialTraits.modifyTraits(body, invasion);
+        }
+    }
+
+    private static @Nullable String invasionBody(LivingEntity entity) {
+        if (entity instanceof EntityUFO) {
+            for (var entry : CelestialTraits.savedTraits().entrySet()) {
+                if (entry.getValue().get(CBT_Invasion.class) instanceof CBT_Invasion invasion
+                        && entity.getUUID().equals(invasion.bossUUID)) return entry.getKey();
+            }
+            return null;
+        }
+        return CelestialTraits.bodyOf(entity.level());
     }
 
     private static void broadcast(ServerLevel level, String text, ChatFormatting color) {
@@ -230,7 +322,9 @@ public class CBT_Invasion extends CelestialBodyTrait {
         }
     }
 
-    /** 1.7 boss bar ({@code IBossDisplayData}): max health is the kill requirement, health what is left of it. */
+    /**
+     * 1.7 boss bar ({@code IBossDisplayData}): max health is the kill requirement, health what is left of it.
+     */
     public float getMaxHealth() {
         return killreq;
     }
@@ -239,7 +333,9 @@ public class CBT_Invasion extends CelestialBodyTrait {
         return killreq - kills;
     }
 
-    /** The server keeps the invasion boss bar's audience restricted to the invaded body. */
+    /**
+     * The server keeps the invasion boss bar's audience restricted to the invaded body.
+     */
     public void updateBar(MinecraftServer server, String body) {
         if (bar == null) {
             bar = Compat.bossEvent(UUID.randomUUID(), Component.empty(), BossEvent.BossBarColor.PINK,
@@ -282,6 +378,7 @@ public class CBT_Invasion extends CelestialBodyTrait {
         podBurstCounter = loaded.podBurstCounter;
         podCooldown = loaded.podCooldown;
         bossSpawned = loaded.bossSpawned;
+        bossUUID = loaded.bossUUID;
     }
 
     @Override
@@ -294,6 +391,7 @@ public class CBT_Invasion extends CelestialBodyTrait {
         copy.podBurstCounter = podBurstCounter;
         copy.podCooldown = podCooldown;
         copy.bossSpawned = bossSpawned;
+        copy.bossUUID = bossUUID;
         copy.warningPlayed = warningPlayed;
         return copy;
     }
@@ -322,11 +420,11 @@ public class CBT_Invasion extends CelestialBodyTrait {
         podBurstCounter = buf.readInt();
         podCooldown = buf.readInt();
         bossSpawned = buf.readBoolean();
-        if (!isInvading && !warningPlayed) CLIENT_WARNING.run();
     }
 
     private record Saved(int wave, int kills, int killreq, double waveTime, boolean isInvading, boolean warningPlayed,
-                         int podBurst, int podCooldown, boolean bossSpawned) {}
+                         int podBurst, int podCooldown, Optional<UUID> boss) {
+    }
 
     static Codec<CBT_Invasion> codec() {
         return RecordCodecBuilder.<Saved>create(i -> i.group(
@@ -338,7 +436,7 @@ public class CBT_Invasion extends CelestialBodyTrait {
                 Codec.BOOL.optionalFieldOf("warningPlayed", false).forGetter(Saved::warningPlayed),
                 Codec.INT.optionalFieldOf("podBurst", 0).forGetter(Saved::podBurst),
                 Codec.INT.optionalFieldOf("podCooldown", 0).forGetter(Saved::podCooldown),
-                Codec.BOOL.optionalFieldOf("bossSpawned", false).forGetter(Saved::bossSpawned)
+                UUIDUtil.CODEC.optionalFieldOf("boss").forGetter(Saved::boss)
         ).apply(i, Saved::new)).xmap(s -> {
             CBT_Invasion inv = new CBT_Invasion(s.wave(), s.waveTime(), s.isInvading());
             inv.kills = s.kills();
@@ -346,9 +444,10 @@ public class CBT_Invasion extends CelestialBodyTrait {
             inv.warningPlayed = s.warningPlayed();
             inv.podBurstCounter = s.podBurst();
             inv.podCooldown = s.podCooldown();
-            inv.bossSpawned = s.bossSpawned();
+            inv.bossUUID = s.boss().orElse(null);
+            inv.bossSpawned = inv.bossUUID != null;
             return inv;
         }, inv -> new Saved(inv.wave, inv.kills, inv.killreq, inv.waveTime, inv.isInvading, inv.warningPlayed,
-                inv.podBurstCounter, inv.podCooldown, inv.bossSpawned));
+                inv.podBurstCounter, inv.podCooldown, Optional.ofNullable(inv.bossUUID)));
     }
 }

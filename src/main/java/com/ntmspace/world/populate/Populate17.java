@@ -2,8 +2,10 @@ package com.ntmspace.world.populate;
 
 import com.ntmspace.block.terrain.BlockLaytheSilt;
 import com.ntmspace.registry.LaytheTektoBlocks;
+
 import java.util.Collections;
 import java.util.LinkedHashMap;
+
 import com.hbm.config.GeneralConfig;
 import com.hbm.config.WorldConfig;
 import com.hbm.inventory.fluid.FluidStack;
@@ -15,12 +17,14 @@ import com.ntmspace.world.gen.legacy.EveTerrain17;
 import com.ntmspace.world.gen.legacy.LayeredBodyTerrain17;
 import com.ntmspace.world.gen.legacy.Ores17;
 import com.ntmspace.world.gen.noise.Noise17Perlin;
+
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Random;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Supplier;
+
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
 import net.minecraft.world.level.WorldGenLevel;
@@ -61,7 +65,9 @@ import org.jspecify.annotations.Nullable;
  */
 public final class Populate17 {
 
-    /** The 1.7 body a chunk generator populates, with what its {@code WorldProviderCelestial} answered. */
+    /**
+     * The 1.7 body a chunk generator populates, with what its {@code WorldProviderCelestial} answered.
+     */
     public enum Body {
         MUN(BlockBodyOre.Body.MUN, "ntmspace:moon_rock", 413_015, true, false, 0, 0),
         MINMUS(BlockBodyOre.Body.MINMUS, "ntmspace:minmus_stone", 413_021, true, true, 0, 0),
@@ -72,22 +78,38 @@ public final class Populate17 {
         MOHO(BlockBodyOre.Body.MOHO, "ntmspace:moho_stone", 413_020, false, true, 50, 0),
         LAYTHE(BlockBodyOre.Body.LAYTHE, "minecraft:stone", 413_022, false, true, 0, 0),
         TEKTO(BlockBodyOre.Body.TEKTO, "hbm:basalt", 413_024, true, true, 0, 0),
-        /** Thatmo is no {@code SolarSystem.Body}: {@code CelestialBody.getBody} answered Kerbin for it. */
+        /**
+         * Thatmo is no {@code SolarSystem.Body}: {@code CelestialBody.getBody} answered Kerbin for it.
+         */
         THATMO(BlockBodyOre.Body.KERBIN, "hbm:sellafield_slaked", 413_025, false, false, 0, 0);
 
-        /** The ore metadata ({@code CelestialBody.getMeta}). */
+        /**
+         * The ore metadata ({@code CelestialBody.getMeta}).
+         */
         public final BlockBodyOre.Body ore;
-        /** {@code WorldProviderCelestial.getStone}. */
+        /**
+         * {@code WorldProviderCelestial.getStone}.
+         */
         public final String stone;
-        /** The 1.7 dimension id ({@code SpaceConfig} default), which salted the bedrock ore noise. */
+        /**
+         * The 1.7 dimension id ({@code SpaceConfig} default), which salted the bedrock ore noise.
+         */
         public final int dimension;
-        /** {@code hasIce}: bedrock ice deposits. */
+        /**
+         * {@code hasIce}: bedrock ice deposits.
+         */
         public final boolean ice;
-        /** The decorator is hbm-space's {@code BiomeDecoratorCelestial} (else vanilla's). */
+        /**
+         * The decorator is hbm-space's {@code BiomeDecoratorCelestial} (else vanilla's).
+         */
         public final boolean celestialDecorator;
-        /** {@code generateLakes ? lavaCount : 0}. */
+        /**
+         * {@code generateLakes ? lavaCount : 0}.
+         */
         public final int lavaSprings;
-        /** {@code lakeChancePerChunk}. */
+        /**
+         * {@code lakeChancePerChunk}.
+         */
         public final int lakeChance;
 
         Body(BlockBodyOre.Body ore, String stone, int dimension, boolean ice, boolean celestialDecorator,
@@ -105,7 +127,9 @@ public final class Populate17 {
             return PopulateWorld.block(stone);
         }
 
-        /** {@code WorldProviderCelestial.getBedrockAcid}: Dres nitric acid, Eve permanganate, else none. */
+        /**
+         * {@code WorldProviderCelestial.getBedrockAcid}: Dres nitric acid, Eve permanganate, else none.
+         */
         public @Nullable FluidStack bedrockAcid() {
             return switch (this) {
                 case DRES -> new FluidStack(Fluids.NITRIC_ACID, 500);
@@ -128,13 +152,16 @@ public final class Populate17 {
         }
     }
 
-    /** hbm-space's {@code WorldConfig} defaults for keys HBM does not have ({@code ironSpawn} had no config key). */
+    /**
+     * hbm-space's {@code WorldConfig} defaults for keys HBM does not have ({@code ironSpawn} had no config key).
+     */
     public static final int IRON_SPAWN = 9;
     public static final int NICKEL_SPAWN = 12;
     public static final int ZINC_SPAWN = 8;
     public static final int MINERAL_SPAWN = 4;
 
-    private Populate17() {}
+    private Populate17() {
+    }
 
     // ---------------------------------------------------------------- entry points
 
@@ -149,7 +176,9 @@ public final class Populate17 {
         generators(body, world, seed, chunkX, chunkZ, terrain, lock, true);
     }
 
-    /** {@code ChunkProviderCelestial.populate}'s random, before {@code biome.decorate}. */
+    /**
+     * {@code ChunkProviderCelestial.populate}'s random, before {@code biome.decorate}.
+     */
     public static Random populateRandom(long seed, int chunkX, int chunkZ) {
         Random rand = new Random(seed);
         long i1 = rand.nextLong() / 2L * 2L + 1L;
@@ -158,7 +187,9 @@ public final class Populate17 {
         return rand;
     }
 
-    /** FML's per-generator chunk seed ({@code GameRegistry.generateWorld}); {@code new Random(it)} is the generator's random. */
+    /**
+     * FML's per-generator chunk seed ({@code GameRegistry.generateWorld}); {@code new Random(it)} is the generator's random.
+     */
     public static long generatorSeed(long worldSeed, int chunkX, int chunkZ) {
         Random fmlRandom = new Random(worldSeed);
         long xSeed = fmlRandom.nextLong() >> 2 + 1L;
@@ -168,12 +199,16 @@ public final class Populate17 {
 
     // ---------------------------------------------------------------- the decorator
 
-    /** The biome decorator of a chunk of {@code body} (not Laythe's, see {@code LaytheTektoDecoration}). */
+    /**
+     * The biome decorator of a chunk of {@code body} (not Laythe's, see {@code LaytheTektoDecoration}).
+     */
     public static void decorator(Body body, PopulateWorld world, long seed, int chunkX, int chunkZ) {
         decorator(body, world, seed, chunkX, chunkZ, populateRandom(seed, chunkX, chunkZ));
     }
 
-    /** {@link #decorator(Body, PopulateWorld, long, int, int)} drawing from {@code rand}. */
+    /**
+     * {@link #decorator(Body, PopulateWorld, long, int, int)} drawing from {@code rand}.
+     */
     public static void decorator(Body body, PopulateWorld world, long seed, int chunkX, int chunkZ, Random rand) {
         int k = chunkX * 16;
         int l = chunkZ * 16;
@@ -258,7 +293,9 @@ public final class Populate17 {
         Ores17.minable(rand, x, y, z, 6, placer(world, Blocks.LAPIS_ORE.defaultBlockState(), stone));
     }
 
-    /** 1.7 {@code genStandardOre1} (and {@code WorldGeneratorCelestial.genVanillaOre}, the same draws). */
+    /**
+     * 1.7 {@code genStandardOre1} (and {@code WorldGeneratorCelestial.genVanillaOre}, the same draws).
+     */
     private static void standardOre(PopulateWorld world, Random rand, int k, int l, int count, BlockState ore, int size,
                                     int minY, int maxY, Block target) {
         Ores17.Placer placer = placer(world, ore, target);
@@ -270,9 +307,18 @@ public final class Populate17 {
         }
     }
 
-    /** Ordered native producers used by Laythe's live pre-decoration pass; disabled caves are absent. */
+    /**
+     * Ordered native producers used by Laythe's live pre-decoration pass; disabled caves are absent.
+     */
     public static Map<String, OreCave17> laytheCaves() {
         return Features.get().laytheCaves;
+    }
+
+    /**
+     * The acid/sulfur producer used by Eve's pre-decoration pass.
+     */
+    public static OreCave17 eveSulfurCave() {
+        return Features.get().acidSulfurCave;
     }
 
     // ---------------------------------------------------------------- the FML world generators
@@ -309,7 +355,9 @@ public final class Populate17 {
         }
     }
 
-    /** {@code WorldGeneratorCelestial.generate}. */
+    /**
+     * {@code WorldGeneratorCelestial.generate}.
+     */
     public static void celestial(Body body, PopulateWorld world, long seed, Random rand, int x, int z) {
         Block stone = body.stoneBlock();
         if (stone == null) return;
@@ -328,19 +376,27 @@ public final class Populate17 {
         bedrockOres(body, world, seed, rand, x, z, stone);
     }
 
-    /** {@code WorldGeneratorCelestial.generateNTMOres}. */
+    /**
+     * {@code WorldGeneratorCelestial.generateNTMOres}.
+     */
     private static void ntmOres(PopulateWorld world, Random rand, int x, int z, Block stone, BlockBodyOre.Body meta) {
         if (WorldConfig.alexandriteChance > 0 && rand.nextInt(WorldConfig.alexandriteChance) == 0) {
             generateOre(world, rand, x, z, 1, 3, 10, 5, PopulateWorld.state("hbm:ore_alexandrite"), stone);
         }
 
         BlockState depth = PopulateWorld.state("hbm:stone_depth");
-        DepthDeposit17.generateCondition(world, x, 0, 3, z, 5, 0.6D, PopulateWorld.state("hbm:cluster_depth_iron"), rand, 24, stone, depth);
-        DepthDeposit17.generateCondition(world, x, 0, 3, z, 5, 0.6D, PopulateWorld.state("hbm:cluster_depth_titanium"), rand, 32, stone, depth);
-        DepthDeposit17.generateCondition(world, x, 0, 3, z, 5, 0.6D, PopulateWorld.state("hbm:cluster_depth_tungsten"), rand, 32, stone, depth);
-        DepthDeposit17.generateCondition(world, x, 0, 3, z, 5, 0.8D, PopulateWorld.state("hbm:ore_depth_cinnabar"), rand, 16, stone, depth);
-        DepthDeposit17.generateCondition(world, x, 0, 3, z, 5, 0.8D, PopulateWorld.state("hbm:ore_depth_zirconium"), rand, 16, stone, depth);
-        DepthDeposit17.generateCondition(world, x, 0, 3, z, 5, 0.8D, PopulateWorld.state("hbm:ore_depth_borax"), rand, 16, stone, depth);
+        DepthDeposit17.generateCondition(world, x, 0, 3, z, 5, 0.6D, PopulateWorld.state("hbm:cluster_depth_iron"),
+                rand, 24, stone, depth);
+        DepthDeposit17.generateCondition(world, x, 0, 3, z, 5, 0.6D, PopulateWorld.state("hbm:cluster_depth_titanium"),
+                rand, 32, stone, depth);
+        DepthDeposit17.generateCondition(world, x, 0, 3, z, 5, 0.6D, PopulateWorld.state("hbm:cluster_depth_tungsten"),
+                rand, 32, stone, depth);
+        DepthDeposit17.generateCondition(world, x, 0, 3, z, 5, 0.8D, PopulateWorld.state("hbm:ore_depth_cinnabar"),
+                rand, 16, stone, depth);
+        DepthDeposit17.generateCondition(world, x, 0, 3, z, 5, 0.8D, PopulateWorld.state("hbm:ore_depth_zirconium"),
+                rand, 16, stone, depth);
+        DepthDeposit17.generateCondition(world, x, 0, 3, z, 5, 0.8D, PopulateWorld.state("hbm:ore_depth_borax"), rand,
+                16, stone, depth);
 
         generateOre(world, rand, x, z, WorldConfig.uraniumSpawn, 5, 5, 20, ore("ore_uranium", meta), stone);
         generateOre(world, rand, x, z, WorldConfig.thoriumSpawn, 5, 5, 25, ore("ore_thorium", meta), stone);
@@ -362,12 +418,15 @@ public final class Populate17 {
         generateOre(world, rand, x, z, WorldConfig.cobaltSpawn, 4, 4, 8, ore("ore_cobalt", meta), stone);
 
         generateOre(world, rand, x, z, WorldConfig.ironClusterSpawn, 6, 15, 45, ore("cluster_iron", meta), stone);
-        generateOre(world, rand, x, z, WorldConfig.titaniumClusterSpawn, 6, 15, 30, ore("cluster_titanium", meta), stone);
-        generateOre(world, rand, x, z, WorldConfig.aluminiumClusterSpawn, 6, 15, 35, ore("cluster_aluminium", meta), stone);
+        generateOre(world, rand, x, z, WorldConfig.titaniumClusterSpawn, 6, 15, 30, ore("cluster_titanium", meta),
+                stone);
+        generateOre(world, rand, x, z, WorldConfig.aluminiumClusterSpawn, 6, 15, 35, ore("cluster_aluminium", meta),
+                stone);
         generateOre(world, rand, x, z, WorldConfig.copperClusterSpawn, 6, 15, 20, ore("cluster_copper", meta), stone);
 
         // malachite: commented out in hbm-space
-        generateOre(world, rand, x, z, WorldConfig.limestoneSpawn, 12, 25, 30, PopulateWorld.state("ntmspace:stone_resource_calcium"), stone);
+        generateOre(world, rand, x, z, WorldConfig.limestoneSpawn, 12, 25, 30,
+                PopulateWorld.state("ntmspace:stone_resource_calcium"), stone);
 
         if (rand.nextInt(4) == 0) {
             int rx = x + rand.nextInt(16) + 8;
@@ -377,7 +436,9 @@ public final class Populate17 {
         }
     }
 
-    /** {@code WorldGeneratorCelestial.generateBedrockOres}. */
+    /**
+     * {@code WorldGeneratorCelestial.generateBedrockOres}.
+     */
     private static void bedrockOres(Body body, PopulateWorld world, long seed, Random rand, int x, int z, Block stone) {
         if (rand.nextInt(10) == 0) {
             int randPosX = x + rand.nextInt(2) + 8;
@@ -393,18 +454,24 @@ public final class Populate17 {
 
     // ---------------------------------------------------------------- shared helpers
 
-    /** The state of per-body ore {@code path} on {@code body}, or null while it is not registered. */
+    /**
+     * The state of per-body ore {@code path} on {@code body}, or null while it is not registered.
+     */
     public static BlockState ore(String path, BlockBodyOre.Body body) {
         return BodyOreBlocks.state(path, body);
     }
 
-    /** {@code DungeonToolbox.generateOre(world, rand, x, z, veins, amount, minHeight, variance, ore, meta, target)}. */
+    /**
+     * {@code DungeonToolbox.generateOre(world, rand, x, z, veins, amount, minHeight, variance, ore, meta, target)}.
+     */
     public static void generateOre(PopulateWorld world, Random rand, int x, int z, int veinCount, int amount,
                                    int minHeight, int variance, BlockState ore, Block target) {
         Ores17.generateOre(rand, x, z, veinCount, amount, minHeight, variance, placer(world, ore, target));
     }
 
-    /** {@code WorldGenMinable}'s write: the vein's block where the world holds {@code target}; null to draw only. */
+    /**
+     * {@code WorldGenMinable}'s write: the vein's block where the world holds {@code target}; null to draw only.
+     */
     public static Ores17.Placer placer(PopulateWorld world, BlockState ore, Block target) {
         if (ore == null || target == null) return null;
         return (x, y, z) -> {
@@ -414,7 +481,9 @@ public final class Populate17 {
 
     // ---------------------------------------------------------------- the Pre-event features
 
-    /** hbm-space's {@code MainRegistry} caves and layers, built once from HBM's config as 1.7 built them. */
+    /**
+     * hbm-space's {@code MainRegistry} caves and layers, built once from HBM's config as 1.7 built them.
+     */
     static final class Features {
 
         private static volatile Features instance;
@@ -453,21 +522,28 @@ public final class Populate17 {
             String resource = "hbm:tile.stone_resource";
             int id = 0;
             // EnumStoneType: SULFUR 0, ASBESTOS 1, HEMATITE 2, MALACHITE 3, LIMESTONE 4, BAUXITE 5, CONGLOMERATE 6, CALCIUM 7
-            if (WorldConfig.enableHematite) global.add(new OreLayer3D17(id++, s("hbm:stone_resource_hematite"), 0.04D, 0.25D, 230));
-            if (WorldConfig.enableBauxite) global.add(new OreLayer3D17(id++, s("hbm:stone_resource_bauxite"), 0.03D, 0.15D, 300));
-            if (WorldConfig.enableMalachite) global.add(new OreLayer3D17(id++, s("hbm:stone_resource_malachite"), 0.1D, 0.15D, 275));
+            if (WorldConfig.enableHematite)
+                global.add(new OreLayer3D17(id++, s("hbm:stone_resource_hematite"), 0.04D, 0.25D, 230));
+            if (WorldConfig.enableBauxite)
+                global.add(new OreLayer3D17(id++, s("hbm:stone_resource_bauxite"), 0.03D, 0.15D, 300));
+            if (WorldConfig.enableMalachite)
+                global.add(new OreLayer3D17(id++, s("hbm:stone_resource_malachite"), 0.1D, 0.15D, 275));
 
             Supplier<BlockState> sulfur = s("hbm:stone_resource_sulfur");
             Supplier<BlockState> asbestos = s("hbm:stone_resource_asbestos");
             Supplier<BlockState> acid = s("hbm:sulfuric_acid_block");
             sulfurCave = WorldConfig.enableSulfurCave
-                    ? new OreCave17(resource, 0, sulfur, 1.5D, 20, 20, 30).spikes(s("hbm:stalactite_sulfur"), s("hbm:stalagmite_sulfur"))
+                    ? new OreCave17(resource, 0, sulfur, 1.5D, 20, 20, 30).spikes(s("hbm:stalactite_sulfur"),
+                    s("hbm:stalagmite_sulfur"))
                     : null;
             acidSulfurCave = WorldConfig.enableSulfurCave
-                    ? new OreCave17(resource, 0, sulfur, 1.5D, 20, 20, 30).withFluid(acid).spikes(s("hbm:stalactite_sulfur"), s("hbm:stalagmite_sulfur"))
+                    ? new OreCave17(resource, 0, sulfur, 1.5D, 20, 20, 30).withFluid(acid)
+                                                                          .spikes(s("hbm:stalactite_sulfur"),
+                                                                                  s("hbm:stalagmite_sulfur"))
                     : null;
             asbestosCave = WorldConfig.enableAsbestosCave
-                    ? new OreCave17(resource, 1, asbestos, 1.75D, 20, 20, 25).spikes(s("hbm:stalactite_asbestos"), s("hbm:stalagmite_asbestos"))
+                    ? new OreCave17(resource, 1, asbestos, 1.75D, 20, 20, 25).spikes(s("hbm:stalactite_asbestos"),
+                    s("hbm:stalagmite_asbestos"))
                     : null;
 
             Supplier<BlockState> conglomerate = s("ntmspace:stone_resource_conglomerate");
@@ -482,11 +558,13 @@ public final class Populate17 {
             laytheTumor = new OreCave17("hbm:tile.tumor", 0, s("ntmspace:tumor"), 0.3D, 20, 70, 25)
                     .spikes(s("ntmspace:stalactite_flesh"), s("ntmspace:stalagmite_flesh"));
             // Authored metadata 6 and 3 map to the real dark and light silt states; random draws are unchanged.
-            laytheSilt6 = new OreCave17("hbm:tile.laythe_silt", 6, () -> LaytheTektoBlocks.LAYTHE_SILT.get().defaultBlockState()
-                    .setValue(BlockLaytheSilt.SHADE, 2), 0.25D, 80, 24, 54)
+            laytheSilt6 = new OreCave17("hbm:tile.laythe_silt", 6,
+                    () -> LaytheTektoBlocks.LAYTHE_SILT.get().defaultBlockState()
+                                                       .setValue(BlockLaytheSilt.SHADE, 2), 0.25D, 80, 24, 54)
                     .blockOverride(() -> PopulateWorld.block("ntmspace:laythe_silt")).ignoreWater().noStalagmites();
-            laytheSilt3 = new OreCave17("hbm:tile.laythe_silt", 3, () -> LaytheTektoBlocks.LAYTHE_SILT.get().defaultBlockState()
-                    .setValue(BlockLaytheSilt.SHADE, 1), 0.2D, 60, 14, 58)
+            laytheSilt3 = new OreCave17("hbm:tile.laythe_silt", 3,
+                    () -> LaytheTektoBlocks.LAYTHE_SILT.get().defaultBlockState()
+                                                       .setValue(BlockLaytheSilt.SHADE, 1), 0.2D, 60, 14, 58)
                     .blockOverride(() -> PopulateWorld.block("ntmspace:laythe_silt")).ignoreWater().noStalagmites();
             var caves = new LinkedHashMap<String, OreCave17>();
             if (acidSulfurCave != null) caves.put("ore_cave_sulfur", acidSulfurCave);
@@ -502,22 +580,29 @@ public final class Populate17 {
 
     private static final Map<Long, Noise17Perlin> BEDROCK_NOISE = new ConcurrentHashMap<>();
 
-    /** {@code ItemBedrockOreBase.getOreLevel} for the type with global index {@code index}. */
+    /**
+     * {@code ItemBedrockOreBase.getOreLevel} for the type with global index {@code index}.
+     */
     public static double oreLevel(long worldSeed, int dimension, int x, int z, int index) {
         long seed = worldSeed + dimension;
         Noise17Perlin level = BEDROCK_NOISE.computeIfAbsent(seed, key -> new Noise17Perlin(new Random(key), 4));
-        Noise17Perlin ore = BEDROCK_NOISE.computeIfAbsent(seed - 4096 + index, key -> new Noise17Perlin(new Random(key), 4));
+        Noise17Perlin ore = BEDROCK_NOISE.computeIfAbsent(seed - 4096 + index,
+                key -> new Noise17Perlin(new Random(key), 4));
         double scale = 0.01D;
         double value = Math.abs(level.value(x * scale, z * scale) * ore.value(x * scale, z * scale)) * 0.05;
         return value < 0 ? 0 : (value > 2 ? 2 : value);
     }
 
-    /** {@code GeneralConfig.coltanRate}. */
+    /**
+     * {@code GeneralConfig.coltanRate}.
+     */
     static int coltanRate() {
         return GeneralConfig.coltanRate;
     }
 
-    /** {@code EveTerrain17}'s seismic plains at a block, read under the generator's lock. */
+    /**
+     * {@code EveTerrain17}'s seismic plains at a block, read under the generator's lock.
+     */
     static boolean eveSeismic(@Nullable LayeredBodyTerrain17 terrain, Object lock, int x, int z) {
         if (!(terrain instanceof EveTerrain17 eve)) return false;
         synchronized (lock) {
@@ -525,7 +610,9 @@ public final class Populate17 {
         }
     }
 
-    /** {@code DunaTerrain17.populateOres}, Duna's ore veins. */
+    /**
+     * {@code DunaTerrain17.populateOres}, Duna's ore veins.
+     */
     static void duna(PopulateWorld world, Random rand, int i, int j) {
         Block stone = Body.DUNA.stoneBlock();
         Block basalt = PopulateWorld.block("hbm:basalt");

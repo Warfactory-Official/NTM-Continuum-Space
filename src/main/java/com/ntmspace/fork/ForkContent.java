@@ -14,24 +14,24 @@ import net.minecraft.world.entity.MobCategory;
 import com.hbm.creativetabs.HbmTab;
 import com.hbm.handler.BobmazonOfferFactory;
 import com.hbm.registration.Presets;
+import com.hbm.registration.Reg;
 import com.ntmspace.NtmSpace;
 import dev.golem.core.Ids;
 import dev.golem.core.dejson.Damage;
 import dev.golem.core.registry.DeferredRegister;
 import dev.golem.core.registry.Registrar;
 import dev.golem.core.registry.RegistryObject;
+
 import java.util.List;
+
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.core.registries.Registries;
+import net.minecraft.sounds.SoundEvent;
 import net.minecraft.world.effect.MobEffect;
 import net.minecraft.world.item.ItemStack;
 
 /**
- * hbm-space's non-space fork content that is not a single feature family of its own (fork-content triage,
- * {@code scratchpad/m2/fork-content-triage.md}): the {@code nitan}, {@code flashbang} and {@code slippery} effects,
- * the NITAN flask, the {@code pellet_charged} Bobmazon offer and the {@code [BOMBPL]} placement log. Values are from
- * the hbm-space source; base-HBM behaviour changes go through HBM/Golem hooks and data maps, so they exist only while
- * NTM: Space is installed.
+ * Space-owned effects and items extend HBM through runtime hooks and data patches.
  */
 public final class ForkContent {
 
@@ -47,14 +47,25 @@ public final class ForkContent {
 
     // Effects go on EFFECTS directly: REG.register(Registries.MOB_EFFECT, ...) would read Registries in this static
     // initialiser, which 1.20.1 cannot do in Dejson's plain JVM.
-    /** hbm-space {@code HbmPotion.nitan} ("Ambrosia"). */
-    public static final RegistryObject<MobEffect> NITAN_EFFECT = EFFECTS.register("nitan", () -> new ForkEffects.Nitan());
-    /** hbm-space {@code HbmPotion.flashbang}. */
-    public static final RegistryObject<MobEffect> FLASHBANG_EFFECT = EFFECTS.register("flashbang", () -> new ForkEffects.Flashbang());
-    /** hbm-space {@code HbmPotion.slippery} ("Butterfingers"). */
-    public static final RegistryObject<MobEffect> SLIPPERY_EFFECT = EFFECTS.register("slippery", () -> new ForkEffects.Slippery());
+    /**
+     * hbm-space {@code HbmPotion.nitan} ("Ambrosia").
+     */
+    public static final RegistryObject<MobEffect> NITAN_EFFECT = EFFECTS.register("nitan",
+            () -> new ForkEffects.Nitan());
+    /**
+     * hbm-space {@code HbmPotion.flashbang}.
+     */
+    public static final RegistryObject<MobEffect> FLASHBANG_EFFECT = EFFECTS.register("flashbang",
+            () -> new ForkEffects.Flashbang());
+    /**
+     * hbm-space {@code HbmPotion.slippery} ("Butterfingers").
+     */
+    public static final RegistryObject<MobEffect> SLIPPERY_EFFECT = EFFECTS.register("slippery",
+            () -> new ForkEffects.Slippery());
 
-    /** hbm-space {@code flask_infusion} metadata NITAN, consumables tab, texture {@code flask_nitan}. */
+    /**
+     * hbm-space {@code flask_infusion} metadata NITAN, consumables tab, texture {@code flask_nitan}.
+     */
     public static final RegistryObject<ItemFlaskNitan> FLASK_INFUSION_NITAN = REG.item("flask_infusion_nitan",
             ItemFlaskNitan::new, p -> p).transform(Presets.sprite(NS + ":items/flask_nitan")).tab(HbmTab.CONSUMABLES);
 
@@ -64,82 +75,117 @@ public final class ForkContent {
      * {@code det_cobalt_top}, sides {@code det_nuke}.
      */
     public static final RegistryObject<BlockDetSalt> DET_SALT = REG.block("det_salt",
-                    BlockDetSalt::new,
-                    p -> p.strength(0.1F, 0.0F).requiresCorrectToolForDrops())
-            .transform(Presets.column(NS + ":blocks/det_cobalt_top", "hbm:blocks/det_nuke"))
-            .loot(dev.golem.core.registry.Loot.self()).tag(dev.golem.core.registry.BlockTag.PICKAXE);
-    public static final RegistryObject<net.minecraft.world.item.BlockItem> DET_SALT_ITEM = REG.blockItem(DET_SALT).tab(HbmTab.BOMBS);
+                                                                           BlockDetSalt::new,
+                                                                           p -> p.strength(0.1F, 0.0F).requiresCorrectToolForDrops())
+                                                                   .transform(
+                                                                           Presets.column(NS + ":blocks/det_cobalt_top",
+                                                                                   "hbm:blocks/det_nuke"))
+                                                                   .loot(dev.golem.core.registry.Loot.self())
+                                                                   .tag(dev.golem.core.registry.BlockTag.PICKAXE);
+    public static final RegistryObject<net.minecraft.world.item.BlockItem> DET_SALT_ITEM = REG.blockItem(DET_SALT)
+                                                                                              .tab(HbmTab.BOMBS);
 
     /**
      * hbm-space {@code salted_fallout} (a {@code BlockFallout}, texture {@code ash}, blocks tab): random ticks add 50 RAD
      * to the chunk ({@link SaltedFallout}). Placed by {@link #DET_SALT}'s blast; creative only otherwise.
      */
     public static final RegistryObject<SaltedFallout> SALTED_FALLOUT = REG.block("salted_fallout", SaltedFallout::new,
-                    p -> p.strength(0.1F).sound(net.minecraft.world.level.block.SoundType.SAND).noOcclusion().replaceable()
-                            .forceSolidOn().randomTicks().isValidSpawn((state, level, pos, type) -> false))
-            .transform(Presets.statesOnly("hbm:block/fallout", dev.golem.core.dejson.Variants.simple()))
-            .icon(d -> d.models(dev.golem.core.dejson.Models.blockItem("hbm:block/fallout")))
-            .loot(dev.golem.core.registry.Loot.only("hbm:falloutitem")).tag(dev.golem.core.registry.BlockTag.SHOVEL);
-    public static final RegistryObject<net.minecraft.world.item.BlockItem> SALTED_FALLOUT_ITEM = REG.blockItem(SALTED_FALLOUT)
-            .tab(HbmTab.BLOCKS);
+                                                                                  p -> p.strength(0.1F).sound(net.minecraft.world.level.block.SoundType.SAND).noOcclusion().replaceable()
+                                                                                        .forceSolidOn().randomTicks().isValidSpawn((state, level, pos, type) -> false))
+                                                                          .transform(Presets.statesOnly(
+                                                                                  "hbm:block/fallout",
+                                                                                  dev.golem.core.dejson.Variants.simple()))
+                                                                          .icon(d -> d.models(
+                                                                                  dev.golem.core.dejson.Models.blockItem(
+                                                                                          "hbm:block/fallout")))
+                                                                          .loot(dev.golem.core.registry.Loot.only(
+                                                                                  "hbm:falloutitem"))
+                                                                          .tag(dev.golem.core.registry.BlockTag.SHOVEL);
+    public static final RegistryObject<net.minecraft.world.item.BlockItem> SALTED_FALLOUT_ITEM = REG.blockItem(
+                                                                                                            SALTED_FALLOUT)
+                                                                                                    .tab(HbmTab.BLOCKS);
 
     /**
      * hbm-space {@code nuke_antimatter} ("Antimatter Bomb", {@code NukeAntimatter}, iron, hardness 5, resistance 6000,
      * nuke tab): drawn by its renderer, facing 2..5 like HBM's Balefire Bomb.
      */
-    public static final RegistryObject<com.ntmspace.fork.antimatter.NukeAntimatter> NUKE_ANTIMATTER = REG.block("nuke_antimatter",
-                    com.ntmspace.fork.antimatter.NukeAntimatter::new,
-                    p -> p.strength(5.0F, 6000.0F).sound(net.minecraft.world.level.block.SoundType.METAL)
-                            .requiresCorrectToolForDrops().noOcclusion())
-            .transform(Presets.rendered(dev.golem.core.dejson.Variants.uniformRange("facing", 2, 5)))
-            .loot(dev.golem.core.registry.Loot.self()).tag(dev.golem.core.registry.BlockTag.PICKAXE);
-    public static final RegistryObject<net.minecraft.world.item.BlockItem> NUKE_ANTIMATTER_ITEM = REG.blockItem(NUKE_ANTIMATTER)
-            .tab(HbmTab.BOMBS);
+    public static final RegistryObject<com.ntmspace.fork.antimatter.NukeAntimatter> NUKE_ANTIMATTER = REG.block(
+                                                                                                                 "nuke_antimatter",
+                                                                                                                 com.ntmspace.fork.antimatter.NukeAntimatter::new,
+                                                                                                                 p -> p.strength(5.0F, 6000.0F).sound(net.minecraft.world.level.block.SoundType.METAL)
+                                                                                                                       .requiresCorrectToolForDrops().noOcclusion())
+                                                                                                         .transform(
+                                                                                                                 Presets.rendered(
+                                                                                                                         dev.golem.core.dejson.Variants.uniformRange(
+                                                                                                                                 "facing",
+                                                                                                                                 2,
+                                                                                                                                 5)))
+                                                                                                         .loot(dev.golem.core.registry.Loot.self())
+                                                                                                         .tag(dev.golem.core.registry.BlockTag.PICKAXE);
+    public static final RegistryObject<net.minecraft.world.item.BlockItem> NUKE_ANTIMATTER_ITEM = REG.blockItem(
+                                                                                                             NUKE_ANTIMATTER)
+                                                                                                     .tab(HbmTab.BOMBS);
     public static final RegistryObject<net.minecraft.world.level.block.entity.BlockEntityType<com.ntmspace.fork.antimatter.TileEntityAntimatter>>
-            NUKE_ANTIMATTER_BE = REG.blockEntity("nuke_antimatter", () -> dev.golem.core.registry.BlockEntities.serverTicking(
-                    com.ntmspace.fork.antimatter.TileEntityAntimatter::new, com.ntmspace.fork.antimatter.TileEntityAntimatter::serverTick,
+            NUKE_ANTIMATTER_BE = REG.blockEntity("nuke_antimatter",
+            () -> dev.golem.core.registry.BlockEntities.serverTicking(
+                    com.ntmspace.fork.antimatter.TileEntityAntimatter::new,
+                    com.ntmspace.fork.antimatter.TileEntityAntimatter::serverTick,
                     NUKE_ANTIMATTER.get()));
     public static final RegistryObject<net.minecraft.world.inventory.MenuType<com.ntmspace.fork.antimatter.ContainerNukeAntimatter>>
             NUKE_ANTIMATTER_MENU = REG.menu("nuke_antimatter",
-                    () -> dev.golem.core.gui.Menus.typeWithPos(com.ntmspace.fork.antimatter.ContainerNukeAntimatter::new));
+            () -> dev.golem.core.gui.Menus.typeWithPos(com.ntmspace.fork.antimatter.ContainerNukeAntimatter::new));
 
-    /** Antimatter uses the shared balefire driver and its own entity identity. */
+    /**
+     * Antimatter uses the shared balefire driver and its own entity identity.
+     */
     public static final Registrar.EntityHandle<EntityAntimatterBlast> ANTIMATTER_BLAST =
             REG.entity("entity_antimatter", key -> Entities.build(
                     Entities.noLoot(EntityType.Builder
-                            .<EntityAntimatterBlast>of(
-                                    EntityAntimatterBlast::new,
-                                    MobCategory.MISC))
+                                    .<EntityAntimatterBlast>of(
+                                            EntityAntimatterBlast::new,
+                                            MobCategory.MISC))
                             .sized(0.6F, 1.8F).clientTrackingRange(63).updateInterval(1), key));
 
     /**
      * hbm-space {@code ore_bedrock_oil} off Kerbin ({@link BlockBedrockOilBody}): Tekto's bedrock oil (Tekto crude +
      * hydrogen-rich gas). Unbreakable like HBM's {@code hbm:ore_bedrock_oil}, no item, no drops.
      */
-    public static final RegistryObject<BlockBedrockOilBody> ORE_BEDROCK_OIL = REG.block("ore_bedrock_oil", BlockBedrockOilBody::new,
-                    p -> p.strength(-1.0F, 3600000.0F).noLootTable())
-            .transform(Presets.cubeAll("hbm:blocks/ore_bedrock_oil"));
+    public static final RegistryObject<BlockBedrockOilBody> ORE_BEDROCK_OIL = REG.block("ore_bedrock_oil",
+                                                                                         BlockBedrockOilBody::new,
+                                                                                         p -> p.strength(-1.0F, 3600000.0F).noLootTable())
+                                                                                 .transform(Presets.cubeAll(
+                                                                                         "hbm:blocks/ore_bedrock_oil"));
 
     static {
         BodyOreBlocks.registerFamily("ore_bedrock_oil", ORE_BEDROCK_OIL, "hbm:ore_bedrock_oil");
     }
 
-    /** hbm-space's new bobbleheads ({@link com.ntmspace.fork.bobble.BlockSpaceBobble}): iron, hardness 0, drawn by its renderer. */
+    /**
+     * hbm-space's new bobbleheads ({@link com.ntmspace.fork.bobble.BlockSpaceBobble}): iron, hardness 0, drawn by its renderer.
+     */
     public static final RegistryObject<com.ntmspace.fork.bobble.BlockSpaceBobble> BOBBLEHEAD = REG.block("bobblehead",
-                    com.ntmspace.fork.bobble.BlockSpaceBobble::new,
-                    p -> p.strength(0.0F, 0.0F).sound(net.minecraft.world.level.block.SoundType.METAL).noOcclusion())
-            .transform(Presets.rendered(dev.golem.core.dejson.Variants.uniformRange("rotation", 0, 15)))
-            .loot(dev.golem.core.registry.Loot.nothing());
-    /** One item per type, index = type ordinal (HBM's variant-family order: 1..n-1, then 0 = the block's own item). */
+                                                                                                          com.ntmspace.fork.bobble.BlockSpaceBobble::new,
+                                                                                                          p -> p.strength(0.0F, 0.0F).sound(net.minecraft.world.level.block.SoundType.METAL).noOcclusion())
+                                                                                                  .transform(
+                                                                                                          Presets.rendered(
+                                                                                                                  dev.golem.core.dejson.Variants.uniformRange(
+                                                                                                                          "rotation",
+                                                                                                                          0,
+                                                                                                                          15)))
+                                                                                                  .loot(dev.golem.core.registry.Loot.nothing());
+    /**
+     * One item per type, index = type ordinal (HBM's variant-family order: 1..n-1, then 0 = the block's own item).
+     */
     public static final List<RegistryObject<com.hbm.items.block.ItemBlockDecoVariant>> BOBBLEHEAD_ITEMS = bobbleItems();
     public static final ItemFamily<BlockSpaceBobble.Type,
             ItemBlockDecoVariant> BOBBLEHEAD_FAMILY = ItemFamily.of(
-                    BlockSpaceBobble.Type.class, type -> BOBBLEHEAD_ITEMS.get(type.ordinal()))
-            .joins(ModDecoCrateBlocks.bobblehead_family);
+                                                                        BlockSpaceBobble.Type.class, type -> BOBBLEHEAD_ITEMS.get(type.ordinal()))
+                                                                .joins(ModDecoCrateBlocks.bobblehead_family);
     public static final RegistryObject<net.minecraft.world.level.block.entity.BlockEntityType<com.ntmspace.fork.bobble.BlockSpaceBobble.Bobble>>
             BOBBLEHEAD_BE = REG.blockEntity("bobblehead", () -> dev.golem.core.registry.BlockEntities.type(
-                    (pos, state) -> new com.ntmspace.fork.bobble.BlockSpaceBobble.Bobble(ForkContent.BOBBLEHEAD_BE.get(), pos, state),
-                    BOBBLEHEAD.get()));
+            (pos, state) -> new com.ntmspace.fork.bobble.BlockSpaceBobble.Bobble(ForkContent.BOBBLEHEAD_BE.get(), pos,
+                    state),
+            BOBBLEHEAD.get()));
 
     private static List<RegistryObject<com.hbm.items.block.ItemBlockDecoVariant>> bobbleItems() {
         var types = com.ntmspace.fork.bobble.BlockSpaceBobble.Type.VALUES;
@@ -147,7 +193,8 @@ public final class ForkContent {
         RegistryObject<com.hbm.items.block.ItemBlockDecoVariant>[] items = new RegistryObject[types.length];
         for (int k = 1; k <= types.length; k++) {
             int variant = k % types.length;
-            items[variant] = REG.item(types[variant].id(), p -> new com.hbm.items.block.ItemBlockDecoVariant(BOBBLEHEAD.get(), p, variant,
+            items[variant] = REG.item(types[variant].id(),
+                    p -> new com.hbm.items.block.ItemBlockDecoVariant(BOBBLEHEAD.get(), p, variant,
                             i -> net.minecraft.network.chat.Component.translatable("block.hbm.bobblehead"), null),
                     dev.golem.core.world.Compat::blockDescription);
         }
@@ -156,35 +203,56 @@ public final class ForkContent {
         return members;
     }
 
-    /** hbm-space {@code ItemCassette.TrackType.DISEMBODIED} ("Ducc", {@code alarm.ducc}, loop, 0xb3a8c1, range 50). */
+    /**
+     * hbm-space {@code ItemCassette.TrackType.DISEMBODIED} ("Ducc", {@code alarm.ducc}, loop, 0xb3a8c1, range 50).
+     */
     public static final com.hbm.items.machine.ItemCassette.TrackType TRACK_DISEMBODIED = com.hbm.items.machine.ItemCassette.TrackType.register(
-            NS + ":DISEMBODIED", "Ducc", NS + ":alarm.ducc", com.hbm.items.machine.ItemCassette.SoundType.LOOP, 0xb3a8c1, 50);
-    /** hbm-space {@code TrackType.SUICIDE} ("Xbox Live", {@code alarm.mama}, loop, 0xb3a8c1, range 70). */
+            NS + ":DISEMBODIED", "Ducc", NS + ":alarm.ducc", com.hbm.items.machine.ItemCassette.SoundType.LOOP,
+            0xb3a8c1, 50);
+    /**
+     * hbm-space {@code TrackType.SUICIDE} ("Xbox Live", {@code alarm.mama}, loop, 0xb3a8c1, range 70).
+     */
     public static final com.hbm.items.machine.ItemCassette.TrackType TRACK_SUICIDE = com.hbm.items.machine.ItemCassette.TrackType.register(
-            NS + ":SUICIDE", "Xbox Live", NS + ":alarm.mama", com.hbm.items.machine.ItemCassette.SoundType.LOOP, 0xb3a8c1, 70);
-    public static final RegistryObject<com.hbm.items.machine.ItemCassette> SIREN_TRACK_DISEMBODIED = cassette("siren_track_disembodied", TRACK_DISEMBODIED);
-    public static final RegistryObject<com.hbm.items.machine.ItemCassette> SIREN_TRACK_SUICIDE = cassette("siren_track_suicide", TRACK_SUICIDE);
+            NS + ":SUICIDE", "Xbox Live", NS + ":alarm.mama", com.hbm.items.machine.ItemCassette.SoundType.LOOP,
+            0xb3a8c1, 70);
+    public static final RegistryObject<com.hbm.items.machine.ItemCassette> SIREN_TRACK_DISEMBODIED = cassette(
+            "siren_track_disembodied", TRACK_DISEMBODIED);
+    public static final RegistryObject<com.hbm.items.machine.ItemCassette> SIREN_TRACK_SUICIDE = cassette(
+            "siren_track_suicide", TRACK_SUICIDE);
 
-    /** HBM's cassette registration ({@code ModPowerGenItems}): the plain cassette, its overlay tinted with the track colour. */
-    private static RegistryObject<com.hbm.items.machine.ItemCassette> cassette(String id, com.hbm.items.machine.ItemCassette.TrackType track) {
+    /**
+     * HBM's cassette registration ({@code ModPowerGenItems}): the plain cassette, its overlay tinted with the track colour.
+     */
+    private static RegistryObject<com.hbm.items.machine.ItemCassette> cassette(String id,
+                                                                               com.hbm.items.machine.ItemCassette.TrackType track) {
         return REG.item(id, p -> new com.hbm.items.machine.ItemCassette(p, track), p -> p.stacksTo(1))
-                .transform(Presets.sprite("hbm:items/cassette", "hbm:items/cassette_overlay")
-                        .tints(dev.golem.core.dejson.Tints.constant(-1), dev.golem.core.dejson.Tints.customModelData(0, track.getColor())))
-                .tab(HbmTab.TEMPLATES);
+                  .transform(Presets.sprite("hbm:items/cassette", "hbm:items/cassette_overlay")
+                                    .tints(dev.golem.core.dejson.Tints.constant(-1),
+                                            dev.golem.core.dejson.Tints.customModelData(0, track.getColor())))
+                  .tab(HbmTab.TEMPLATES);
     }
 
     public static final DeferredRegister.Sounds SOUNDS = DeferredRegister.createSounds(NS);
-    private static final Registrar SOUND_REG = Registrar.of(SOUNDS);
-    public static final RegistryObject<net.minecraft.sounds.SoundEvent> ALARM_DUCC = SOUND_REG.sound("alarm.ducc");
-    public static final RegistryObject<net.minecraft.sounds.SoundEvent> ALARM_MAMA = SOUND_REG.sound("alarm.mama");
+    private static final Reg SOUND_REG = Reg.of(SOUNDS);
+    public static final RegistryObject<SoundEvent> ALARM_DUCC = SOUND_REG.sound("alarm.ducc");
+    public static final RegistryObject<SoundEvent> ALARM_MAMA = SOUND_REG.sound("alarm.mama");
+    public static final RegistryObject<SoundEvent> SQUEAKY_PAIN = SOUND_REG.sound("block.squeaky_pain");
 
-    /** hbm-space {@code bomb_caller} metadata 8: "Civilian Airliner." (foil like every designator from the A-bomb on). */
-    public static final RegistryObject<com.hbm.items.tool.ItemBombCaller> BOMB_CALLER_AIRLINER = REG.item("bomb_caller_airliner",
-                    p -> new com.hbm.items.tool.ItemBombCaller(p, NS + ":airliner", "Civilian Airliner.", true, "Rerouted Civilian Traffic!"),
-                    p -> p)
-            .transform(Presets.handheld("hbm:items/bomb_caller")).tab(HbmTab.CONSUMABLES);
+    /**
+     * hbm-space {@code bomb_caller} metadata 8: "Civilian Airliner." (foil like every designator from the A-bomb on).
+     */
+    public static final RegistryObject<com.hbm.items.tool.ItemBombCaller> BOMB_CALLER_AIRLINER = REG.item(
+                                                                                                            "bomb_caller_airliner",
+                                                                                                            p -> new com.hbm.items.tool.ItemBombCaller(p, NS + ":airliner", "Civilian Airliner.", true,
+                                                                                                                    "Rerouted Civilian Traffic!"),
+                                                                                                            p -> p)
+                                                                                                    .transform(
+                                                                                                            Presets.handheld(
+                                                                                                                    "hbm:items/bomb_caller"))
+                                                                                                    .tab(HbmTab.CONSUMABLES);
 
-    private ForkContent() {}
+    private ForkContent() {
+    }
 
     private static boolean started;
 
@@ -214,20 +282,24 @@ public final class ForkContent {
         com.hbm.tileentity.machine.TileEntityDeuteriumExtractor.powerDivisor = 100;
         com.hbm.tileentity.machine.TileEntityDeuteriumExtractor.powerFloorExclusive = 200;
         // hbm-space ItemRag: above 500 RAD a used rag becomes rag_blood instead of rag_piss
-        com.hbm.items.special.ItemRag.USE.register(player -> com.hbm.capability.HbmLivingProps.getRadiation(player) > 500
-                ? BuiltInRegistries.ITEM.getOptional(Ids.of(NS, "rag_blood")).map(ItemStack::new).orElse(ItemStack.EMPTY)
-                : ItemStack.EMPTY);
+        com.hbm.items.special.ItemRag.USE.register(
+                player -> com.hbm.capability.HbmLivingProps.getRadiation(player) > 500
+                        ? BuiltInRegistries.ITEM.getOptional(Ids.of(NS, "rag_blood")).map(ItemStack::new)
+                                                .orElse(ItemStack.EMPTY)
+                        : ItemStack.EMPTY);
         // hbm-space BobmazonOfferFactory: special.add(pellet_charged, STEEL, 16), right after the empty crucible
         BobmazonOfferFactory.OFFERS.register((standard, special) -> {
             ItemStack pellet = BuiltInRegistries.ITEM.getOptional(Ids.of("hbm", "pellet_charged"))
-                    .map(ItemStack::new).orElse(ItemStack.EMPTY);
+                                                     .map(ItemStack::new).orElse(ItemStack.EMPTY);
             if (pellet.isEmpty()) return;
             special.add(indexAfter(special, "crucible"),
                     new BobmazonOfferFactory.Offer(pellet, BobmazonOfferFactory.Requirement.STEEL, 16, 0));
         });
     }
 
-    /** The position after the first offer of {@code hbm:<path>}, or the end of the list. */
+    /**
+     * The position after the first offer of {@code hbm:<path>}, or the end of the list.
+     */
     static int indexAfter(List<BobmazonOfferFactory.Offer> offers, String path) {
         for (int i = 0; i < offers.size(); i++) {
             ItemStack stack = offers.get(i).offer;
@@ -238,7 +310,9 @@ public final class ForkContent {
 
     private static boolean declared;
 
-    /** Dejson: the {@code nitan} damage type (absolute, bypasses armour, allowed in creative). */
+    /**
+     * Dejson: the {@code nitan} damage type (absolute, bypasses armour, allowed in creative).
+     */
     public static void declare() {
         if (declared) return;
         declared = true;
@@ -251,16 +325,21 @@ public final class ForkContent {
             model.addProperty("renderer", NS + ":bobblehead");
             model.addProperty("frame", "machine");
             dev.golem.core.dejson.Dejson.itemDefinition(NS + ":item/" + type.id()).add("model", model);
-            dev.golem.core.dejson.Dejson.itemDefinition(NS + ":item/" + type.id()).addProperty("oversized_in_gui", true);
+            dev.golem.core.dejson.Dejson.itemDefinition(NS + ":item/" + type.id())
+                                        .addProperty("oversized_in_gui", true);
         }
         // hbm-space ItemRenderLibrary nuke_antimatter: inv translate(0, 7, 0) scale(3.25) rotate(180 about X); common
         // blomb_tex on blomb.obj, smooth shading
         dev.golem.core.dejson.Dejson.item(NS, "nuke_antimatter")
-                .definition(com.hbm.items.MachineObjModel.of(NS + ":models/bombs/blomb.obj", NS + ":textures/models/bombs/blomb_tex.png")
-                        .scale(1.0).ty(0.0).yaw(0.0).rawLegacyTransform().noCull()
-                        .itemTranslate(0.0, 0.0, 0.0).itemPreTranslate(0.0, 0.0, 0.0)
-                        .guiTranslate(0.0, 7.0, 0.0).guiScale(3.25).guiRotateStep(180.0, 0.0, 0.0))
-                .oversizedInGui().register();
+                                    .definition(com.hbm.items.MachineObjModel.of(NS + ":models/bombs/blomb.obj",
+                                                           NS + ":textures/models/bombs/blomb_tex.png")
+                                                                             .scale(1.0).ty(0.0).yaw(0.0)
+                                                                             .rawLegacyTransform().noCull()
+                                                                             .itemTranslate(0.0, 0.0, 0.0)
+                                                                             .itemPreTranslate(0.0, 0.0, 0.0)
+                                                                             .guiTranslate(0.0, 7.0, 0.0).guiScale(3.25)
+                                                                             .guiRotateStep(180.0, 0.0, 0.0))
+                                    .oversizedInGui().register();
         dev.golem.core.dejson.Tags.member("damage_type", "minecraft", "bypasses_armor", NS + ":nitan");
         dev.golem.core.dejson.Tags.member("damage_type", "minecraft", "bypasses_effects", NS + ":nitan");
         dev.golem.core.dejson.Tags.member("damage_type", "minecraft", "bypasses_invulnerability", NS + ":nitan");

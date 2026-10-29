@@ -1,0 +1,29 @@
+{
+  "model": {
+    "type": "hbm:machine_obj",
+    "obj": "ntmspace:models/machines/electrolyser_space.obj",
+    "texture": "ntmspace:textures/models/machines/electrolyser.png",
+    "scale": 0.5,
+    "ty": 0.0,
+    "yaw": 0.0,
+    "guiScale": 2.5,
+    "rawLegacyTransform": true,
+    "noCull": true,
+    "itemTranslate": [
+      0.0,
+      0.0,
+      0.0
+    ],
+    "itemPreTranslate": [
+      0.0,
+      0.0,
+      0.0
+    ],
+    "guiTranslate": [
+      -1.0,
+      -1.0,
+      0.0
+    ]
+  },
+  "oversized_in_gui": true
+}

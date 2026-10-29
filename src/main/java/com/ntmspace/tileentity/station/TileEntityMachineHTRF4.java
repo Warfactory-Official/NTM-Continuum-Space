@@ -6,6 +6,7 @@ import com.hbm.inventory.fluid.Fluids;
 import com.hbm.inventory.fluid.tank.FluidTankNTM;
 import com.hbm.lib.DirPos;
 import com.hbm.lib.ForgeDirection;
+import com.hbm.particle.RocketFlameColor;
 import com.hbm.sound.AudioSystem;
 import com.hbm.sound.AudioWrapper;
 import com.hbm.tileentity.MachineCore;
@@ -16,12 +17,15 @@ import com.ntmspace.block.machine.MachinePorts;
 import com.ntmspace.fluid.trait.FT_Rocket;
 import com.ntmspace.orbit.Orbit;
 import com.ntmspace.orbit.Propulsion;
+import com.ntmspace.particle.RocketFlames;
 import com.ntmspace.registry.StationBlocks;
 import com.ntmspace.registry.StationSounds;
 import com.ntmspace.world.SolarSystem;
 import dev.golem.core.data.DataIn;
 import dev.golem.core.data.DataOut;
+
 import java.util.List;
+
 import net.minecraft.ChatFormatting;
 import net.minecraft.core.BlockPos;
 import net.minecraft.network.RegistryFriendlyByteBuf;
@@ -63,7 +67,7 @@ public class TileEntityMachineHTRF4 extends TileEntityMachineBase implements Pro
 
     public TileEntityMachineHTRF4(BlockPos pos, BlockState state) {
         super(StationBlocks.HTRF4_BE.get(), pos, state, 0);
-        tanks = new FluidTankNTM[] {new FluidTankNTM(Fluids.PLASMA_DT, 64000)};
+        tanks = new FluidTankNTM[]{new FluidTankNTM(Fluids.PLASMA_DT, 64000)};
     }
 
     public static void serverTick(Level level, BlockPos pos, BlockState state, TileEntityMachineHTRF4 te) {
@@ -124,10 +128,9 @@ public class TileEntityMachineHTRF4 extends TileEntityMachineBase implements Pro
                 }
 
                 ForgeDirection dir = MachineCore.facing(state).getRotation(ForgeDirection.UP);
-                // 1.7 effectNT "missileContrailf" ("missileContrailbf" for balefire plasma): the fusion flame colours
-                // are the particle port's
                 com.hbm.client.ClientEffects.spawnRocketFlame(level, pos.getX() + dir.offsetX * 12, pos.getY() + 1,
-                        pos.getZ() + dir.offsetZ * 12, 3, dir.offsetX * 10, 0, dir.offsetZ * 10, 40 + level.getRandom().nextInt(40));
+                        pos.getZ() + dir.offsetZ * 12, 3, dir.offsetX * 10, 0, dir.offsetZ * 10,
+                        40 + level.getRandom().nextInt(40), te.contrailType());
             }
         } else {
             te.speed -= 0.05D;
@@ -149,23 +152,28 @@ public class TileEntityMachineHTRF4 extends TileEntityMachineBase implements Pro
         return cachedPorts;
     }
 
-    /** 1.7 {@code getConPos}: the two blocks either side of the far end of the long axis (power). */
+    /**
+     * 1.7 {@code getConPos}: the two blocks either side of the far end of the long axis (power).
+     */
     public DirPos[] getConPos() {
         return conPos(worldPosition, MachineCore.facing(getBlockState()));
     }
 
-    /** {@link #getConPos} for a core at {@code core} facing {@code dir}. */
+    /**
+     * {@link #getConPos} for a core at {@code core} facing {@code dir}.
+     */
     public static DirPos[] conPos(BlockPos core, ForgeDirection dir) {
         ForgeDirection rot = dir.getRotation(ForgeDirection.UP);
         int x = core.getX(), y = core.getY(), z = core.getZ();
-        return new DirPos[] {
+        return new DirPos[]{
                 new DirPos(x - rot.offsetX * 10 + dir.offsetX, y, z - rot.offsetZ * 10 + dir.offsetZ, rot),
                 new DirPos(x - rot.offsetX * 10 - dir.offsetX, y, z - rot.offsetZ * 10 - dir.offsetZ, rot),
         };
     }
 
     private AudioWrapper createAudioLoop() {
-        return AudioSystem.getLoopedSound(StationSounds.LPW_LOOP.get(), SoundSource.BLOCKS, worldPosition.getX(), worldPosition.getY(),
+        return AudioSystem.getLoopedSound(StationSounds.LPW_LOOP.get(), SoundSource.BLOCKS, worldPosition.getX(),
+                worldPosition.getY(),
                 worldPosition.getZ(), 0.25F, 27.5F, 1.0F, 20);
     }
 
@@ -222,7 +230,9 @@ public class TileEntityMachineHTRF4 extends TileEntityMachineBase implements Pro
         return MachineCore.facing(getBlockState()) == ForgeDirection.SOUTH;
     }
 
-    /** 1.7 {@code getRenderBoundingBox} (the renderer draws off-screen, so only Forge 1.20.1 asks). */
+    /**
+     * 1.7 {@code getRenderBoundingBox} (the renderer draws off-screen, so only Forge 1.20.1 asks).
+     */
     public AABB renderBounds() {
         BlockPos p = worldPosition;
         return new AABB(p.getX() - 11, p.getY() - 2, p.getZ() - 11, p.getX() + 12, p.getY() + 3, p.getZ() + 12);
@@ -233,7 +243,9 @@ public class TileEntityMachineHTRF4 extends TileEntityMachineBase implements Pro
         return this;
     }
 
-    /** 1.7 {@code fuelCost * POWER_COST_MULTIPLIER}: an int product, overflowing past 8,589 mB, kept as 1.7 computed it. */
+    /**
+     * 1.7 {@code fuelCost * POWER_COST_MULTIPLIER}: an int product, overflowing past 8,589 mB, kept as 1.7 computed it.
+     */
     public long powerCost() {
         return fuelCost * POWER_COST_MULTIPLIER;
     }
@@ -257,7 +269,9 @@ public class TileEntityMachineHTRF4 extends TileEntityMachineBase implements Pro
     @Override
     public void addErrors(List<Component> errors) {
         if (power < powerCost()) {
-            errors.add(Component.literal(ChatFormatting.RED + " - Insufficient power: needs " + BobMathUtil.getShortNumber(powerCost()) + "HE"));
+            errors.add(Component.literal(
+                    ChatFormatting.RED + " - Insufficient power: needs " + BobMathUtil.getShortNumber(
+                            powerCost()) + "HE"));
         }
         for (FluidTankNTM tank : tanks) {
             if (tank.getFill() < fuelCost) {
@@ -295,7 +309,9 @@ public class TileEntityMachineHTRF4 extends TileEntityMachineBase implements Pro
         return tanks;
     }
 
-    /** 1.7 never subscribed the tank (see the class comment): nothing is received. */
+    /**
+     * 1.7 never subscribed the tank (see the class comment): nothing is received.
+     */
     @Override
     public FluidTankNTM[] getReceivingTanks() {
         return new FluidTankNTM[0];
@@ -314,5 +330,10 @@ public class TileEntityMachineHTRF4 extends TileEntityMachineBase implements Pro
     @Override
     public long getMaxPower() {
         return maxPower;
+    }
+
+    public RocketFlameColor contrailType() {
+        return tanks[0].getTankType() == Fluids.PLASMA_BF
+                ? RocketFlames.BALEFIRE : RocketFlames.FUSION;
     }
 }

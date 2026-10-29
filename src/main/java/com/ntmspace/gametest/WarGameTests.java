@@ -28,10 +28,13 @@ import dev.golem.core.gametest.GameTests;
 import dev.golem.core.registry.Entities;
 import dev.golem.core.world.Compat;
 import io.netty.buffer.Unpooled;
+
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.UUID;
 import java.util.List;
 import java.util.Map;
+
 import net.minecraft.core.BlockPos;
 import net.minecraft.gametest.framework.GameTestHelper;
 import net.minecraft.nbt.CompoundTag;
@@ -53,32 +56,52 @@ public final class WarGameTests {
 
     private static final GameTests.Suite TESTS = SpaceGameTests.TESTS;
 
-    /** CBT_War and CBT_Invasion: saved by name with their progress; synced with the flash (1.7 perma-sync). */
-    public static final GameTests.Function SAVE = TESTS.function("war_traits_save_and_sync", 20, () -> WarGameTests::saveAndSync);
+    /**
+     * CBT_War and CBT_Invasion: saved by name with their progress; synced with the flash (1.7 perma-sync).
+     */
+    public static final GameTests.Function SAVE = TESTS.function("war_traits_save_and_sync", 20,
+            () -> WarGameTests::saveAndSync);
 
-    /** A war projectile: 1.7 travel countdown, impact flash curve, 100-tick impact, damage to the target, split shot. */
+    /**
+     * A war projectile: 1.7 travel countdown, impact flash curve, 100-tick impact, damage to the target, split shot.
+     */
     public static final GameTests.Function PROGRESSION = TESTS.function("war_projectile_progression", 20,
             () -> WarGameTests::progression);
 
-    /** The invasion's countdown, waves by kills, the boss at the final wave, pod bursts and the end on the boss's death. */
+    /**
+     * The invasion's countdown, waves by kills, the boss at the final wave, pod bursts and the end on the boss's death.
+     */
     public static final GameTests.Function WAVES = TESTS.function("invasion_waves_17", 40, () -> WarGameTests::waves);
 
-    /** The saucers an invasion spawns, their 1.7 tier table and what each kill is worth. */
-    public static final GameTests.Function SPAWNS = TESTS.function("invasion_spawns_and_kills", 20, () -> WarGameTests::spawns);
+    /**
+     * The saucers an invasion spawns, their 1.7 tier table and what each kill is worth.
+     */
+    public static final GameTests.Function SPAWNS = TESTS.function("invasion_spawns_and_kills", 20,
+            () -> WarGameTests::spawns);
 
-    /** The angel's death starts an invasion of its body. */
+    /**
+     * The angel's death starts an invasion of its body.
+     */
     public static final GameTests.Function ANGEL = TESTS.function("invasion_angel_death_starts_invasion", 200,
             () -> WarGameTests::angel);
 
-    /** The war controller aims the railgun at the drive's body; a click starts the war, the next fires a projectile. */
-    public static final GameTests.Function CONTROLLER = TESTS.function("war_controller_railgun", 60, () -> WarGameTests::controller);
+    /**
+     * The war controller aims the railgun at the drive's body; a click starts the war, the next fires a projectile.
+     */
+    public static final GameTests.Function CONTROLLER = TESTS.function("war_controller_railgun", 60,
+            () -> WarGameTests::controller);
 
-    /** The siege craft: tier health x25, damage threshold, tier saved by name. */
-    public static final GameTests.Function CRAFT = TESTS.function("war_siege_craft_tier", 20, () -> WarGameTests::craft);
+    /**
+     * The siege craft: tier health x25, damage threshold, tier saved by name.
+     */
+    public static final GameTests.Function CRAFT = TESTS.function("war_siege_craft_tier", 20,
+            () -> WarGameTests::craft);
 
-    private WarGameTests() {}
+    private WarGameTests() {
+    }
 
-    public static void init() {}
+    public static void init() {
+    }
 
     // ------------------------------------------------------------------------------------------------ save / sync
 
@@ -95,23 +118,26 @@ public final class WarGameTests {
         invasion.podBurstCounter = 2;
         invasion.podCooldown = 321;
         invasion.bossSpawned = true;
+        invasion.bossUUID = UUID.randomUUID();
         invasion.warningPlayed = true;
 
         SolarSystemSavedData data = new SolarSystemSavedData();
         data.setTraits("moho", war, invasion);
         Tag tag = SolarSystemSavedData.toTag(data);
         String nbt = tag.toString();
-        for (String expected : new String[] {"\"SPLITSHOT\"", "\"ntmspace:moho\"", "animtime", "podCooldown", "bossSpawned"}) {
+        for (String expected : new String[]{"\"SPLITSHOT\"", "\"ntmspace:moho\"", "animtime", "podCooldown", "boss"}) {
             if (!nbt.contains(expected)) errors.add("save lacks " + expected);
         }
         if (nbt.contains("flashtime")) errors.add("1.7 never saved the flash: " + nbt);
-        Map<Class<? extends CelestialBodyTrait>, CelestialBodyTrait> back = SolarSystemSavedData.fromTag(tag).getTraits("moho");
+        Map<Class<? extends CelestialBodyTrait>, CelestialBodyTrait> back = SolarSystemSavedData.fromTag(tag)
+                                                                                                .getTraits("moho");
         CBT_War war2 = back == null ? null : (CBT_War) back.get(CBT_War.class);
         CBT_Invasion inv2 = back == null ? null : (CBT_Invasion) back.get(CBT_Invasion.class);
         if (war2 == null || war2.health != 64 || war2.shield != 7 || war2.projectiles.size() != 1
                 || war2.projectiles.get(0).getAnimtime() != 12 || war2.projectiles.get(0).getFlashtime() != 0F
                 || war2.projectiles.get(0).getType() != CBT_War.ProjectileType.SPLITSHOT) {
-            errors.add("war round trip " + (war2 == null ? null : war2.health + "/" + war2.shield + " " + war2.projectiles.size()));
+            errors.add(
+                    "war round trip " + (war2 == null ? null : war2.health + "/" + war2.shield + " " + war2.projectiles.size()));
         }
         if (inv2 == null || inv2.wave != 3 || inv2.waveTime != 17.5 || !inv2.isInvading || inv2.kills != 33 || inv2.killreq != 150
                 || inv2.podBurstCounter != 2 || inv2.podCooldown != 321 || !inv2.bossSpawned || !inv2.warningPlayed) {
@@ -141,7 +167,10 @@ public final class WarGameTests {
         Map<Class<? extends CelestialBodyTrait>, CelestialBodyTrait> before = copy(CelestialTraits.getTraits("moho"));
         List<String> errors = new ArrayList<>();
         try {
-            CelestialTraits.setTraits("moho", new HashMap<>(before) {{ remove(CBT_War.class); remove(CBT_Destroyed.class); }});
+            CelestialTraits.setTraits("moho", new HashMap<>(before) {{
+                remove(CBT_War.class);
+                remove(CBT_Destroyed.class);
+            }});
 
             CBT_War war = new CBT_War(100, 0);
             war.launchProjectile(3F, 20, 50, 0F, 55, 20, CBT_War.ProjectileType.SMALL, "ntmspace:moho");
@@ -149,17 +178,20 @@ public final class WarGameTests {
             for (int i = 0; i < 3; i++) war.update(false, "kerbin");
             // the tick it arrives: travel 0, still no animation, so impact() resets the flash to 0
             if (p.getTravel() != 0F || p.getAnimtime() != 0 || p.getFlashtime() != 0F) {
-                errors.add("after 3 ticks travel " + p.getTravel() + " anim " + p.getAnimtime() + " flash " + p.getFlashtime());
+                errors.add(
+                        "after 3 ticks travel " + p.getTravel() + " anim " + p.getAnimtime() + " flash " + p.getFlashtime());
             }
             war.update(false, "kerbin");
             // 1.7 impact(): f += 0.6; f = min(100, f + 0.1 (100 - f) 0.15) = 0.6 + 1.491
             float expected = 0.6F;
             expected = Math.min(100.0F, expected + 0.1F * (100.0F - expected) * 0.15F);
             if (p.getAnimtime() != 1 || p.getFlashtime() != expected) {
-                errors.add("first impact tick anim " + p.getAnimtime() + " flash " + p.getFlashtime() + ", 1.7 1 / " + expected);
+                errors.add(
+                        "first impact tick anim " + p.getAnimtime() + " flash " + p.getFlashtime() + ", 1.7 1 / " + expected);
             }
             for (int i = 0; i < 98; i++) war.update(false, "kerbin");
-            if (war.projectiles.size() != 1 || p.getAnimtime() != 99) errors.add("before the 100th impact tick anim " + p.getAnimtime());
+            if (war.projectiles.size() != 1 || p.getAnimtime() != 99)
+                errors.add("before the 100th impact tick anim " + p.getAnimtime());
             CBT_War target = CelestialTraits.getTrait("moho", CBT_War.class, false);
             if (target != null) errors.add("Moho damaged before the impact ended");
             war.update(false, "kerbin");
@@ -167,14 +199,16 @@ public final class WarGameTests {
             if (!war.projectiles.isEmpty()) errors.add("the projectile outlived its impact");
             // CelestialBody.damage: a body without a war gets CBT_War() (100) and loses the damage (no shield)
             if (target == null || target.health != 50 || target.shield != 0) {
-                errors.add("Moho after one hit: " + (target == null ? "no war" : target.health + "/" + target.shield) + ", 1.7 50/0");
+                errors.add(
+                        "Moho after one hit: " + (target == null ? "no war" : target.health + "/" + target.shield) + ", 1.7 50/0");
             }
 
             // a beaten attacker: the hit destroys the target's planet instead (1.7 reads the attacker's health)
             CBT_War beaten = new CBT_War(0, 0);
             beaten.launchProjectile(0F, 20, 50, 0F, 55, 20, CBT_War.ProjectileType.MEDIUM, "ntmspace:moho");
             for (int i = 0; i < 100; i++) beaten.update(false, "kerbin");
-            if (!CelestialTraits.hasTrait("moho", CBT_Destroyed.class, false)) errors.add("a 0-health war did not destroy Moho");
+            if (!CelestialTraits.hasTrait("moho", CBT_Destroyed.class, false))
+                errors.add("a 0-health war did not destroy Moho");
 
             // the split shot: arriving, it becomes four small shots 20, 30, 40, 50 ticks out, which the same pass of 1.7's
             // loop (it walks on into the appended shots) already moves one tick: 19, 29, 39, 49
@@ -186,7 +220,8 @@ public final class WarGameTests {
                 travels.add(s.getTravel());
                 if (s.getType() != CBT_War.ProjectileType.SMALL) errors.add("split part of type " + s.getType());
             }
-            if (!travels.equals(List.of(19F, 29F, 39F, 49F))) errors.add("split shot travels " + travels + ", 1.7 [19, 29, 39, 49]");
+            if (!travels.equals(List.of(19F, 29F, 39F, 49F)))
+                errors.add("split shot travels " + travels + ", 1.7 [19, 29, 39, 49]");
         } finally {
             CelestialTraits.setTraits("moho", before);
         }
@@ -206,15 +241,24 @@ public final class WarGameTests {
         countdown.prepare();
         if (countdown.waveTime != 5 || countdown.warningPlayed) errors.add("1.7: the warning is due at 5 ticks left");
         for (int i = 0; i < 5; i++) countdown.prepare();
-        if (!countdown.isInvading || countdown.waveTime != 0) errors.add("invading after the countdown: " + countdown.waveTime);
+        if (!countdown.isInvading || countdown.waveTime != 0)
+            errors.add("invading after the countdown: " + countdown.waveTime);
 
         // waves by kills, the boss through the spawner (swapped for a recorder inside this one tick)
         CBT_Invasion.Spawner real = CBT_Invasion.SPAWNER;
         int[] bosses = {0};
         CBT_Invasion.SPAWNER = new CBT_Invasion.Spawner() {
-            @Override public void dropPod(ServerLevel l, CBT_Invasion i) {}
-            @Override public LivingEntity ufo(ServerLevel l, CBT_Invasion i) { return null; }
-            @Override public EntityUFO boss(ServerLevel l, CBT_Invasion i) {
+            @Override
+            public void dropPod(ServerLevel l, CBT_Invasion i) {
+            }
+
+            @Override
+            public LivingEntity ufo(ServerLevel l, CBT_Invasion i) {
+                return null;
+            }
+
+            @Override
+            public EntityUFO boss(ServerLevel l, CBT_Invasion i) {
                 bosses[0]++;
                 return new EntityUFO(ModNtmEntities.UFO.get(), l);
             }
@@ -228,18 +272,22 @@ public final class WarGameTests {
                 inv.kills = step[1] - 1;
                 inv.logicTick(level);
                 if (inv.wave != step[0] || inv.killreq != step[1]) {
-                    errors.add("wave " + step[0] + " needs " + step[1] + " kills: wave " + inv.wave + " req " + inv.killreq);
+                    errors.add(
+                            "wave " + step[0] + " needs " + step[1] + " kills: wave " + inv.wave + " req " + inv.killreq);
                 }
                 inv.kills = step[1];
                 inv.logicTick(level);
-                if (inv.wave != step[0] + 1 || inv.kills != 0) errors.add("wave " + step[0] + " did not end at " + step[1] + " kills");
+                if (inv.wave != step[0] + 1 || inv.kills != 0)
+                    errors.add("wave " + step[0] + " did not end at " + step[1] + " kills");
             }
             inv.logicTick(level);
             inv.logicTick(level);
             if (inv.wave != 4 || inv.killreq != 1 || !inv.bossSpawned || bosses[0] != 1) {
-                errors.add("final wave: wave " + inv.wave + " req " + inv.killreq + " bosses " + bosses[0] + ", 1.7 4 / 1 / one boss");
+                errors.add(
+                        "final wave: wave " + inv.wave + " req " + inv.killreq + " bosses " + bosses[0] + ", 1.7 4 / 1 / one boss");
             }
-            if (inv.getMaxHealth() != 1F || inv.getHealth() != 1F) errors.add("final boss bar " + inv.getHealth() + "/" + inv.getMaxHealth());
+            if (inv.getMaxHealth() != 1F || inv.getHealth() != 1F)
+                errors.add("final boss bar " + inv.getHealth() + "/" + inv.getMaxHealth());
         } finally {
             CBT_Invasion.SPAWNER = real;
         }
@@ -267,8 +315,9 @@ public final class WarGameTests {
                 CBT_Invasion.DROP_POD = realPod;
             }
             if (pods[0] != 3 || burst.podBurstCounter != 0 || burst.podCooldown != 499) {
-                errors.add("wave 1 burst: " + pods[0] + " pods, counter " + burst.podBurstCounter + ", cooldown " + burst.podCooldown
-                        + " after " + calls + " calls; 1.7: 3, 0, 500 then 499");
+                errors.add(
+                        "wave 1 burst: " + pods[0] + " pods, counter " + burst.podBurstCounter + ", cooldown " + burst.podCooldown
+                                + " after " + calls + " calls; 1.7: 3, 0, 500 then 499");
             }
             check(helper, errors);
         });
@@ -288,7 +337,8 @@ public final class WarGameTests {
                 {0.50F, 0.2F, SiegeTier.GOLD}, {0.80F, 0.2F, SiegeTier.DESH}, {0.90F, 0.2F, SiegeTier.SCHRAB}};
         for (Object[] row : table) {
             SiegeTier got = Invasions.smallTier((Float) row[0], (Float) row[1]);
-            if (got != row[2]) errors.add("roll " + row[0] + " factor " + row[1] + ": " + got.name + ", 1.7 " + ((SiegeTier) row[2]).name);
+            if (got != row[2]) errors.add(
+                    "roll " + row[0] + " factor " + row[1] + ": " + got.name + ", 1.7 " + ((SiegeTier) row[2]).name);
         }
 
         // kills: a small saucer 1 (2 from GOLD up), the craft 10, anything else 0; the UFO ends the final wave only
@@ -299,12 +349,15 @@ public final class WarGameTests {
         EntitySiegeCraft craft = Entities.createDetached(WarContent.SIEGE_CRAFT.get(), level);
         craft.setTier(SiegeTier.IRON);
         LivingEntity ufo = Entities.createDetached(ModNtmEntities.UFO.get(), level);
-        if (Invasions.kills(stone) != 1 || Invasions.kills(gold) != 2 || Invasions.kills(craft) != 10 || Invasions.kills(ufo) != 0) {
-            errors.add("kill values " + Invasions.kills(stone) + "/" + Invasions.kills(gold) + "/" + Invasions.kills(craft) + "/"
+        if (Invasions.kills(stone) != 1 || Invasions.kills(gold) != 2 || Invasions.kills(
+                craft) != 10 || Invasions.kills(ufo) != 0) {
+            errors.add("kill values " + Invasions.kills(stone) + "/" + Invasions.kills(gold) + "/" + Invasions.kills(
+                    craft) + "/"
                     + Invasions.kills(ufo) + ", 1.7 1/2/10/0");
         }
         CBT_Invasion.KillValue kills = CBT_Invasion.KILLS;
-        if (kills == null || !kills.endsInvasion(ufo, 4) || kills.endsInvasion(ufo, 3) || kills.endsInvasion(craft, 4)) {
+        if (kills == null || !kills.endsInvasion(ufo, 4) || kills.endsInvasion(ufo, 3) || kills.endsInvasion(craft,
+                4)) {
             errors.add("only the UFO's death in wave 4 ends the invasion");
         }
 
@@ -313,11 +366,19 @@ public final class WarGameTests {
         Map<Class<? extends CelestialBodyTrait>, CelestialBodyTrait> before = copy(CelestialTraits.getTraits("moho"));
         try {
             CBT_Invasion inv = new CBT_Invasion(4, 1000, false);
+            inv.bossSpawned = true;
+            inv.bossUUID = ufo.getUUID();
             CelestialTraits.modifyTraits("moho", inv);
             inv.onKill(craft, "moho");
             if (inv.kills != 10) errors.add("a craft kill counted " + inv.kills);
+            var unrelated = Entities.createDetached(ModNtmEntities.UFO.get(), level);
+            inv.onKill(unrelated, "moho");
+            if (!CelestialTraits.hasTrait("moho", CBT_Invasion.class, false)) {
+                errors.add("an unrelated UFO ended the invasion");
+            }
             inv.onKill(ufo, "moho");
-            if (CelestialTraits.hasTrait("moho", CBT_Invasion.class, false)) errors.add("the boss's death did not end the invasion");
+            if (CelestialTraits.hasTrait("moho", CBT_Invasion.class, false))
+                errors.add("the boss's death did not end the invasion");
         } finally {
             CelestialTraits.setTraits("moho", before);
         }
@@ -336,10 +397,12 @@ public final class WarGameTests {
                 boolean near = false;
                 for (ServerPlayer p : level.players()) {
                     double dy = spawned.getY() - p.getY();
-                    if (dy >= 30 && dy < 50 && Math.abs(spawned.getX() - p.getX()) < 200 && Math.abs(spawned.getZ() - p.getZ()) < 200) near = true;
+                    if (dy >= 30 && dy < 50 && Math.abs(spawned.getX() - p.getX()) < 200 && Math.abs(
+                            spawned.getZ() - p.getZ()) < 200) near = true;
                 }
                 if (!near) errors.add("saucer at " + spawned.position() + " is 30..49 over no player");
-                if (!(spawned instanceof EntitySiegeUFO)) errors.add("wave 1 spawned a " + spawned.getType() + ", 1.7 only small saucers");
+                if (!(spawned instanceof EntitySiegeUFO))
+                    errors.add("wave 1 spawned a " + spawned.getType() + ", 1.7 only small saucers");
                 spawned.discard();
             }
         } finally {
@@ -384,11 +447,13 @@ public final class WarGameTests {
             if (invasion == null) {
                 result.add("no invasion on " + CelestialTraits.bodyOf(level) + " after the angel's death");
             } else if (invasion.isInvading || invasion.waveTime <= 0 || invasion.waveTime > 122) {
-                result.add("invasion " + invasion.wave + " invading " + invasion.isInvading + " countdown " + invasion.waveTime
-                        + ", 1.7 CBT_Invasion(0, 122, false)");
+                result.add(
+                        "invasion " + invasion.wave + " invading " + invasion.isInvading + " countdown " + invasion.waveTime
+                                + ", 1.7 CBT_Invasion(0, 122, false)");
             }
             Invasions.stop(level);
-            if (CelestialTraits.hasTrait(level, CBT_Invasion.class)) result.add("the test could not remove the invasion");
+            if (CelestialTraits.hasTrait(level, CBT_Invasion.class))
+                result.add("the test could not remove the invasion");
             KerbinInvasion.release(owner);
             done[0] = true;
             check(helper, result);
@@ -414,9 +479,12 @@ public final class WarGameTests {
         private static @org.jspecify.annotations.Nullable ServerLevel ownerLevel;
         private static long claimedAt;
 
-        private KerbinInvasion() {}
+        private KerbinInvasion() {
+        }
 
-        /** True when {@code who} owns Kerbin's invasion now (it already did, or nobody did). Server thread only. */
+        /**
+         * True when {@code who} owns Kerbin's invasion now (it already did, or nobody did). Server thread only.
+         */
         static boolean claim(ServerLevel level, Object who) {
             long now = level.getGameTime();
             if (owner == who) return true;
@@ -455,7 +523,9 @@ public final class WarGameTests {
         te.setItem(2, chip);
         te.setItem(1, new ItemStack(RocketItems.drive(DriveBody.MUN)));
         Map<Class<? extends CelestialBodyTrait>, CelestialBodyTrait> before = copy(CelestialTraits.getTraits("mun"));
-        CelestialTraits.setTraits("mun", new HashMap<>(before) {{ remove(CBT_War.class); }});
+        CelestialTraits.setTraits("mun", new HashMap<>(before) {{
+            remove(CBT_War.class);
+        }});
 
         // setpos through the control packet path
         CompoundTag setpos = new CompoundTag();
@@ -506,7 +576,8 @@ public final class WarGameTests {
             }
             railgun.onClick(level, 0, 0);
             CBT_War war = CelestialTraits.getTrait("mun", CBT_War.class, false);
-            if (war == null || war.projectiles.size() != 1 || war.projectiles.get(0).getType() != CBT_War.ProjectileType.SMALL
+            if (war == null || war.projectiles.size() != 1 || war.projectiles.get(0)
+                                                                             .getType() != CBT_War.ProjectileType.SMALL
                     || war.projectiles.get(0).getTravel() != 100F || war.projectiles.get(0).getDamage() != 50
                     || !"ntmspace:mun".equals(war.projectiles.get(0).getTarget())) {
                 errors.add("the second click must fire one small projectile (travel 100, damage 50) at ntmspace:mun");
@@ -537,9 +608,11 @@ public final class WarGameTests {
         if (craft.getMaxHealth() != 500 * 25 || craft.getHealth() != craft.getMaxHealth()) {
             errors.add("DNT craft health " + craft.getMaxHealth() + ", 1.7 12500");
         }
-        if (craft.getBbWidth() != 7F || craft.getBbHeight() != 1F || !craft.fireImmune()) errors.add("1.7 7 x 1, fireproof");
+        if (craft.getBbWidth() != 7F || craft.getBbHeight() != 1F || !craft.fireImmune())
+            errors.add("1.7 7 x 1, fireproof");
         CompoundTag saved = Entities.saveToTag(craft);
-        if (!"dnt".equals(dev.golem.core.data.Tags.getStringOr(saved, "siegeTier", ""))) errors.add("tier not saved by name: " + saved);
+        if (!"dnt".equals(dev.golem.core.data.Tags.getStringOr(saved, "siegeTier", "")))
+            errors.add("tier not saved by name: " + saved);
         EntitySiegeCraft loaded = Entities.createDetached(WarContent.SIEGE_CRAFT.get(), level);
         Entities.loadFromTag(loaded, saved);
         if (loaded.getTier() != SiegeTier.DNT) errors.add("tier round trip " + loaded.getTier().name);
@@ -565,11 +638,14 @@ public final class WarGameTests {
     private static Map<Class<? extends CelestialBodyTrait>, CelestialBodyTrait> copy(
             Map<Class<? extends CelestialBodyTrait>, CelestialBodyTrait> traits) {
         Map<Class<? extends CelestialBodyTrait>, CelestialBodyTrait> out = new HashMap<>();
-        for (Map.Entry<Class<? extends CelestialBodyTrait>, CelestialBodyTrait> e : traits.entrySet()) out.put(e.getKey(), e.getValue().copy());
+        for (Map.Entry<Class<? extends CelestialBodyTrait>, CelestialBodyTrait> e : traits.entrySet())
+            out.put(e.getKey(), e.getValue().copy());
         return out;
     }
 
-    /** Inside {@code succeedWhen}: throws on errors (logged), returns otherwise so the test succeeds. */
+    /**
+     * Inside {@code succeedWhen}: throws on errors (logged), returns otherwise so the test succeeds.
+     */
     private static void check(GameTestHelper helper, List<String> errors) {
         if (errors.isEmpty()) return;
         String message = String.join("; ", errors);

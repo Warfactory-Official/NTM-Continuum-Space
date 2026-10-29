@@ -1,6 +1,9 @@
 package com.ntmspace.fork.client;
 
 import com.hbm.blocks.ModPneumaticBlocks;
+import com.hbm.client.jetpack.JetpackClientVisuals;
+import com.hbm.client.render.BeamPronter;
+import dev.golem.core.client.Tooltips;
 import net.minecraft.ChatFormatting;
 import net.minecraft.network.chat.Component;
 
@@ -14,17 +17,21 @@ import net.minecraft.network.chat.Component;
  */
 public final class ForkBaseClient {
 
-    private ForkBaseClient() {}
+    private ForkBaseClient() {
+    }
 
     private static boolean started;
 
     public static synchronized void init() {
         if (started) return;
         started = true;
-        com.hbm.client.jetpack.JetpackClientVisuals.relaxWhileRiding = true;
-        dev.golem.core.client.Tooltips.onItemTooltip((stack, lines) -> {
+        JetpackClientVisuals.relaxWhileRiding = true;
+        JetpackClientVisuals.directionalArmorPose = true;
+        BeamPronter.alpha = 0.5F;
+        Tooltips.onItemTooltip((stack, lines) -> {
             if (stack.is(ModPneumaticBlocks.PNEUMATIC_TUBE.get().asItem())) {
-                lines.add(Component.translatable("block.ntmspace.pneumatic_tube.desc_gas").withStyle(ChatFormatting.YELLOW));
+                lines.add(Component.translatable("block.ntmspace.pneumatic_tube.desc_gas")
+                                   .withStyle(ChatFormatting.YELLOW));
             }
         });
     }

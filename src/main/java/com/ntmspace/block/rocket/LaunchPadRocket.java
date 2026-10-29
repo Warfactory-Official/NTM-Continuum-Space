@@ -14,9 +14,14 @@ import com.hbm.items.ModFuelItems;
 import com.hbm.lib.ForgeDirection;
 import com.hbm.util.BobMathUtil;
 import com.ntmspace.orbit.Orbit;
+import com.ntmspace.registry.RocketBlocks;
 import com.ntmspace.tileentity.rocket.TileEntityLaunchPadRocket;
+import dev.golem.core.data.Tags;
+import dev.golem.core.world.ItemStacks;
+
 import java.util.ArrayList;
 import java.util.List;
+
 import net.minecraft.ChatFormatting;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
@@ -24,6 +29,8 @@ import net.minecraft.network.chat.Component;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.InteractionResult;
 import net.minecraft.world.entity.player.Player;
+import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.level.BlockGetter;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.block.Block;
@@ -45,6 +52,17 @@ public class LaunchPadRocket extends BlockMultiblockMachine implements ILookOver
 
     public static final BooleanProperty LADDER = BooleanProperty.create("ladder");
     private static final AABB[] LADDER_BOXES = new AABB[4];
+    private static final int[][] TOWER = {{2, -4}, {2, -5}, {2, -6}, {3, -4}, {4, -4}, {3, -6}, {4, -6}};
+    private static final int[][] WALKWAY = walkway();
+
+    private static int[][] walkway() {
+        var cells = new int[19][2];
+        cells[0] = new int[]{2, -3};
+        int next = 1;
+        for (int x = -1; x <= 1; x++)
+            for (int z = -1; z >= -6; z--) cells[next++] = new int[]{-x, z};
+        return cells;
+    }
 
     static {
         for (var facing : Direction.Plane.HORIZONTAL) {
@@ -68,7 +86,7 @@ public class LaunchPadRocket extends BlockMultiblockMachine implements ILookOver
     @Override
     protected BlockState cellStateFor(int localX, int localY, int localZ, Direction facing, int shapeId) {
         return super.cellStateFor(localX, localY, localZ, facing, shapeId)
-                .setValue(LADDER, localZ == -5 && localX == (localY >= 3 ? 2 : 6));
+                    .setValue(LADDER, localZ == -5 && localX == (localY >= 3 ? 2 : 6));
     }
 
     public @Nullable AABB climbBox(BlockState state) {
@@ -80,18 +98,27 @@ public class LaunchPadRocket extends BlockMultiblockMachine implements ILookOver
         return new TileEntityLaunchPadRocket(pos, state);
     }
 
-    @Override public int[] getDimensions() { return new int[] {2, 0, 7, 6, 6, 6}; }
-    @Override public int getOffset() { return 6; }
+    @Override
+    public int[] getDimensions() {
+        return new int[]{2, 0, 7, 6, 6, 6};
+    }
+
+    @Override
+    public int getOffset() {
+        return 6;
+    }
 
     @Override
     protected void visitCells(BlockPos core, Direction facing, CellVisitor visitor) {
         ForgeDirection dir = ForgeDirection.getOrientation(facing);
 
         // Main body
-        MultiblockHandlerXR.visitBox(core, new int[] {2, 0, 6, 6, 4, 4}, facing, visitor);
+        MultiblockHandlerXR.visitBox(core, new int[]{2, 0, 6, 6, 4, 4}, facing, visitor);
 
-        MultiblockHandlerXR.visitBox(core.offset(-dir.offsetX * 2, 0, -dir.offsetZ * 2), new int[] {2, 0, 4, 0, 6, 6}, facing, visitor);
-        MultiblockHandlerXR.visitBox(core.offset(dir.offsetX * 2, 0, dir.offsetZ * 2), new int[] {2, 0, 0, 4, 6, 6}, facing, visitor);
+        MultiblockHandlerXR.visitBox(core.offset(-dir.offsetX * 2, 0, -dir.offsetZ * 2), new int[]{2, 0, 4, 0, 6, 6},
+                facing, visitor);
+        MultiblockHandlerXR.visitBox(core.offset(dir.offsetX * 2, 0, dir.offsetZ * 2), new int[]{2, 0, 0, 4, 6, 6},
+                facing, visitor);
 
         // Inputs, open on their back face
         int mask = maskOf(MultiblockMaskTable.toLocal(facing.getOpposite(), facing));
@@ -100,7 +127,81 @@ public class LaunchPadRocket extends BlockMultiblockMachine implements ILookOver
         }
     }
 
-    /** 1.7's 12 + 1 input cells (and the cells its {@code getConPos} reached from behind them). */
+    @Override
+    public void visitPlacedCells(BlockGetter level, BlockPos core, Direction facing, CellVisitor visitor) {
+        visitCells(core, facing, visitor);
+        if (level.getBlockEntity(core) instanceof TileEntityLaunchPadRocket pad)
+            visitTower(core, facing, pad.towerHeight(), visitor);
+    }
+
+    @Override
+    public void visitPlacementCells(BlockPos core, Direction facing, ItemStack stack, CellVisitor visitor) {
+        visitCells(core, facing, visitor);
+        var data = ItemStacks.blockEntityData(stack, RocketBlocks.LAUNCH_PAD_ROCKET_BE.get());
+        if (data != null) visitTower(core, facing, Tags.getIntOr(data, "tower", 0), visitor);
+    }
+
+    public static void visitTower(BlockPos core, Direction facing, int height, CellVisitor visitor) {
+        if (height <= 8) return;
+        var pos = new BlockPos.MutableBlockPos();
+        for (int y = 3; y < height + 3; y++)
+            for (int[] column : TOWER) visitTowerCell(core, facing, column, y, pos, visitor);
+        for (int[] cell : WALKWAY) visitTowerCell(core, facing, cell, height + 2, pos, visitor);
+    }
+
+    private static void visitTowerCell(BlockPos core, Direction facing, int[] cell, int y,
+                                       BlockPos.MutableBlockPos pos, CellVisitor visitor) {
+        visitor.cell(pos.setWithOffset(core, MultiblockMaskTable.worldX(cell[0], y, cell[1], facing), y,
+                MultiblockMaskTable.worldZ(cell[0], y, cell[1], facing)), MASK_NONE);
+    }
+
+    private static boolean contains(int[][] cells, int x, int z) {
+        for (int[] cell : cells) if (cell[0] == x && cell[1] == z) return true;
+        return false;
+    }
+
+    @Override
+    public boolean claimsCell(BlockGetter level, BlockPos core, BlockPos cell, Direction facing) {
+        if (super.claimsCell(level, core, cell, facing)) return true;
+        if (!(level.getBlockEntity(core) instanceof TileEntityLaunchPadRocket pad)) return false;
+        int y = cell.getY() - core.getY(), height = pad.towerHeight();
+        if (height <= 8 || y < 3 || y > height + 2) return false;
+        int dx = cell.getX() - core.getX(), dz = cell.getZ() - core.getZ();
+        int x = MultiblockMaskTable.localX(dx, y, dz, facing), z = MultiblockMaskTable.localZ(dx, y, dz, facing);
+        return contains(TOWER, x, z) || y == height + 2 && contains(WALKWAY, x, z);
+    }
+
+    @Override
+    public @Nullable BlockPos findClientCore(BlockGetter level, BlockPos cell) {
+        var facing = level.getBlockState(cell).getValue(FACING);
+        var ladder = new BlockPos.MutableBlockPos();
+        for (int[][] layer : new int[][][]{TOWER, WALKWAY})
+            for (int[] xz : layer) {
+                int x = 2 - xz[0], z = -5 - xz[1];
+                ladder.setWithOffset(cell, MultiblockMaskTable.worldX(x, 0, z, facing), 0,
+                        MultiblockMaskTable.worldZ(x, 0, z, facing));
+                if (!isLadder(level, ladder, cell)) continue;
+                int foot = ladder.getY();
+                while (isLadder(level, ladder.setY(foot - 1), cell)) foot--;
+                var core = new BlockPos(ladder.getX() - MultiblockMaskTable.worldX(2, 0, -5, facing), foot - 3,
+                        ladder.getZ() - MultiblockMaskTable.worldZ(2, 0, -5, facing));
+                if (MultiblockSurface.coreClaims(level, core, cell)) return core;
+            }
+        return super.findClientCore(level, cell);
+    }
+
+    private boolean isLadder(BlockGetter level, BlockPos pos, BlockPos from) {
+        if (level instanceof Level world) {
+            if (world.isOutsideBuildHeight(pos) || !world.hasChunkAt(pos)) return false;
+        } else if (Math.max(Math.abs(pos.getX() - from.getX()), Math.max(Math.abs(pos.getY() - from.getY()),
+                Math.abs(pos.getZ() - from.getZ()))) > MultiblockSurface.REGION_REACH) return false;
+        var state = level.getBlockState(pos);
+        return state.is(this) && state.getValue(LADDER);
+    }
+
+    /**
+     * 1.7's 12 + 1 input cells (and the cells its {@code getConPos} reached from behind them).
+     */
     public static List<BlockPos> inputs(BlockPos core, Direction facing) {
         ForgeDirection dir = ForgeDirection.getOrientation(facing);
         ForgeDirection rot = dir.getRotation(ForgeDirection.UP);
@@ -144,7 +245,9 @@ public class LaunchPadRocket extends BlockMultiblockMachine implements ILookOver
         };
     }
 
-    /** A tower or platform cell at {@code at}, owned by the pad at {@code core}. */
+    /**
+     * A tower or platform cell at {@code at}, owned by the pad at {@code core}.
+     */
     public void placeDynamicCell(Level level, BlockPos core, BlockPos at) {
         if (!(level instanceof ServerLevel server)) return;
         BlockPos pos = at.immutable();
@@ -167,7 +270,8 @@ public class LaunchPadRocket extends BlockMultiblockMachine implements ILookOver
     }
 
     @Override
-    protected InteractionResult useAtCore(BlockState state, Level level, BlockPos core, Player player, BlockHitResult hit) {
+    protected InteractionResult useAtCore(BlockState state, Level level, BlockPos core, Player player,
+                                          BlockHitResult hit) {
         if (Orbit.inOrbit(level)) return InteractionResult.TRY_WITH_EMPTY_HAND;
         return super.useAtCore(state, level, core, player, hit);
     }
@@ -193,13 +297,15 @@ public class LaunchPadRocket extends BlockMultiblockMachine implements ILookOver
 
         for (FluidTankNTM tank : pad.tanks) {
             if (tank.getTankType() == Fluids.NONE) continue;
-            text.add(ChatFormatting.GREEN + "-> " + ChatFormatting.RESET + tank.getTankType().getDisplayNameString() + ": "
+            text.add(ChatFormatting.GREEN + "-> " + ChatFormatting.RESET + tank.getTankType()
+                                                                               .getDisplayNameString() + ": "
                     + tank.getFill() + "/" + tank.getMaxFill() + "mB");
         }
 
         if (pad.solidFuel.max > 0) {
             text.add(ChatFormatting.GREEN + "-> " + ChatFormatting.RESET
-                    + ModFuelItems.rocket_fuel.get().getName(ModFuelItems.rocket_fuel.get().getDefaultInstance()).getString()
+                    + ModFuelItems.rocket_fuel.get().getName(ModFuelItems.rocket_fuel.get().getDefaultInstance())
+                                              .getString()
                     + ": " + pad.solidFuel.level + "/" + pad.solidFuel.max + "kg");
         }
 

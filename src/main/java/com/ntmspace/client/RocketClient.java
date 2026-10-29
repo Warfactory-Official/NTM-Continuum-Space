@@ -24,7 +24,8 @@ import net.minecraft.client.player.LocalPlayer;
  */
 public final class RocketClient {
 
-    private RocketClient() {}
+    private RocketClient() {
+    }
 
     public static void init() {
         ClientRegistrations.screens(screens -> {
@@ -43,7 +44,6 @@ public final class RocketClient {
         DriveProcessorClient.init();
         ItemVOTVdrive.clientLevel = () -> Minecraft.getInstance().level;
         ClientTicks.onEndTick(RocketClient::tick);
-        dev.golem.core.client.Tooltips.onItemTooltip(RocketClient::partStats);
         // hbm-space ModEventHandlerRenderer: third person zoomed out to 12 blocks while inside a rocket
         dev.golem.core.client.CameraHooks.DISTANCE.register((player, distance) ->
                 player.getVehicle() instanceof EntityRideableRocket ? 12.0F : distance);
@@ -57,42 +57,16 @@ public final class RocketClient {
      * translated to the player, so the pivot is the camera, not the player: odd, kept (the rider swings with the rocket's
      * turn as seen from the camera).
      */
-    private static void tiltRider(net.minecraft.world.entity.player.Player player, com.mojang.blaze3d.vertex.PoseStack pose,
+    private static void tiltRider(net.minecraft.world.entity.player.Player player,
+                                  com.mojang.blaze3d.vertex.PoseStack pose,
                                   float partialTick) {
         if (!(player.getVehicle() instanceof EntityRideableRocket rocket)) return;
-        float pitch = rocket.getPitch(1.0F);
+        float pitch = rocket.getXRot();
         if (pitch == 0.0F) return;
         net.minecraft.world.phys.Vec3 d = dev.golem.core.client.PlayerRenderHooks.renderOffset(player, partialTick);
         pose.translate(-d.x, -d.y, -d.z);
         pose.mulPose(com.mojang.math.Axis.ZP.rotationDegrees(-pitch));
         pose.translate(d.x, d.y, d.z);
-    }
-
-    /**
-     * hbm-space's rocket stats in a missile part's tooltip (its {@code ItemCustomMissilePart.addInformation}: mass for
-     * warheads and fuselages, thrust, ISP and mass for thrusters). HBM's own lines stay as 1.7 wrote them (tonnes,
-     * litres), these follow; hbm-space replaced HBM's weight line instead.
-     */
-    private static void partStats(net.minecraft.world.item.ItemStack stack, java.util.List<net.minecraft.network.chat.Component> lines) {
-        if (!(stack.getItem() instanceof com.hbm.items.weapon.ItemCustomMissilePart)) return;
-        com.ntmspace.rocket.RocketPart part = com.ntmspace.rocket.RocketParts.get(stack);
-        if (part == null) return;
-        switch (part.type()) {
-            case THRUSTER -> {
-                lines.add(stat("thrust", part.getThrust() + "N"));
-                lines.add(stat("isp", part.getISP() + "s"));
-                lines.add(stat("mass", part.mass() + "kg"));
-            }
-            case WARHEAD, FUSELAGE -> lines.add(stat("mass", part.mass() + "kg"));
-            default -> {}
-        }
-    }
-
-    private static net.minecraft.network.chat.Component stat(String key, String value) {
-        return net.minecraft.network.chat.Component.translatable("item.missile.part." + key).append(": ")
-                .withStyle(net.minecraft.ChatFormatting.GRAY, net.minecraft.ChatFormatting.BOLD)
-                .append(net.minecraft.network.chat.Component.literal(value).withStyle(style -> style.withBold(false)
-                        .withColor(net.minecraft.ChatFormatting.GRAY)));
     }
 
     private static void tick() {

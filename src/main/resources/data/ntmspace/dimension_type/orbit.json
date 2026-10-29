@@ -9,6 +9,8 @@
       }
     },
     "minecraft:gameplay/respawn_anchor_works": false,
+    "minecraft:visual/sun_angle": 0.0,
+    "minecraft:visual/sky_light_factor": 1.0,
     "minecraft:visual/cloud_color": "#00ffffff",
     "minecraft:visual/fog_color": "#000000",
     "minecraft:visual/sky_color": "#000000",
@@ -26,7 +28,8 @@
     }
   },
   "coordinate_scale": 1.0,
-  "default_clock": "minecraft:overworld",
+  "has_fixed_time": true,
+  "default_clock": "ntmspace:orbit",
   "has_ceiling": false,
   "has_ender_dragon_fight": false,
   "has_skylight": true,
@@ -36,5 +39,5 @@
   "min_y": 0,
   "monster_spawn_block_light_limit": 0,
   "monster_spawn_light_level": 0,
-  "timelines": "#minecraft:in_overworld"
+  "timelines": []
 }

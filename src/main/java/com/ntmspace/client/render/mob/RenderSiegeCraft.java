@@ -16,7 +16,9 @@ import dev.golem.core.render.CompatRenderTypes;
 import dev.golem.core.render.SubmitSink;
 import dev.golem.core.render.Vertexes;
 import dev.golem.core.render.gem.Geometry;
+
 import java.util.Random;
+
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.player.LocalPlayer;
 import net.minecraft.client.renderer.entity.EntityRendererProvider;
@@ -67,7 +69,7 @@ public class RenderSiegeCraft extends CompatEntityRenderer<EntitySiegeCraft, Ren
         state.spin = (entity.tickCount + partialTicks) * 5 % 360D;
         state.alive = entity.isAlive();
         state.tilt = entity.deathTime + partialTicks;
-        state.health = entity.getMaxHealth() > 0 ? entity.getHealth() / entity.getMaxHealth() : 0F;
+        state.health = entity.getHealth() / entity.getMaxHealth();
         state.beam = entity.getBeam();
         state.lockon = entity.getLockon().subtract(entity.getX(), entity.getY(), entity.getZ());
         state.age = entity.tickCount;
@@ -96,7 +98,7 @@ public class RenderSiegeCraft extends CompatEntityRenderer<EntitySiegeCraft, Ren
                 (pose, buffer) -> obj.renderPart("UFO", pose, buffer, light, OverlayTexture.NO_OVERLAY));
 
         // GL_LIGHTING off, lightmap 240/240, glColor3f(1 - health, health, 0)
-        int coil = 0xFF000000 | ((int) (255 * Mth.clamp(1F - state.health, 0F, 1F)) << 16) | ((int) (255 * Mth.clamp(state.health, 0F, 1F)) << 8);
+        int coil = coilColor(state.health);
         sink.submitCustomGeometry(ps, CompatRenderTypes.flatCutout(WHITE),
                 (pose, buffer) -> obj.renderPart("Coils", pose, buffer, 0xF000F0, OverlayTexture.NO_OVERLAY, coil));
 
@@ -107,8 +109,8 @@ public class RenderSiegeCraft extends CompatEntityRenderer<EntitySiegeCraft, Ren
                 for (int k = 0; k < 2; k++) {
                     float movement = offset * (0.001F + k * 0.003F) * 5F;
                     Matrix3f texture = new Matrix3f().scaling(1F, 1F, 1F)
-                            .rotateZ((float) Math.toRadians(30F - k * 60F))
-                            .mul(new Matrix3f(1F, 0F, 0F, 0F, 1F, 0F, 0F, movement, 1F));
+                                                     .rotateZ((float) Math.toRadians(30F - k * 60F))
+                                                     .mul(new Matrix3f(1F, 0F, 0F, 0F, 1F, 0F, 0F, movement, 1F));
                     hull.draw(pose, Vertexes.uvTransformed(buffer, texture), 0xF000F0, OverlayTexture.NO_OVERLAY, -1);
                 }
             });
@@ -144,6 +146,15 @@ public class RenderSiegeCraft extends CompatEntityRenderer<EntitySiegeCraft, Ren
         }
 
         ps.popPose();
+    }
+
+    public static int coilColor(EntitySiegeCraft entity) {
+        return coilColor(entity.getHealth() / entity.getMaxHealth());
+    }
+
+    private static int coilColor(float health) {
+        return 0xFF000000 | ((int) (255 * Mth.clamp(1F - health, 0F, 1F)) << 16)
+                | ((int) (255 * Mth.clamp(health, 0F, 1F)) << 8);
     }
 
     public static final class State extends CompatEntityRenderState {

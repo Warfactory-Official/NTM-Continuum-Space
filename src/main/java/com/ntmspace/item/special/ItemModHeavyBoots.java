@@ -3,7 +3,10 @@ package com.ntmspace.item.special;
 import com.hbm.handler.ArmorModHandler;
 import com.hbm.items.armor.ItemArmorMod;
 import dev.golem.core.world.CompatTooltipContext;
+import dev.golem.core.world.ArmorModelSelection;
+
 import java.util.List;
+
 import net.minecraft.ChatFormatting;
 import net.minecraft.network.chat.Component;
 import net.minecraft.world.entity.EquipmentSlot;
@@ -18,10 +21,15 @@ import net.minecraft.world.item.TooltipFlag;
  *
  * <p>The item also equips in the feet slot with its own humanoid equipment asset on component-based targets.
  */
-public class ItemModHeavyBoots extends ItemArmorMod {
+public class ItemModHeavyBoots extends ItemArmorMod implements ArmorModelSelection {
 
     public ItemModHeavyBoots(Item.Properties properties) {
         super(ArmorModHandler.boots_only, false, false, false, true, properties);
+    }
+
+    @Override
+    public EquipmentSlot armorModelSlot() {
+        return EquipmentSlot.LEGS;
     }
 
     @Override
@@ -33,18 +41,21 @@ public class ItemModHeavyBoots extends ItemArmorMod {
         super.appendCompatHoverText(stack, context, tooltip, flag);
         tooltip.add(coloured(ChatFormatting.GOLD, "Can be worn on its own!"));
         tooltip.add(Component.literal("We take no responsibility for any deaths that may")
-                .withStyle(ChatFormatting.DARK_GRAY, ChatFormatting.ITALIC));
+                             .withStyle(ChatFormatting.DARK_GRAY, ChatFormatting.ITALIC));
         tooltip.add(Component.literal("occur while using these boots without a space suit.")
-                .withStyle(ChatFormatting.DARK_GRAY, ChatFormatting.ITALIC));
+                             .withStyle(ChatFormatting.DARK_GRAY, ChatFormatting.ITALIC));
     }
 
     @Override
     public void addArmorModDescription(List<Component> tooltip, ItemStack stack, ItemStack armor) {
         tooltip.add(Component.literal("  ").append(stack.getHoverName()).append(" (")
-                .append(Component.translatable("armor.fastFall")).append(")").withStyle(ChatFormatting.DARK_PURPLE));
+                             .append(Component.translatable("armor.fastFall")).append(")")
+                             .withStyle(ChatFormatting.DARK_PURPLE));
     }
 
-    /** Worn or socketed boots restore standard pull for a crouching airborne wearer in low gravity. */
+    /**
+     * Worn or socketed boots restore standard pull for a crouching airborne wearer in low gravity.
+     */
     public static boolean pulls(Player player) {
         if (!player.isShiftKeyDown() || player.onGround()) return false;
         var feet = player.getItemBySlot(EquipmentSlot.FEET);

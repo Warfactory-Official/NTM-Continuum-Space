@@ -14,9 +14,11 @@ import dev.golem.core.net.GolemNetwork;
 import dev.golem.core.net.GolemPayload;
 import dev.golem.core.platform.Lifecycle;
 import dev.golem.core.world.CompatSavedData;
+
 import java.util.HashMap;
 import java.util.Map;
 import java.util.UUID;
+
 import net.minecraft.commands.CommandSourceStack;
 import net.minecraft.commands.Commands;
 import net.minecraft.network.chat.Component;
@@ -24,6 +26,7 @@ import net.minecraft.resources.Identifier;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.world.level.Level;
 import net.minecraft.util.RandomSource;
 import org.jetbrains.annotations.Nullable;
 
@@ -38,8 +41,8 @@ import org.jetbrains.annotations.Nullable;
  *
  * <p>Differences: 1.7 advanced the countdown only while Duna's dimension was loaded (players there or forced chunks);
  * the port advances it while players are on Duna, as modern levels never unload (a chunk loader no longer keeps the
- * storm going). 1.7 also ended the storm when everyone on Duna slept ({@code resetRainAndThunder}); not ported, as the
- * body's morning reset is not either ({@link com.ntmspace.world.SpaceSkies}). Daytime queries answer false during a
+ * storm going). A completed night clears the storm and starts a new clear countdown, through the same completed-sleep
+ * hook that resets the body's weather and local morning. Daytime queries answer false during a
  * storm of strength 0.2 or more through {@link com.ntmspace.world.SpaceSkies}, independently of cached sky brightness.
  * A fresh save starts with strength 1 and an expired countdown, which the
  * first tick turns into a long clear spell, as in 1.7.
@@ -48,15 +51,22 @@ public final class DustStorm extends CompatSavedData<DustStorm> {
 
     static final String ID = NtmSpace.MOD_ID + ":dust_storm";
 
-    /** {@code dustStormTimer}: ticks until the weather changes. */
+    /**
+     * {@code dustStormTimer}: ticks until the weather changes.
+     */
     public int timer = 0;
-    /** {@code dustStormIntensity}: 0 = clear, 0.25 .. 1 = a storm. */
+    /**
+     * {@code dustStormIntensity}: 0 = clear, 0.25 .. 1 = a storm.
+     */
     public float intensity = 1;
 
-    /** The strength last delivered to the client, before its visual easing. */
+    /**
+     * The strength last delivered to the client, before its visual easing.
+     */
     public static float clientIntensity;
 
-    public DustStorm() {}
+    public DustStorm() {
+    }
 
     private DustStorm(int timer, float intensity) {
         this.timer = timer;
@@ -67,18 +77,27 @@ public final class DustStorm extends CompatSavedData<DustStorm> {
         return CompatSavedData.get(duna, ID, DustStorm::new, CODEC);
     }
 
+    public static boolean obscuresDaylight(Level level) {
+        return level.dimension().equals(SpaceDimensions.DUNA)
+                && (level instanceof ServerLevel server ? get(server).intensity : clientIntensity) >= 0.2F;
+    }
+
     public static void acceptSync(float intensity) {
         clientIntensity = intensity;
     }
 
-    /** Delivers the current strength when a player arrives in Duna's level. */
+    /**
+     * Delivers the current strength when a player arrives in Duna's level.
+     */
     public static void sync(ServerPlayer player, ServerLevel duna) {
         if (duna.dimension().equals(SpaceDimensions.DUNA)) {
             GolemNetwork.sendToPlayer(player, CODEC_PAYLOAD, new Payload(get(duna).intensity));
         }
     }
 
-    /** The 1.7 server half of {@code updateWeather}, one tick; {@code rand} is the level's random. */
+    /**
+     * The 1.7 server half of {@code updateWeather}, one tick; {@code rand} is the level's random.
+     */
     public void tick(RandomSource rand) {
         if (timer <= 0) {
             if (intensity >= 0.05F) {
@@ -106,7 +125,9 @@ public final class DustStorm extends CompatSavedData<DustStorm> {
     // ---------------------------------------------------------------------------------------------------------------
     // ticking and sync
 
-    /** The strength sent to a client (1.7 {@code serialize}: the server's {@code dustStormIntensity}). */
+    /**
+     * The strength sent to a client (1.7 {@code serialize}: the server's {@code dustStormIntensity}).
+     */
     public record Payload(float intensity) implements GolemPayload {
         @Override
         public Identifier id() {
@@ -114,7 +135,8 @@ public final class DustStorm extends CompatSavedData<DustStorm> {
         }
     }
 
-    public static final GolemCodec<Payload> CODEC_PAYLOAD = GolemCodec.of(Payload.class, Ids.of(NtmSpace.MOD_ID, "dust_storm"),
+    public static final GolemCodec<Payload> CODEC_PAYLOAD = GolemCodec.of(Payload.class,
+            Ids.of(NtmSpace.MOD_ID, "dust_storm"),
             (payload, buf) -> buf.writeFloat(payload.intensity()), buf -> new Payload(buf.readFloat()));
 
     private static final Map<UUID, Float> SENT = new HashMap<>();
@@ -147,19 +169,37 @@ public final class DustStorm extends CompatSavedData<DustStorm> {
         });
     }
 
+    /**
+     * WorldProviderDuna.resetRainAndThunder: a slept-through night starts a fresh clear interval.
+     */
+    public static void sleptThrough(ServerLevel level) {
+        if (!level.dimension().equals(SpaceDimensions.DUNA)) return;
+        var storm = get(level);
+        storm.intensity = 0F;
+        storm.timer = level.getRandom().nextInt(168000) + 12000;
+        storm.setDirty();
+    }
+
     // ---------------------------------------------------------------------------------------------------------------
     // /ntmspace duststorm [strength [ticks]] (test and harness)
 
     private static void registerCommand(CommandDispatcher<CommandSourceStack> dispatcher) {
         dispatcher.register(Commands.literal(NtmSpace.MOD_ID)
-                .requires(dev.golem.core.command.Permissions.gamemasters())
-                .then(Commands.literal("duststorm")
-                        .executes(context -> report(context.getSource()))
-                        .then(Commands.argument("strength", FloatArgumentType.floatArg(0, 1))
-                                .executes(context -> set(context.getSource(), FloatArgumentType.getFloat(context, "strength"), 12000))
-                                .then(Commands.argument("ticks", IntegerArgumentType.integer(1))
-                                        .executes(context -> set(context.getSource(), FloatArgumentType.getFloat(context, "strength"),
-                                                IntegerArgumentType.getInteger(context, "ticks")))))));
+                                    .requires(dev.golem.core.command.Permissions.gamemasters())
+                                    .then(Commands.literal("duststorm")
+                                                  .executes(context -> report(context.getSource()))
+                                                  .then(Commands.argument("strength", FloatArgumentType.floatArg(0, 1))
+                                                                .executes(context -> set(context.getSource(),
+                                                                        FloatArgumentType.getFloat(context, "strength"),
+                                                                        12000))
+                                                                .then(Commands.argument("ticks",
+                                                                                      IntegerArgumentType.integer(1))
+                                                                              .executes(context -> set(
+                                                                                      context.getSource(),
+                                                                                      FloatArgumentType.getFloat(
+                                                                                              context, "strength"),
+                                                                                      IntegerArgumentType.getInteger(
+                                                                                              context, "ticks")))))));
     }
 
     private static int set(CommandSourceStack source, float strength, int ticks) {

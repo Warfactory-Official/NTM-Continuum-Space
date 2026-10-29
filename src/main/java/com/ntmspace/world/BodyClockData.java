@@ -6,6 +6,7 @@ import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 import com.google.gson.JsonPrimitive;
 import dev.golem.core.dejson.Data;
+
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.UncheckedIOException;
@@ -21,16 +22,20 @@ import java.util.TreeMap;
  */
 public final class BodyClockData {
 
-    /** The bodies with their own clock ({@code SpaceSkies}); Thatmo keeps Kerbin's day. */
+    /**
+     * The bodies with their own clock ({@code SpaceSkies}); Thatmo keeps Kerbin's day.
+     */
     private static final List<String> BODIES =
             List.of("mun", "minmus", "duna", "ike", "dres", "eve", "moho", "laythe", "tekto", "thatmo");
 
-    private BodyClockData() {}
+    private BodyClockData() {
+    }
 
     public static void declare() {
         var day = vanilla("day");
         var schedule = vanilla("villager_schedule");
         if (day == null || schedule == null) return;
+        Data.declare("data/ntmspace/world_clock/orbit.json", new JsonObject());
         for (String body : BODIES) {
             int period = (int) Math.floor(SolarSystem.dayLength(
                     SolarSystem.getBody(body.equals("thatmo") ? "kerbin" : body), 1) + 0.5D);
@@ -41,7 +46,8 @@ public final class BodyClockData {
     }
 
     private static JsonObject vanilla(String name) {
-        var stream = BodyClockData.class.getClassLoader().getResourceAsStream("data/minecraft/timeline/" + name + ".json");
+        var stream = BodyClockData.class.getClassLoader()
+                                        .getResourceAsStream("data/minecraft/timeline/" + name + ".json");
         if (stream == null) return null;
         try (var reader = new InputStreamReader(stream, StandardCharsets.UTF_8)) {
             return JsonParser.parseReader(reader).getAsJsonObject();
@@ -80,7 +86,9 @@ public final class BodyClockData {
         return Math.min(period - 1, (int) Math.floor((double) ticks * period / previous + 0.5D));
     }
 
-    /** Keys in order, as vanilla writes its files. */
+    /**
+     * Keys in order, as vanilla writes its files.
+     */
     private static JsonElement sorted(JsonElement element) {
         if (element.isJsonArray()) {
             var array = new JsonArray();

@@ -1,6 +1,7 @@
 package com.ntmspace.world;
 
 import java.awt.Color;
+
 import com.hbm.handler.ImpactSky;
 import com.ntmspace.trait.CBT_War;
 import com.ntmspace.trait.CelestialTraits;
@@ -9,12 +10,15 @@ import net.minecraft.util.Mth;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.phys.Vec3;
 
-/** WorldProviderCelestial's live colour and illumination formulas, shared by rendering and level queries. */
+/**
+ * WorldProviderCelestial's live colour and illumination formulas, shared by rendering and level queries.
+ */
 public final class SpaceSkyColors {
 
     public static final boolean HARDCORE_DARKNESS = false;
 
-    private SpaceSkyColors() {}
+    private SpaceSkyColors() {
+    }
 
     /**
      * {@code WorldProviderCelestial.getSkyColor} (with {@code WorldProviderEve}'s lightning flash), then
@@ -35,13 +39,20 @@ public final class SpaceSkyColors {
             double fr, fg, fb;
             String fluid = entry.fluid();
             if (fluid.equals(Atmospheres.EVEAIR)) {
-                fr = 53F / 255F * sun; fg = 32F / 255F * sun; fb = 74F / 255F * sun;
+                fr = 53F / 255F * sun;
+                fg = 32F / 255F * sun;
+                fb = 74F / 255F * sun;
             } else if (fluid.equals(Atmospheres.DUNAAIR) || fluid.equals(Atmospheres.CARBONDIOXIDE)) {
-                fr = 212F / 255F * sun; fg = 112F / 255F * sun; fb = 78F / 255F * sun;
-            } else if (fluid.equals(Atmospheres.EARTHAIR) || fluid.equals(Atmospheres.OXYGEN) || fluid.equals(Atmospheres.NITROGEN)) {
+                fr = 212F / 255F * sun;
+                fg = 112F / 255F * sun;
+                fb = 78F / 255F * sun;
+            } else if (fluid.equals(Atmospheres.EARTHAIR) || fluid.equals(Atmospheres.OXYGEN) || fluid.equals(
+                    Atmospheres.NITROGEN)) {
                 // Default to regular ol' overworld
                 Vec3 earth = SpaceSkies.isKerbin(level) ? vanilla : skyColorBody(level, partialTicks, position);
-                fr = earth.x; fg = earth.y; fb = earth.z;
+                fr = earth.x;
+                fg = earth.y;
+                fb = earth.z;
             } else {
                 int hex = Atmospheres.color(fluid);
                 fr = ((hex >> 16) & 0xFF) / 255.0F * sun;
@@ -114,7 +125,9 @@ public final class SpaceSkyColors {
         return new Vec3(r, g, b);
     }
 
-    /** 1.7 {@code World.getSkyColorBody} without weather: the camera biome's {@code getSkyColorByTemp}, by the sun's height. */
+    /**
+     * 1.7 {@code World.getSkyColorBody} without weather: the camera biome's {@code getSkyColorByTemp}, by the sun's height.
+     */
     public static Vec3 skyColorBody(Level level, float partialTicks, Vec3 position) {
         float angle = SpaceSkies.angle(level, partialTicks);
         float f2 = Mth.clamp(Mth.cos(angle * (float) Math.PI * 2.0F) * 2.0F + 0.5F, 0.0F, 1.0F);
@@ -123,7 +136,9 @@ public final class SpaceSkyColors {
         return new Vec3(((rgb >> 16) & 255) / 255.0F * f2, ((rgb >> 8) & 255) / 255.0F * f2, (rgb & 255) / 255.0F * f2);
     }
 
-    /** 1.7 {@code BiomeGenBase.getSkyColorByTemp}: {@code Color.getHSBColor} of the temperature. */
+    /**
+     * 1.7 {@code BiomeGenBase.getSkyColorByTemp}: {@code Color.getHSBColor} of the temperature.
+     */
     public static int skyColorByTemp(float temperature) {
         temperature /= 3.0F;
         if (temperature < -1.0F) temperature = -1.0F;
@@ -131,7 +146,9 @@ public final class SpaceSkyColors {
         return Color.HSBtoRGB(0.62222224F - temperature * 0.05F, 0.5F + temperature * 0.1F, 1.0F);
     }
 
-    /** {@code WorldProviderCelestial.getFogColor(solarAngle)}, before the shared impact-fog modifier. */
+    /**
+     * {@code WorldProviderCelestial.getFogColor(solarAngle)}, before the shared impact-fog modifier.
+     */
     public static Vec3 fogColor(Level level, float solarAngle, Vec3 position) {
         String air = SpaceSkies.airBody(level);
         // The cold hard vacuum of space
@@ -152,11 +169,18 @@ public final class SpaceSkyColors {
             double fr, fg, fb;
             String fluid = entry.fluid();
             if (fluid.equals(Atmospheres.EVEAIR)) {
-                fr = 53F / 255F * sunR; fg = 32F / 255F * sunG; fb = 74F / 255F * sunB;
+                fr = 53F / 255F * sunR;
+                fg = 32F / 255F * sunG;
+                fb = 74F / 255F * sunB;
             } else if (fluid.equals(Atmospheres.DUNAAIR) || fluid.equals(Atmospheres.CARBONDIOXIDE)) {
-                fr = 212F / 255F * sunR; fg = 112F / 255F * sunG; fb = 78F / 255F * sunB;
-            } else if (fluid.equals(Atmospheres.EARTHAIR) || fluid.equals(Atmospheres.OXYGEN) || fluid.equals(Atmospheres.NITROGEN)) {
-                fr = 0.7529412F * sunR; fg = 0.84705883F * sunG; fb = 1.0F * sunB;
+                fr = 212F / 255F * sunR;
+                fg = 112F / 255F * sunG;
+                fb = 78F / 255F * sunB;
+            } else if (fluid.equals(Atmospheres.EARTHAIR) || fluid.equals(Atmospheres.OXYGEN) || fluid.equals(
+                    Atmospheres.NITROGEN)) {
+                fr = 0.7529412F * sunR;
+                fg = 0.84705883F * sunG;
+                fb = 1.0F * sunB;
             } else {
                 int hex = Atmospheres.color(fluid);
                 fr = ((hex >> 16) & 0xFF) / 255.0F * (sunR * 1.4F);
@@ -209,7 +233,9 @@ public final class SpaceSkyColors {
         return new Vec3(r + thatmo, g + thatmo, b + thatmo);
     }
 
-    /** Vanilla 1.7 {@code WorldProvider.calcSunriseSunsetColors} at {@code solarAngle}, or null away from the horizon. */
+    /**
+     * Vanilla 1.7 {@code WorldProvider.calcSunriseSunsetColors} at {@code solarAngle}, or null away from the horizon.
+     */
     public static float[] vanillaSunset(float solarAngle) {
         float f2 = 0.4F;
         float f3 = Mth.cos(solarAngle * (float) Math.PI * 2.0F) - 0.0F;
@@ -218,7 +244,7 @@ public final class SpaceSkyColors {
             float f5 = (f3 - f4) / f2 * 0.5F + 0.5F;
             float f6 = 1.0F - (1.0F - Mth.sin(f5 * (float) Math.PI)) * 0.99F;
             f6 *= f6;
-            return new float[] {f5 * 0.3F + 0.7F, f5 * f5 * 0.7F + 0.2F, f5 * f5 * 0.0F + 0.2F, f6};
+            return new float[]{f5 * 0.3F + 0.7F, f5 * f5 * 0.7F + 0.2F, f5 * f5 * 0.0F + 0.2F, f6};
         }
         return null;
     }
@@ -229,11 +255,13 @@ public final class SpaceSkyColors {
      */
     public static float[] providerSunset(Level level, float solarAngle) {
         String air = SpaceSkies.airBody(level);
-        if (air == null || !Atmospheres.has(air, level.isClientSide()) || Atmospheres.pressure(air, level.isClientSide()) < 0.05F) return null;
+        if (air == null || !Atmospheres.has(air, level.isClientSide()) || Atmospheres.pressure(air,
+                level.isClientSide()) < 0.05F) return null;
         float[] colors = vanillaSunset(solarAngle);
         if (colors == null) return null;
 
-        if (Atmospheres.hasFluid(air, Atmospheres.DUNAAIR, level.isClientSide()) || Atmospheres.hasFluid(air, Atmospheres.CARBONDIOXIDE, level.isClientSide())) {
+        if (Atmospheres.hasFluid(air, Atmospheres.DUNAAIR, level.isClientSide()) || Atmospheres.hasFluid(air,
+                Atmospheres.CARBONDIOXIDE, level.isClientSide())) {
             float tmp = colors[0];
             colors[0] = colors[2];
             colors[2] = tmp;
@@ -250,7 +278,8 @@ public final class SpaceSkyColors {
                 colors[2] = f5 * f5;
                 colors[3] = f6;
             }
-        } else if (Atmospheres.hasFluid(air, Atmospheres.TEKTOAIR, level.isClientSide()) || Atmospheres.hasFluid(air, Atmospheres.JOOLGAS, level.isClientSide())
+        } else if (Atmospheres.hasFluid(air, Atmospheres.TEKTOAIR, level.isClientSide()) || Atmospheres.hasFluid(air,
+                Atmospheres.JOOLGAS, level.isClientSide())
                 || Atmospheres.hasFluid(air, Atmospheres.CHLORINE, level.isClientSide())) {
             float tmp = colors[1];
             colors[1] = colors[2];
@@ -266,16 +295,21 @@ public final class SpaceSkyColors {
     public static float[] skySunset(Level level, float solarAngle) {
         String air = SpaceSkies.airBody(level);
         float pressure = air == null ? 0 : (float) Atmospheres.pressure(air, level.isClientSide());
-        if (pressure < 0.05F) {
-            float cutoff = 0.4F;
-            float angle = Mth.cos(solarAngle * (float) Math.PI * 2.0F) - 0.0F;
-            if (angle < -cutoff || angle > cutoff) return null;
-            float colorIntensity = angle / cutoff * 0.5F + 0.5F;
-            float alpha = 1.0F - (1.0F - Mth.sin(colorIntensity * (float) Math.PI)) * 0.99F;
-            alpha *= alpha;
-            return new float[] {0.9F, 1.0F, 1.0F, alpha * 0.2F};
-        }
+        if (pressure < 0.05F) return chargedDustSunset(solarAngle);
         return providerSunset(level, solarAngle);
+    }
+
+    /**
+     * {@code SkyProviderCelestial.calcSunriseSunsetColors}'s airless glow, shared by its fan and charged dust.
+     */
+    public static float[] chargedDustSunset(float solarAngle) {
+        float cutoff = 0.4F;
+        float angle = Mth.cos(solarAngle * (float) Math.PI * 2.0F) - 0.0F;
+        if (angle < -cutoff || angle > cutoff) return null;
+        float colorIntensity = angle / cutoff * 0.5F + 0.5F;
+        float alpha = 1.0F - (1.0F - Mth.sin(colorIntensity * (float) Math.PI)) * 0.99F;
+        alpha *= alpha;
+        return new float[]{0.9F, 1.0F, 1.0F, alpha * 0.2F};
     }
 
     /**
@@ -296,8 +330,10 @@ public final class SpaceSkyColors {
         }
         if (level.dimension().equals(SpaceDimensions.TEKTO)) sunBrightness *= 0.7F;
         // WorldProviderThatmo.getSunBrightness: a tenth, plus the railgun's flash and the shield's glow (ThatmoSky)
-        if (level.dimension().equals(SpaceDimensions.THATMO)) sunBrightness = sunBrightness * SkyMath.THATMO_SUN_MULTIPLIER + ThatmoBattlefield.lightAdd(level);
-        if (level.dimension().equals(SpaceDimensions.EVE)) sunBrightness = SkyMath.eveSunBrightness(sunBrightness, eveFlash(level, partialTicks));
+        if (level.dimension().equals(SpaceDimensions.THATMO))
+            sunBrightness = sunBrightness * SkyMath.THATMO_SUN_MULTIPLIER + ThatmoBattlefield.lightAdd(level);
+        if (level.dimension().equals(SpaceDimensions.EVE))
+            sunBrightness = SkyMath.eveSunBrightness(sunBrightness, eveFlash(level, partialTicks));
         return sunBrightness;
     }
 
@@ -311,7 +347,8 @@ public final class SpaceSkyColors {
         if (air == null) return sunColor;
         for (Atmospheres.Entry entry : Atmospheres.of(air, level.isClientSide())) {
             String fluid = entry.fluid();
-            if (fluid.equals(Atmospheres.TEKTOAIR) || fluid.equals(Atmospheres.CHLORINE) || fluid.equals(Atmospheres.CHLOROMETHANE)
+            if (fluid.equals(Atmospheres.TEKTOAIR) || fluid.equals(Atmospheres.CHLORINE) || fluid.equals(
+                    Atmospheres.CHLOROMETHANE)
                     || fluid.equals(Atmospheres.RADIOSOLVENT) || fluid.equals(Atmospheres.CCL)) {
                 float absorption = Mth.clamp(1.0F - (float) entry.pressure() * 0.5F, 0.0F, 1.0F);
                 sunColor[1] *= absorption;
@@ -323,12 +360,16 @@ public final class SpaceSkyColors {
 
     // Eve's lightning
 
-    /** The same live body gate and authored flash curve exposed by the common sky rules. */
+    /**
+     * The same live body gate and authored flash curve exposed by the common sky rules.
+     */
     public static float eveFlash(Level level, float partialTicks) {
         return SkyMath.eveFlashStrength(SpaceSkies.body(level), ((float) level.getGameTime() + partialTicks) / 20.0F);
     }
 
-    /** The same base colour and tint used by the actual cloud-layer renderer. */
+    /**
+     * The same base colour and tint used by the actual cloud-layer renderer.
+     */
     public static Vec3 cloudColor(Level level, float partialTick) {
         return CloudLayers17.color(level, partialTick);
     }

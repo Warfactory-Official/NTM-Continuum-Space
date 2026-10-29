@@ -1,6 +1,7 @@
 package com.ntmspace.client.render.rocket;
 
 import com.hbm.client.model.WavefrontObj;
+import com.hbm.items.weapon.ItemCustomMissilePart;
 import com.mojang.blaze3d.vertex.PoseStack;
 import com.mojang.blaze3d.vertex.VertexConsumer;
 import com.mojang.math.Axis;
@@ -11,8 +12,10 @@ import dev.golem.core.Ids;
 import dev.golem.core.render.CompatRenderTypes;
 import dev.golem.core.render.SubmitSink;
 import dev.golem.core.render.Vertexes;
+
 import java.util.HashMap;
 import java.util.Map;
+
 import net.minecraft.client.renderer.rendertype.RenderType;
 import net.minecraft.client.renderer.texture.OverlayTexture;
 import net.minecraft.resources.Identifier;
@@ -30,13 +33,17 @@ import org.jspecify.annotations.Nullable;
  */
 public final class RocketPronter {
 
-    /** 1.7 {@code ResourceManager.universal}: the shroud's texture. */
+    /**
+     * 1.7 {@code ResourceManager.universal}: the shroud's texture.
+     */
     private static final Identifier UNIVERSAL = Ids.of("hbm", "textures/models/thegadget3_.png");
 
     private final Map<Identifier, WavefrontObj> meshes = new HashMap<>();
     private final Map<Identifier, RenderType> skins = new HashMap<>();
 
-    /** A capsule with its own renderer (1.7 {@code RenderRocketPart}). */
+    /**
+     * A capsule with its own renderer (1.7 {@code RenderRocketPart}).
+     */
     public interface PartRenderer {
         void render(RocketPronter pronter, RocketRenderState state, PoseStack pose, SubmitSink sink, int light);
     }
@@ -48,20 +55,26 @@ public final class RocketPronter {
     }
 
     public WavefrontObj mesh(Identifier id) {
-        return meshes.computeIfAbsent(id, WavefrontObj::load);
+        return meshes.computeIfAbsent(id,
+                mesh -> WavefrontObj.load(mesh, ItemCustomMissilePart.useVertexNormals(mesh)));
     }
 
     private RenderType skin(Identifier id) {
         return skins.computeIfAbsent(id, CompatRenderTypes::entityCutoutCull);
     }
 
-    /** 1.7 {@code prontRocket(rocket, tex)}: deployed, no stage animation (the screens and the item). */
+    /**
+     * 1.7 {@code prontRocket(rocket, tex)}: deployed, no stage animation (the screens and the item).
+     */
     public void pront(RocketStruct rocket, PoseStack pose, SubmitSink sink, int light) {
         pront(rocket, null, pose, sink, light, true, 0, 0, 0F);
     }
 
-    /** Attaches a set of stages together. */
-    public void pront(RocketStruct rocket, @Nullable RocketRenderState entity, PoseStack pose, SubmitSink sink, int light,
+    /**
+     * Attaches a set of stages together.
+     */
+    public void pront(RocketStruct rocket, @Nullable RocketRenderState entity, PoseStack pose, SubmitSink sink,
+                      int light,
                       boolean isDeployed, int decoupleTimer, int shroudTimer, float interp) {
         pose.pushPose();
 
@@ -104,7 +117,8 @@ public final class RocketPronter {
                             pose.mulPose(Axis.XP.rotationDegrees(shroudLerp * 0.5F));
                         }
 
-                        drawClipped(stage.fuselage.getShroud(), UNIVERSAL, (float) stage.thruster.height(), pose, sink, light);
+                        drawClipped(stage.fuselage.getShroud(), UNIVERSAL, (float) stage.thruster.height(), pose, sink,
+                                light);
 
                         if (shroudTimer > 0) {
                             pose.popPose();
@@ -157,21 +171,29 @@ public final class RocketPronter {
 
     public void draw(Identifier meshId, Identifier skinId, PoseStack pose, SubmitSink sink, int light) {
         WavefrontObj mesh = mesh(meshId);
-        sink.submitCustomGeometry(pose, skin(skinId), (p, buffer) -> mesh.renderAll(p, buffer, light, OverlayTexture.NO_OVERLAY));
+        sink.submitCustomGeometry(pose, skin(skinId),
+                (p, buffer) -> mesh.renderAll(p, buffer, light, OverlayTexture.NO_OVERLAY));
     }
 
-    public void drawPart(Identifier meshId, String part, Identifier skinId, PoseStack pose, SubmitSink sink, int light) {
+    public void drawPart(Identifier meshId, String part, Identifier skinId, PoseStack pose, SubmitSink sink,
+                         int light) {
         WavefrontObj mesh = mesh(meshId);
-        sink.submitCustomGeometry(pose, skin(skinId), (p, buffer) -> mesh.renderPart(part, p, buffer, light, OverlayTexture.NO_OVERLAY));
+        sink.submitCustomGeometry(pose, skin(skinId),
+                (p, buffer) -> mesh.renderPart(part, p, buffer, light, OverlayTexture.NO_OVERLAY));
     }
 
-    /** The whole mesh, cut to {@code y <= maxY} (1.7's clip plane {@code (0, -1, 0, maxY)}). */
-    private void drawClipped(Identifier meshId, Identifier skinId, float maxY, PoseStack pose, SubmitSink sink, int light) {
+    /**
+     * The whole mesh, cut to {@code y <= maxY} (1.7's clip plane {@code (0, -1, 0, maxY)}).
+     */
+    private void drawClipped(Identifier meshId, Identifier skinId, float maxY, PoseStack pose, SubmitSink sink,
+                             int light) {
         float[] vertices = mesh(meshId).all().vertices();
         sink.submitCustomGeometry(pose, skin(skinId), (p, buffer) -> clip(vertices, maxY, p, buffer, light));
     }
 
-    /** Sutherland-Hodgman against one plane: each triangle becomes nothing, itself, a triangle or a quad. */
+    /**
+     * Sutherland-Hodgman against one plane: each triangle becomes nothing, itself, a triangle or a quad.
+     */
     static void clip(float[] v, float maxY, PoseStack.Pose pose, VertexConsumer buffer, int light) {
         float[][] in = new float[3][];
         float[][] out = new float[4][];
@@ -205,6 +227,7 @@ public final class RocketPronter {
     }
 
     private static void emit(float[] a, PoseStack.Pose pose, VertexConsumer buffer, int light) {
-        Vertexes.vertex(buffer, pose, a[0], a[1], a[2], -1, a[3], a[4], OverlayTexture.NO_OVERLAY, light, a[5], a[6], a[7]);
+        Vertexes.vertex(buffer, pose, a[0], a[1], a[2], -1, a[3], a[4], OverlayTexture.NO_OVERLAY, light, a[5], a[6],
+                a[7]);
     }
 }

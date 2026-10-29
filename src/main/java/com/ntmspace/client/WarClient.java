@@ -22,11 +22,9 @@ import net.minecraft.network.chat.Component;
  * <ul>
  *   <li>the war controller's screen and the siege craft's renderer;</li>
  *   <li>the invasion's warning: in its last 5 countdown ticks the client plays {@code alarm.ping} (volume 10) and prints
- *       "Incoming Invasion!" in red - for every body's invasion, wherever the player is (1.7 updated every body's traits
- *       on the client). 1.7 re-synced the traits every tick, which re-armed the warning each tick, so it sounds about
- *       five times; the port's trait sync does the same;</li>
- *   <li>meteors while an invasion runs: each client tick one in {@code max(1, 5 - wave)} (into the player's sky,
- *       whichever body the invasion is on, 1.7);</li>
+ *       "Incoming Invasion!" in red for the currently viewed body;</li>
+ *   <li>meteors while the viewed body's invasion runs: each client tick one in {@code max(1, 5 - wave)}, owned by that
+ *       client level and cleared when the viewed world changes;</li>
  *   <li>the invasion's boss bar on its body while it invades and before the final wave: "Wave N", the kills still
  *       needed over the kill requirement (1.7 {@code BossStatus.setBossStatus(invasion)}, HBM's {@code BossStatus});</li>
  *   <li>{@code misc.impact} at the player (volume 10) the tick a war projectile of the player's body has 18 ticks of
@@ -35,10 +33,12 @@ import net.minecraft.network.chat.Component;
  */
 public final class WarClient {
 
-    private WarClient() {}
+    private WarClient() {
+    }
 
     public static void init() {
-        ClientRegistrations.screens(screens -> screens.register(WarContent.WAR_CONTROLLER_MENU.get(), GUIWarController::new));
+        ClientRegistrations.screens(
+                screens -> screens.register(WarContent.WAR_CONTROLLER_MENU.get(), GUIWarController::new));
         ClientRegistrations.renderers(r -> r.entity(WarContent.SIEGE_CRAFT.get(), RenderSiegeCraft::new));
         WarSatellites.initClient();
         WarSky.init();
@@ -50,13 +50,14 @@ public final class WarClient {
                     var player = Minecraft.getInstance().player;
                     if (player == null) return;
                     player.playSound(WarContent.ALARM_PING.get(), 10F, 1F);
-                    player.sendSystemMessage(Component.translatable("invasion.hbmspace.incoming").withStyle(ChatFormatting.RED));
+                    player.sendSystemMessage(
+                            Component.translatable("invasion.hbmspace.incoming").withStyle(ChatFormatting.RED));
                 });
             }
 
             @Override
             public void meteor() {
-                WarSky.addMeteor();
+                SkyWeatherClient.addMeteor();
             }
         };
         ClientTicks.onEndTick(WarClient::tick);
@@ -119,8 +120,6 @@ public final class WarClient {
         ClientLevel level = mc.level;
         LocalPlayer player = mc.player;
         if (level == null || player == null) return;
-
-        WarSky.tickMeteors(level);
 
         CBT_War war = CelestialTraits.getTrait(level, CBT_War.class);
         if (war != null) {

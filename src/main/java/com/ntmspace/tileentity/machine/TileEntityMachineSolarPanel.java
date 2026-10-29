@@ -18,6 +18,7 @@ import net.minecraft.nbt.CompoundTag;
 import net.minecraft.util.Mth;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.LightLayer;
+import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.state.BlockState;
 
 /**
@@ -38,6 +39,12 @@ public class TileEntityMachineSolarPanel extends TileEntityLoadedBase implements
     }
 
     public static void serverTick(Level level, BlockPos pos, BlockState state, TileEntityMachineSolarPanel te) {
+        int connections = MachineSolar.powerConnectionMask(level, pos);
+        if (connections != te.recordedConnections) {
+            te.recordedConnections = connections;
+            te.setChanged();
+            level.sendBlockUpdated(pos, state, state, Block.UPDATE_CLIENTS);
+        }
         te.setupPowerPorts(te.getPorts());
         te.updateAllPorts();
         te.providePower();
@@ -58,7 +65,8 @@ public class TileEntityMachineSolarPanel extends TileEntityLoadedBase implements
     private PortDef[] cachedPorts;
 
     public PortDef[] getPorts() {
-        if (cachedPorts == null) cachedPorts = TilePortShapes.around(worldPosition.getX(), worldPosition.getY(), worldPosition.getZ());
+        if (cachedPorts == null)
+            cachedPorts = TilePortShapes.around(worldPosition.getX(), worldPosition.getY(), worldPosition.getZ());
         return cachedPorts;
     }
 
@@ -66,18 +74,32 @@ public class TileEntityMachineSolarPanel extends TileEntityLoadedBase implements
         return pos.getY() >= SkyColumns.lowestSourceY(level.getChunkAt(pos), pos.getX(), pos.getZ());
     }
 
-    /** 1.7 {@code getOutput}: balanced around 100 HE/t on Earth (sun 4, sun power 1). */
+    /**
+     * 1.7 {@code getOutput}: balanced around 100 HE/t on Earth (sun 4, sun power 1).
+     */
     public long getOutput(int sun, float sunPower) {
         return Mth.ceil(sun * 25 * sunPower);
     }
 
-    @Override public long getPower() { return power; }
-    @Override public void setPower(long power) { this.power = power; }
-    @Override public long getMaxPower() { return maxpwr; }
+    @Override
+    public long getPower() {
+        return power;
+    }
+
+    @Override
+    public void setPower(long power) {
+        this.power = power;
+    }
+
+    @Override
+    public long getMaxPower() {
+        return maxpwr;
+    }
 
     @Override
     public int getPowerConnectionMask() {
-        return level == null ? recordedConnections : MachineSolar.powerConnectionMask(level, worldPosition);
+        return level == null || level.isClientSide() ? recordedConnections : MachineSolar.powerConnectionMask(level,
+                worldPosition);
     }
 
     @Override
@@ -97,7 +119,8 @@ public class TileEntityMachineSolarPanel extends TileEntityLoadedBase implements
         super.saveData(output);
         output.putLong("power", power);
         output.putLong("maxpwr", maxpwr);
-        output.putInt(PowerConnectionLayout.KEY, getPowerConnectionMask());
+        // Saving must not query neighbours while their chunks are unloading.
+        output.putInt(PowerConnectionLayout.KEY, recordedConnections);
     }
 
     @Override

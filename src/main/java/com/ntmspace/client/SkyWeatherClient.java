@@ -2,6 +2,8 @@ package com.ntmspace.client;
 
 import com.ntmspace.world.SolarSystem;
 import com.ntmspace.world.SpaceSkies;
+import com.ntmspace.trait.CBT_Invasion;
+import com.ntmspace.trait.CelestialTraits;
 import dev.golem.core.harness.HarnessQueryRegistry;
 import dev.golem.core.Ids;
 import com.google.gson.JsonObject;
@@ -14,7 +16,11 @@ import com.ntmspace.weather.DustStorm;
 import com.ntmspace.world.SpaceDimensions;
 import dev.golem.core.client.ClientTicks;
 import dev.golem.core.net.GolemNetwork;
+import dev.golem.core.net.ClientSessions;
 import dev.golem.core.render.Particles;
+
+import java.util.Map;
+
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.multiplayer.ClientLevel;
 import net.minecraft.client.player.LocalPlayer;
@@ -37,17 +43,23 @@ import net.minecraft.world.phys.Vec3;
  */
 public final class SkyWeatherClient {
 
-    private SkyWeatherClient() {}
+    private SkyWeatherClient() {
+    }
 
-    /** {@code dustStormSmoothed}. */
+    /**
+     * {@code dustStormSmoothed}.
+     */
     private static float dustStormSmoothed = 0;
     private static float lastFlashStrength;
     private static ClientLevel lastLevel;
 
     public static void init() {
-        GolemNetwork.registerPlayToClient(DustStorm.CODEC_PAYLOAD, (payload, context) -> DustStorm.acceptSync(payload.intensity()));
+        GolemNetwork.registerPlayToClient(DustStorm.CODEC_PAYLOAD,
+                (payload, context) -> DustStorm.acceptSync(payload.intensity()));
         SatelliteSky.initClient();
-        ClientTicks.onEndTick(SkyWeatherClient::tick);
+        ClientTicks.onEndTick(SkyWeatherClient::clientTick);
+        ClientSessions.START.register(session -> Minecraft.getInstance().execute(SkyWeatherClient::disconnected));
+        ClientSessions.END.register(session -> Minecraft.getInstance().execute(SkyWeatherClient::disconnected));
         HarnessQueryRegistry.register("ntmspace_sky", SkyWeatherClient::query);
         // port: Each node keeps its native lightmap for renderer compatibility, including 26.1's departure from 1.7.
         Lightmaps.useClassicFormula(level -> Orbit.inOrbit(level)
@@ -55,7 +67,8 @@ public final class SkyWeatherClient {
         Lightmaps.register(new Lightmaps.Modifier() {
             @Override
             public boolean active(ClientLevel level) {
-                return level.dimension().equals(SpaceDimensions.LAYTHE) || level.dimension().equals(SpaceDimensions.IKE);
+                return level.dimension().equals(SpaceDimensions.LAYTHE) || level.dimension()
+                                                                                .equals(SpaceDimensions.IKE);
             }
 
             @Override
@@ -85,24 +98,38 @@ public final class SkyWeatherClient {
         }
     }
 
-    /** {@code dustStormSmoothed} on Duna (0 elsewhere). */
+    /**
+     * {@code dustStormSmoothed} on Duna (0 elsewhere).
+     */
     public static float dustStorm() {
         return dustStormSmoothed;
     }
 
-    private static void tick() {
+    /**
+     * The viewed world's weather and invasion effects advance once per unpaused client tick.
+     */
+    public static void clientTick() {
         Minecraft mc = Minecraft.getInstance();
-        ClientLevel level = mc.level;
+        ClientLevel level = useLevel(mc);
         if (level == null) {
-            lastLevel = null;
+            disconnected();
             return;
         }
-        if (level != lastLevel) {
-            lastLevel = level;
-            dustStormSmoothed = 0;
-            lastFlashStrength = 0;
-        }
         if (mc.isPaused()) return; // 1.7 ran this in the world tick, which pauses
+
+        // port: Client invasion effects belong to the viewed level so remote bodies cannot change its sky.
+        if (viewedBody(level)) {
+            var body = SpaceSkies.body(level);
+            var invasion = CelestialTraits.getTrait(body.name, CBT_Invasion.class, true);
+            if (invasion != null) {
+                if (!invasion.isInvading && !invasion.warningPlayed && invasion.waveTime > 0 && invasion.waveTime <= 5) {
+                    invasion.warningPlayed = true;
+                    CBT_Invasion.CLIENT_WARNING.run();
+                }
+                invasion.update(true, body.name);
+            }
+        }
+        tickMeteors();
 
         if (level.dimension().equals(SpaceDimensions.DUNA)) {
             // BobMathUtil.lerp(0.008, smoothed, intensity)
@@ -112,7 +139,8 @@ public final class SkyWeatherClient {
                 Vec3 vec = new Vec3(20, 0, 50)
                         .zRot((float) (level.getRandom().nextDouble() * Math.PI * 10))
                         .yRot((float) (level.getRandom().nextDouble() * Math.PI * 2 * 5));
-                Particles.add(new ParticleDust(level, view.getX() + vec.x, view.getY(), view.getZ() + vec.z, -4, 0, 0, 4F));
+                Particles.add(
+                        new ParticleDust(level, view.getX() + vec.x, view.getY(), view.getZ() + vec.z, -4, 0, 0, 4F));
             }
         } else {
             dustStormSmoothed = 0;
@@ -126,6 +154,59 @@ public final class SkyWeatherClient {
             }
             lastFlashStrength = flashStrength;
         }
+    }
+
+    private static boolean viewedBody(ClientLevel level) {
+        return !Orbit.inOrbit(level) && SpaceSkies.body(level) != null;
+    }
+
+    private static ClientLevel useLevel(Minecraft mc) {
+        var level = mc.level;
+        if (level != lastLevel) {
+            clearVisuals();
+            lastLevel = level;
+        }
+        return level;
+    }
+
+    /**
+     * The same concrete meteor factory is used by the viewed invasion and explicit sky consumers.
+     */
+    public static void addMeteor() {
+        var level = useLevel(Minecraft.getInstance());
+        if (level != null && viewedBody(level)) WarSky.addMeteor();
+    }
+
+    public static void clearMeteors() {
+        WarSky.METEORS.clear();
+    }
+
+    /**
+     * Meteors belong to the current celestial level instance and pause with that world.
+     */
+    public static void tickMeteors() {
+        var mc = Minecraft.getInstance();
+        var level = useLevel(mc);
+        if (level == null || !viewedBody(level)) {
+            clearMeteors();
+            return;
+        }
+        if (!mc.isPaused()) WarSky.tickMeteors(level);
+    }
+
+    private static void clearVisuals() {
+        clearMeteors();
+        lastLevel = null;
+        dustStormSmoothed = 0;
+        lastFlashStrength = 0;
+    }
+
+    /**
+     * A real connection transition releases its visual objects and received celestial overrides.
+     */
+    public static void disconnected() {
+        clearVisuals();
+        CelestialTraits.receive(Map.of());
     }
 
     /**
@@ -177,7 +258,9 @@ public final class SkyWeatherClient {
         return json;
     }
 
-    /** Samples the real integrated-server input on its owner thread, independently of the rendered orbital state. */
+    /**
+     * Samples the real integrated-server input on its owner thread, independently of the rendered orbital state.
+     */
     private static JsonObject serverSky(Minecraft mc) {
         var server = mc.getSingleplayerServer();
         if (server == null) return new JsonObject();

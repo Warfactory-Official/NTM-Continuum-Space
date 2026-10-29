@@ -5,6 +5,7 @@ import com.hbm.inventory.fluid.FluidType;
 import com.hbm.inventory.fluid.tank.FluidTankNTM;
 import com.hbm.lib.DirPos;
 import com.hbm.lib.ForgeDirection;
+import com.hbm.particle.RocketFlameColor;
 import com.hbm.sound.AudioSystem;
 import com.hbm.sound.AudioWrapper;
 import com.hbm.tileentity.MachineCore;
@@ -15,12 +16,15 @@ import com.ntmspace.fluid.SpaceFluids;
 import com.ntmspace.fluid.trait.FT_Rocket;
 import com.ntmspace.orbit.Orbit;
 import com.ntmspace.orbit.Propulsion;
+import com.ntmspace.particle.RocketFlames;
 import com.ntmspace.registry.StationBlocks;
 import com.ntmspace.registry.StationSounds;
 import com.ntmspace.world.SolarSystem;
 import dev.golem.core.data.DataIn;
 import dev.golem.core.data.DataOut;
+
 import java.util.List;
+
 import net.minecraft.ChatFormatting;
 import net.minecraft.core.BlockPos;
 import net.minecraft.network.RegistryFriendlyByteBuf;
@@ -54,7 +58,7 @@ public class TileEntityMachineHTR3 extends TileEntityMachineBase implements Prop
 
     public TileEntityMachineHTR3(BlockPos pos, BlockState state) {
         super(StationBlocks.HTR3_BE.get(), pos, state, 0);
-        tanks = new FluidTankNTM[] {new FluidTankNTM(SpaceFluids.SUPERHEATED_HYDROGEN, 1_280_000)};
+        tanks = new FluidTankNTM[]{new FluidTankNTM(SpaceFluids.SUPERHEATED_HYDROGEN, 1_280_000)};
     }
 
     public static void serverTick(Level level, BlockPos pos, BlockState state, TileEntityMachineHTR3 te) {
@@ -114,9 +118,9 @@ public class TileEntityMachineHTR3 extends TileEntityMachineBase implements Prop
                 }
 
                 ForgeDirection dir = MachineCore.facing(state).getRotation(ForgeDirection.UP);
-                // 1.7 effectNT "missileContrail" (MUD/SCH/UP variants for the bromide fuels: a particle port's colours)
                 com.hbm.client.ClientEffects.spawnRocketFlame(level, pos.getX() + dir.offsetX * 7, pos.getY() + 1,
-                        pos.getZ() + dir.offsetZ * 7, 3, dir.offsetX * 10, 0, dir.offsetZ * 10, 40 + level.getRandom().nextInt(40));
+                        pos.getZ() + dir.offsetZ * 7, 3, dir.offsetX * 10, 0, dir.offsetZ * 10,
+                        40 + level.getRandom().nextInt(40), te.contrailType());
             }
         } else {
             te.speed -= 0.05D;
@@ -132,12 +136,20 @@ public class TileEntityMachineHTR3 extends TileEntityMachineBase implements Prop
         te.time += te.speed;
     }
 
-    /** 1.7 {@code getContrailType}: the exhaust colour of the fuel. */
+    /**
+     * 1.7 {@code getContrailType}: the exhaust colour of the fuel.
+     */
     public static String getContrailType(FluidType type) {
-        if (type == SpaceFluids.GAS_WATZ || type == com.hbm.inventory.fluid.Fluids.WASTEGAS || type == SpaceFluids.GASEOUS_THORIUM_BROMIDE) return "missileContrailMUD";
+        if (type == SpaceFluids.GAS_WATZ || type == com.hbm.inventory.fluid.Fluids.WASTEGAS || type == SpaceFluids.GASEOUS_THORIUM_BROMIDE)
+            return "missileContrailMUD";
         if (type == SpaceFluids.GASEOUS_SCHRABIDIUM_BROMIDE) return "missileContrailSCH";
-        if (type == SpaceFluids.GASEOUS_URANIUM_BROMIDE || type == SpaceFluids.GASEOUS_PLUTONIUM_BROMIDE) return "missileContrailUP";
+        if (type == SpaceFluids.GASEOUS_URANIUM_BROMIDE || type == SpaceFluids.GASEOUS_PLUTONIUM_BROMIDE)
+            return "missileContrailUP";
         return "missileContrail";
+    }
+
+    public RocketFlameColor contrailType() {
+        return RocketFlames.forEffect(getContrailType(tanks[0].getTankType()));
     }
 
     private PortDef[] cachedPorts;
@@ -147,19 +159,24 @@ public class TileEntityMachineHTR3 extends TileEntityMachineBase implements Prop
         return cachedPorts;
     }
 
-    /** 1.7 {@code getConPos}: one point, six blocks out along the long axis. */
+    /**
+     * 1.7 {@code getConPos}: one point, six blocks out along the long axis.
+     */
     public DirPos[] getConPos() {
         return conPos(worldPosition, MachineCore.facing(getBlockState()));
     }
 
-    /** {@link #getConPos} for a core at {@code core} facing {@code facing}. */
+    /**
+     * {@link #getConPos} for a core at {@code core} facing {@code facing}.
+     */
     public static DirPos[] conPos(BlockPos core, ForgeDirection facing) {
         ForgeDirection dir = facing.getRotation(ForgeDirection.UP);
-        return new DirPos[] {new DirPos(core.getX() - dir.offsetX * 6, core.getY(), core.getZ() - dir.offsetZ * 6, dir)};
+        return new DirPos[]{new DirPos(core.getX() - dir.offsetX * 6, core.getY(), core.getZ() - dir.offsetZ * 6, dir)};
     }
 
     private AudioWrapper createAudioLoop() {
-        return AudioSystem.getLoopedSound(StationSounds.HTR_LOOP.get(), SoundSource.BLOCKS, worldPosition.getX(), worldPosition.getY(),
+        return AudioSystem.getLoopedSound(StationSounds.HTR_LOOP.get(), SoundSource.BLOCKS, worldPosition.getX(),
+                worldPosition.getY(),
                 worldPosition.getZ(), 0.25F, 27.5F, 1.0F, 20);
     }
 
@@ -212,7 +229,9 @@ public class TileEntityMachineHTR3 extends TileEntityMachineBase implements Prop
         return MachineCore.facing(getBlockState()) == ForgeDirection.SOUTH;
     }
 
-    /** 1.7 {@code getRenderBoundingBox} (the renderer draws off-screen, so only Forge 1.20.1 asks). */
+    /**
+     * 1.7 {@code getRenderBoundingBox} (the renderer draws off-screen, so only Forge 1.20.1 asks).
+     */
     public AABB renderBounds() {
         BlockPos p = worldPosition;
         return new AABB(p.getX() - 10, p.getY() - 3, p.getZ() - 10, p.getX() + 11, p.getY() + 4, p.getZ() + 11);

@@ -6,7 +6,9 @@ import static com.ntmspace.world.populate.Populate17.ore;
 import com.hbm.config.WorldConfig;
 import com.ntmspace.block.BlockBodyOre;
 import com.ntmspace.world.gen.legacy.LayeredBodyTerrain17;
+
 import java.util.Random;
+
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.state.BlockState;
@@ -20,10 +22,11 @@ import org.jspecify.annotations.Nullable;
  */
 public final class BodyGenerators17 {
 
-    private BodyGenerators17() {}
+    private BodyGenerators17() {
+    }
 
     public static void generate(Populate17.Body body, PopulateWorld world, Random rand, int i, int j,
-                         @Nullable LayeredBodyTerrain17 terrain, Object lock) {
+                                @Nullable LayeredBodyTerrain17 terrain, Object lock) {
         Block stone = body.stoneBlock();
         BlockBodyOre.Body meta = body.ore;
         switch (body) {
@@ -56,7 +59,8 @@ public final class BodyGenerators17 {
                 generateOre(world, rand, i, j, Populate17.MINERAL_SPAWN, 10, 12, 32, ore("ore_mineral", meta), stone);
                 // the ancient tomb, one chunk in pyramidStructure: built by the structure ntmspace:ancient_tomb_ike, which
                 // replays these draws (world/structure/BodyDungeonStructure); the tomb's own draws come last
-                if (com.hbm.config.DungeonConfig.pyramidStructure > 0 && rand.nextInt(com.hbm.config.DungeonConfig.pyramidStructure) == 0) {
+                if (com.hbm.config.DungeonConfig.pyramidStructure > 0 && rand.nextInt(
+                        com.hbm.config.DungeonConfig.pyramidStructure) == 0) {
                     int x = i + rand.nextInt(16);
                     int z = j + rand.nextInt(16);
                     world.dungeonSite("ancient_tomb", x, z, rand);
@@ -76,7 +80,8 @@ public final class BodyGenerators17 {
             case MINMUS -> {
                 generateOre(world, rand, i, j, Populate17.NICKEL_SPAWN, 8, 1, 43, ore("ore_nickel", meta), stone);
                 generateOre(world, rand, i, j, WorldConfig.titaniumSpawn, 12, 4, 27, ore("ore_titanium", meta), stone);
-                generateOre(world, rand, i, j, 1, 16, 6, 40, PopulateWorld.state("hbm:stone_resource_malachite"), stone);
+                generateOre(world, rand, i, j, 1, 16, 6, 40, PopulateWorld.state("hbm:stone_resource_malachite"),
+                        stone);
                 generateOre(world, rand, i, j, WorldConfig.copperSpawn * 3, 12, 8, 56, ore("ore_copper", meta), stone);
             }
             case LAYTHE -> {
@@ -89,7 +94,9 @@ public final class BodyGenerators17 {
         }
     }
 
-    /** {@code WorldGeneratorEve.generateEve}. */
+    /**
+     * {@code WorldGeneratorEve.generateEve}.
+     */
     private static void eve(PopulateWorld world, Random rand, int i, int j, Block stone, BlockBodyOre.Body meta,
                             @Nullable LayeredBodyTerrain17 terrain, Object lock) {
         generateOre(world, rand, i, j, 12, 8, 1, 33, ore("ore_niobium", meta), stone);
@@ -110,12 +117,16 @@ public final class BodyGenerators17 {
 
         if (rand.nextInt(100) == 0) {
             // new WorldGenElectricVolcano(30, 22, eve_silt, eve_rock)
-            EveFeatures17.volcano(world, rand, x, y, z, 30, 22, silt, rock, PopulateWorld.state("hbm:basalt"),
-                    PopulateWorld.state("hbm:ore_depth_nether_neodymium"), PopulateWorld.state("ntmspace:geysir_electric"));
+            EveFeatures17.volcano(world, rand, x, y, z, EveFeatures17.VOLCANO_HEIGHT, EveFeatures17.VOLCANO_WIDTH,
+                    silt, rock, PopulateWorld.state("hbm:basalt"),
+                    PopulateWorld.state("hbm:ore_depth_nether_neodymium"),
+                    PopulateWorld.state("ntmspace:geysir_electric"));
         }
     }
 
-    /** {@code WorldGeneratorMoho.generateMoho}. */
+    /**
+     * {@code WorldGeneratorMoho.generateMoho}.
+     */
     private static void moho(PopulateWorld world, Random rand, int i, int j, Block stone, BlockBodyOre.Body meta) {
         generateOre(world, rand, i, j, Populate17.MINERAL_SPAWN, 10, 12, 32, ore("ore_mineral", meta), stone);
 
@@ -183,7 +194,9 @@ public final class BodyGenerators17 {
         }
     }
 
-    /** 1.7's {@code volcano_core}, any of its metadata states (separate blocks in HBM's port). */
+    /**
+     * 1.7's {@code volcano_core}, any of its metadata states (separate blocks in HBM's port).
+     */
     private static boolean volcanoCore(BlockState state) {
         return state.getBlock() instanceof com.hbm.blocks.bomb.BlockVolcano;
     }

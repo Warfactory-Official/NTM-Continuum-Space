@@ -25,12 +25,13 @@ import net.minecraft.world.entity.player.Inventory;
  * (188 and 206, 70 tall, bottom at 88). No labels.
  *
  * <p>1.7 drew the tanks over the finished screen in {@code drawScreen}; here they are drawn on the background.
- * 1.7's slider reacted to {@code mouseClickMove} (a drag); the port follows the held mouse each frame and sends a new
- * value when it changes.
+ * 1.7's slider reacted to {@code mouseClickMove}; drag events update it immediately, with held-cursor movement
+ * observed during extraction as well.
  */
 public final class GUITransporterRocket extends CompatContainerScreen<ContainerTransporterRocket> {
 
-    private static final Identifier TEXTURE = dev.golem.core.Ids.of(NtmSpace.MOD_ID, "textures/gui/machine/gui_transporter.png");
+    private static final Identifier TEXTURE = dev.golem.core.Ids.of(NtmSpace.MOD_ID,
+            "textures/gui/machine/gui_transporter.png");
 
     private EditBox transporterName;
     private boolean dragging;
@@ -64,7 +65,8 @@ public final class GUITransporterRocket extends CompatContainerScreen<ContainerT
         GuiDraw.blit(graphics, TEXTURE, leftPos, topPos, 0F, 0F, imageWidth, imageHeight, 256, 256);
         if (transporter == null) return;
 
-        GuiDraw.blit(graphics, TEXTURE, leftPos + 100 + (int) (transporter.threshold * 6.78), topPos + 122, imageWidth, 0F, 4, 15, 256, 256);
+        GuiDraw.blit(graphics, TEXTURE, leftPos + 100 + (int) (transporter.threshold * 6.78), topPos + 122, imageWidth,
+                0F, 4, 15, 256, 256);
 
         int threshold = transporter.getThreshold();
         int width = font.width("x" + threshold);
@@ -82,7 +84,8 @@ public final class GUITransporterRocket extends CompatContainerScreen<ContainerT
     }
 
     @Override
-    protected void extractLabels(GuiGraphicsExtractor graphics, int mouseX, int mouseY) {}
+    protected void extractLabels(GuiGraphicsExtractor graphics, int mouseX, int mouseY) {
+    }
 
     @Override
     protected void extractOwnTooltip(GuiGraphicsExtractor graphics, int mouseX, int mouseY) {
@@ -122,10 +125,23 @@ public final class GUITransporterRocket extends CompatContainerScreen<ContainerT
         return false;
     }
 
-    /** 1.7 {@code mouseClickMove}: the slider follows a drag inside its box. */
-    private void mouseClickMove(int mouseX, int mouseY) {
+    @Override
+    protected boolean mouseDragged(MouseInput event, double deltaX, double deltaY) {
+        int mouseX = (int) event.x(), mouseY = (int) event.y();
+        if (dragging && mouseClickMove(mouseX, mouseY)) {
+            lastMouseX = mouseX;
+            lastMouseY = mouseY;
+            return true;
+        }
+        return false;
+    }
+
+    /**
+     * 1.7 {@code mouseClickMove}: the slider follows a drag inside its box.
+     */
+    private boolean mouseClickMove(int mouseX, int mouseY) {
         TileEntityTransporterRocket transporter = menu.transporter();
-        if (transporter == null) return;
+        if (transporter == null) return false;
 
         if (isInAABB(mouseX, mouseY, leftPos + 98, topPos + 120, 74, 20)) {
             int slidPos = (int) ((mouseX - (leftPos + 98)) / 6.78);
@@ -133,8 +149,11 @@ public final class GUITransporterRocket extends CompatContainerScreen<ContainerT
 
             CompoundTag data = new CompoundTag();
             data.putDouble("threshold", slidPos);
-            GolemNetwork.sendToServer(ControlEventPayload.CODEC, new ControlEventPayload(transporter.getBlockPos(), data));
+            GolemNetwork.sendToServer(ControlEventPayload.CODEC,
+                    new ControlEventPayload(transporter.getBlockPos(), data));
+            return true;
         }
+        return false;
     }
 
     private void setName(String name) {

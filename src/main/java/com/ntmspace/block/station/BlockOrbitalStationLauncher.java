@@ -10,8 +10,10 @@ import com.hbm.util.BobMathUtil;
 import com.ntmspace.orbit.Orbit;
 import com.ntmspace.registry.StationLauncherBlocks;
 import com.ntmspace.tileentity.station.TileEntityOrbitalStationLauncher;
+
 import java.util.ArrayList;
 import java.util.List;
+
 import net.minecraft.ChatFormatting;
 import net.minecraft.core.BlockPos;
 import net.minecraft.network.chat.Component;
@@ -38,7 +40,9 @@ public class BlockOrbitalStationLauncher extends BlockOrbitalStation {
         super(properties, false);
     }
 
-    /** The launcher owns its fuel tanks; only its subscriptions require an assembled rocket. */
+    /**
+     * The launcher owns its fuel tanks; only its subscriptions require an assembled rocket.
+     */
     @Override
     public MachineCaps caps() {
         return MachineCaps.of(StationLauncherBlocks.ORBITAL_STATION_LAUNCHER_BE).fluidIn().itemsAtCells();
@@ -50,7 +54,8 @@ public class BlockOrbitalStationLauncher extends BlockOrbitalStation {
     }
 
     @Override
-    protected InteractionResult useAtCore(BlockState state, Level level, BlockPos corePos, Player player, BlockHitResult hit) {
+    protected InteractionResult useAtCore(BlockState state, Level level, BlockPos corePos, Player player,
+                                          BlockHitResult hit) {
         if (!Orbit.inOrbit(level)) return InteractionResult.TRY_WITH_EMPTY_HAND;
 
         // If activating the side blocks, ignore, to allow placing
@@ -59,12 +64,15 @@ public class BlockOrbitalStationLauncher extends BlockOrbitalStation {
             return InteractionResult.TRY_WITH_EMPTY_HAND;
         }
 
-        if (!(level.getBlockEntity(corePos) instanceof TileEntityOrbitalStationLauncher station)) return InteractionResult.TRY_WITH_EMPTY_HAND;
+        if (!(level.getBlockEntity(corePos) instanceof TileEntityOrbitalStationLauncher station))
+            return InteractionResult.TRY_WITH_EMPTY_HAND;
 
         if (level.isClientSide()) return InteractionResult.SUCCESS;
 
-        if (station.hasDocked) {
-            if (!station.hasRider) {
+        if (station.getDocked() != null) {
+            if (player.isShiftKeyDown()) {
+                if (player.getMainHandItem().isEmpty()) station.retrieveDockedCraft(player);
+            } else {
                 station.enterCapsule(player);
             }
             return InteractionResult.SUCCESS;
@@ -73,10 +81,15 @@ public class BlockOrbitalStationLauncher extends BlockOrbitalStation {
         return openMenu(state, level, corePos, player, hit);
     }
 
-    /** 1.7 {@code standardOpenBehavior}: the multiblock's menu. */
-    private InteractionResult openMenu(BlockState state, Level level, BlockPos corePos, Player player, BlockHitResult hit) {
-        if (!(level.getBlockEntity(corePos) instanceof net.minecraft.world.MenuProvider menu)) return InteractionResult.TRY_WITH_EMPTY_HAND;
-        if (!(player instanceof net.minecraft.server.level.ServerPlayer serverPlayer)) return InteractionResult.TRY_WITH_EMPTY_HAND;
+    /**
+     * 1.7 {@code standardOpenBehavior}: the multiblock's menu.
+     */
+    private InteractionResult openMenu(BlockState state, Level level, BlockPos corePos, Player player,
+                                       BlockHitResult hit) {
+        if (!(level.getBlockEntity(corePos) instanceof net.minecraft.world.MenuProvider menu))
+            return InteractionResult.TRY_WITH_EMPTY_HAND;
+        if (!(player instanceof net.minecraft.server.level.ServerPlayer serverPlayer))
+            return InteractionResult.TRY_WITH_EMPTY_HAND;
         dev.golem.core.gui.Menus.openWithPos(serverPlayer, menu, corePos);
         return InteractionResult.SUCCESS;
     }
@@ -112,13 +125,15 @@ public class BlockOrbitalStationLauncher extends BlockOrbitalStation {
 
         for (FluidTankNTM tank : pad.tanks) {
             if (tank.getTankType() == Fluids.NONE) continue;
-            text.add(ChatFormatting.GREEN + "-> " + ChatFormatting.RESET + tank.getTankType().getDisplayNameString() + ": "
+            text.add(ChatFormatting.GREEN + "-> " + ChatFormatting.RESET + tank.getTankType()
+                                                                               .getDisplayNameString() + ": "
                     + tank.getFill() + "/" + tank.getMaxFill() + "mB");
         }
 
         if (pad.solidFuel.max > 0) {
             text.add(ChatFormatting.GREEN + "-> " + ChatFormatting.RESET
-                    + ModFuelItems.rocket_fuel.get().getName(ModFuelItems.rocket_fuel.get().getDefaultInstance()).getString()
+                    + ModFuelItems.rocket_fuel.get().getName(ModFuelItems.rocket_fuel.get().getDefaultInstance())
+                                              .getString()
                     + ": " + pad.solidFuel.level + "/" + pad.solidFuel.max + "kg");
         }
 

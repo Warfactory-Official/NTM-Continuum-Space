@@ -2,6 +2,7 @@ package com.ntmspace.client.render;
 
 import com.hbm.blocks.generic.BlockTrinket;
 import com.hbm.client.model.WavefrontObj;
+import com.hbm.client.render.RenderPlushie;
 import com.hbm.client.render.item.CustomItemRenderer;
 import com.mojang.blaze3d.vertex.PoseStack;
 import com.mojang.math.Axis;
@@ -33,10 +34,12 @@ import org.jspecify.annotations.Nullable;
 public final class RenderSpacePlushie extends GemBER<BlockSpacePlushie.Plushie, RenderSpacePlushie.State> {
 
     public static final class State extends CompatRenderState {
-        public float yaw;
+        public int rotation;
         public Type type = Type.TETO;
         public float squish;
         public int squishTimer;
+        public boolean miserable;
+        public double misery;
     }
 
     private static final Identifier[] TEXTURE = new Identifier[Type.VALUES.length];
@@ -54,11 +57,14 @@ public final class RenderSpacePlushie extends GemBER<BlockSpacePlushie.Plushie, 
 
     public RenderSpacePlushie() {
         for (Type type : Type.VALUES) {
-            models[type.ordinal()] = WavefrontObj.load(Ids.of(NtmSpace.MOD_ID, "models/trinkets/" + model(type) + ".obj"));
+            models[type.ordinal()] = WavefrontObj.load(
+                    Ids.of(NtmSpace.MOD_ID, "models/trinkets/" + model(type) + ".obj"));
         }
     }
 
-    /** FAT TETO is drawn with Teto's model and textures. */
+    /**
+     * FAT TETO is drawn with Teto's model and textures.
+     */
     private static String model(Type type) {
         return type == Type.FATO ? "teto" : type.name().toLowerCase(java.util.Locale.ROOT);
     }
@@ -74,31 +80,26 @@ public final class RenderSpacePlushie extends GemBER<BlockSpacePlushie.Plushie, 
 
     @Override
     public void extract(BlockSpacePlushie.Plushie plushie, State state, float interp, Vec3 cameraPosition) {
-        state.yaw = -(22.5F * plushie.getBlockState().getValue(BlockTrinket.ROTATION) + 90F);
+        state.rotation = plushie.getBlockState().getValue(BlockTrinket.ROTATION);
         state.type = plushie.type();
         state.squishTimer = plushie.squishTimer;
         state.squish = plushie.squishTimer > 0 ? plushie.squishTimer - interp : -1F;
+        state.miserable = plushie.miseryFactor > 0.01F;
+        state.misery = plushie.lastMiseryFactor + (plushie.miseryFactor - plushie.lastMiseryFactor) * interp;
     }
 
     @Override
     protected void submitUndeclared(State state, PoseStack pose, SubmitSink sink, CameraInfo camera) {
         pose.pushPose();
-        pose.translate(0.5D, 0D, 0.5D);
-        pose.mulPose(Axis.YP.rotationDegrees(state.yaw));
-        if (state.squish >= 0F) {
-            double squish = state.squish;
-            pose.scale(1F, (float) (1 + (-(Math.sin(squish)) * squish) * 0.025), 1F);
-        }
-        if (state.type == Type.FATO) {
-            pose.scale(1.0F, 0.5F, 1.0F);
-        } else {
-            pose.scale(0.5F, 0.5F, 0.5F);
-        }
+        RenderPlushie.rootPose(pose, state.type, state.rotation, state.miserable, state.misery, state.squish >= 0F,
+                state.squish);
         renderPlushie(pose, sink, state.type, state.squishTimer, state.lightCoords);
         pose.popPose();
     }
 
-    /** 1.7 {@code renderPlushie(type, squishTimer)}. */
+    /**
+     * 1.7 {@code renderPlushie(type, squishTimer)}.
+     */
     void renderPlushie(PoseStack pose, SubmitSink sink, Type type, int squishTimer, int light) {
         WavefrontObj model = models[type.ordinal()];
         Identifier texture = squishTimer > 6 ? BLUSH[type.ordinal()] : TEXTURE[type.ordinal()];
@@ -106,7 +107,9 @@ public final class RenderSpacePlushie extends GemBER<BlockSpacePlushie.Plushie, 
                 (p, b) -> model.renderAll(p, b, light, OverlayTexture.NO_OVERLAY));
     }
 
-    /** The plushie items' renderer ({@code ntmspace:plushie}, HBM's {@code hbm:custom_item}). */
+    /**
+     * The plushie items' renderer ({@code ntmspace:plushie}, HBM's {@code hbm:custom_item}).
+     */
     public static final class Item implements CustomItemRenderer {
 
         private final RenderSpacePlushie renderer = new RenderSpacePlushie();

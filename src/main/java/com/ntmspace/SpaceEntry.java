@@ -8,13 +8,20 @@ import com.ntmspace.tileentity.machine.TileEntityRadiator;
 import com.hbm.config.MachineDynConfig;
 import com.ntmspace.fluid.SpaceFluidPropertyData;
 import com.ntmspace.fork.ForkBaseChanges;
+import com.ntmspace.fork.SpaceImpactDirt;
+import com.ntmspace.fork.SpaceImpactEffects;
+import com.ntmspace.fork.SpacePedestalConditions;
 import com.ntmspace.fork.SpaceOilDetector;
 import com.ntmspace.fork.V1ArmorEffects;
 import com.ntmspace.registry.SpaceCreativeOrder;
+import com.ntmspace.registry.SpaceDashSounds;
+import com.ntmspace.registry.SpaceParticles;
 import com.ntmspace.satellite.SpaceSatellites;
 import com.ntmspace.tileentity.machine.StardarHeightmap;
 import com.ntmspace.world.OverworldFlora;
 import com.ntmspace.world.OverworldFloraData;
+import com.ntmspace.world.SpaceFishing;
+import com.ntmspace.world.SpaceNetherPortals;
 import com.ntmspace.world.TektoTreeData;
 import com.ntmspace.world.TektoTrees;
 import com.ntmspace.fluid.SpaceWorldFluids;
@@ -23,6 +30,9 @@ import com.hbm.capability.ForeignFluids;
 import com.hbm.capability.ForeignItems;
 import dev.golem.core.platform.ModEntry;
 import dev.golem.core.registry.Substitutions;
+import dev.golem.core.world.BiomeFeatures;
+import dev.golem.core.world.Weathers;
+import com.ntmspace.weather.DustStorm;
 
 /**
  * NTM: Space's common start-up in Golem Core's three phases: the Fabric {@code golemcore:entry}, and what the NeoForge
@@ -34,6 +44,7 @@ public final class SpaceEntry implements ModEntry {
     public void substitute() {
         ForkTweaks.substituteFoods();
         Substitutions.block(NtmSpace.MOD_ID, "hbm:plushie", BlockSpacePlushie.Base::new);
+        Substitutions.block(NtmSpace.MOD_ID, "hbm:impact_dirt", SpaceImpactDirt::new);
         SpaceSchrabidicBlock.substitute();
         SpaceSatellites.substitute();
         // hbm-space's fan is sealable-aware (IBlockSealable); same id, HBM's own registration properties
@@ -53,6 +64,8 @@ public final class SpaceEntry implements ModEntry {
         ForeignFluids.registerMachines(NtmSpace.MOD_ID);
         ForeignItems.registerContents(NtmSpace.MOD_ID);
         SpaceConfig.load();
+        SpaceNetherPortals.init();
+        SpacePedestalConditions.init();
         MachineDynConfig.register(TileEntityRadiator.CONFIG);
         SpaceFluidPropertyData.init();
         com.ntmspace.fluid.SpaceFluids.init();
@@ -78,6 +91,8 @@ public final class SpaceEntry implements ModEntry {
         com.ntmspace.registry.StationBlocks.init();
         com.ntmspace.registry.TransporterBlocks.init();
         com.ntmspace.registry.StationSounds.init();
+        SpaceParticles.init();
+        SpaceDashSounds.init();
         com.ntmspace.rocket.RocketContent.init();
         com.ntmspace.orbit.Orbit.init();
         com.ntmspace.command.StationCommands.init();
@@ -120,6 +135,7 @@ public final class SpaceEntry implements ModEntry {
         OverworldFloraData.init();
         SpaceCreativeOrder.init();
         com.ntmspace.trait.TraitSync.init();
+        V1ArmorEffects.init();
         com.ntmspace.breathing.OxygenSync.init();
         com.ntmspace.atmosphere.AtmosphereHandler.init();
         com.ntmspace.world.SpaceEnvironment.init();
@@ -129,13 +145,16 @@ public final class SpaceEntry implements ModEntry {
         // the shader sky layers' nuke shocks (CelestialNukeShockHandler) and their test commands
         com.ntmspace.world.NukeShocks.init();
         com.ntmspace.command.SkyTraitCommands.init();
+        BiomeFeatures.install();
     }
 
     @Override
     public void registered() {
         NtmSpace.LOG.info("NTM: Space registered");
+        SpaceFishing.init();
+        Weathers.SLEPT_THROUGH.register(DustStorm::sleptThrough);
         ForkBaseChanges.registered();
-        V1ArmorEffects.init();
+        SpaceImpactEffects.init();
         // furnace fuels on Fabric and Forge (NeoForge: the authored neoforge:furnace_fuels data map)
         dev.golem.core.registry.Fuels.register(com.ntmspace.registry.FloraBlocks.burnTimes());
     }

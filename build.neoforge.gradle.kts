@@ -1,4 +1,3 @@
-
 plugins {
     id("java-library")
     id("net.neoforged.moddev") version "2.0.141"
@@ -37,7 +36,8 @@ val devRunSource = importedTests ?: probe
 
 // The NeoForge this build runs on: deps.neoforge, or deps.neoforge_kubejs in a -Pkubejs.run=true dev run (KubeJS may need
 // an older build; see versions/*/gradle.properties). Release jars always use deps.neoforge.
-val neoforgeVersion = propOrNull("deps.neoforge_kubejs")?.takeIf { propOrNull("kubejs.run") == "true" } ?: prop("deps.neoforge")
+val neoforgeVersion =
+    propOrNull("deps.neoforge_kubejs")?.takeIf { propOrNull("kubejs.run") == "true" } ?: prop("deps.neoforge")
 // The oldest NeoForge the jar accepts (neoforge.mods.toml): deps.neoforge_floor where a node sets one, else the build's.
 val neoforgeFloor = propOrNull("deps.neoforge_floor") ?: neoforgeVersion
 
@@ -46,7 +46,10 @@ neoForge {
 
     runs {
         configureEach {
-            systemProperty("neoforge.enabledGameTestNamespaces", if (importedTests == null) "$modId,ntmprobe" else modId)
+            systemProperty(
+                "neoforge.enabledGameTestNamespaces",
+                if (importedTests == null) "$modId,ntmprobe" else modId
+            )
             ideName = "NTM: Space NeoForge ${name.replaceFirstChar { it.uppercase() }} ($mcVersion)"
             sourceSet = devRunSource
         }
@@ -60,8 +63,15 @@ neoForge {
         register("gameTestServer") {
             type = "gameTestServer"
             gameDirectory = file("runs/gametest")
-            systemProperty("ntmprobe.doubleSubstitution", providers.gradleProperty("probe.doubleSubstitution").orElse("false").get())
-            systemProperty("golem.gametest.filter", providers.gradleProperty("gametest.filter").orElse("(ntmspace|ntmprobe):.*").get())
+            systemProperty("golem.gametest.datapackDimensions", "true")
+            systemProperty(
+                "ntmprobe.doubleSubstitution",
+                providers.gradleProperty("probe.doubleSubstitution").orElse("false").get()
+            )
+            systemProperty(
+                "golem.gametest.filter",
+                providers.gradleProperty("gametest.filter").orElse("(ntmspace|ntmprobe):.*").get()
+            )
         }
         register("server") {
             server()
@@ -91,6 +101,10 @@ repositories {
 val localRuntime by configurations.creating
 configurations.named("runtimeClasspath") { extendsFrom(localRuntime) }
 configurations.named("probeRuntimeClasspath") { extendsFrom(localRuntime) }
+
+val devModJar by configurations.creating
+extra["golem.build.gemrender.runtimeConfiguration"] = devModJar.name
+apply(from = rootProject.file("gradle/gemrender-runtime.gradle.kts"))
 
 dependencies {
     // Golem Core and HBM, both from their composite builds (settings.gradle.kts).
@@ -141,7 +155,13 @@ tasks.named<ProcessResources>("processProbeResources") {
 }
 
 tasks.jar {
-    from(files(rootProject.file("LICENSE"), rootProject.file("LICENSE.LESSER"), rootProject.file("CREDITS.txt"))) { rename { "${it}_${prop("mod.id")}" } }
+    from(
+        files(
+            rootProject.file("LICENSE"),
+            rootProject.file("LICENSE.LESSER"),
+            rootProject.file("CREDITS.txt")
+        )
+    ) { rename { "${it}_${prop("mod.id")}" } }
 }
 
 tasks.named("createMinecraftArtifacts") { dependsOn(tasks.named("stonecutterGenerate")) }
@@ -205,8 +225,10 @@ if (project.name == "26.1-neoforge") {
             // The generator's mod group repeats NTM: Space's classes and resources without the generated rows: every other
             // run loads the mod's own groups only, or it would hold two copies of the mod and could pick the one without them.
             matching { it.name != "generateData" }.configureEach {
-                loadedMods.set(if (importedTests == null)
-                    setOf(mods.getByName(modId), mods.getByName("ntmprobe")) else setOf(mods.getByName(modId)))
+                loadedMods.set(
+                    if (importedTests == null)
+                        setOf(mods.getByName(modId), mods.getByName("ntmprobe")) else setOf(mods.getByName(modId))
+                )
             }
             // HBM's generator run, for this mod: a headless GameTest server that writes once started and halts.
             register("generateData") {
@@ -263,24 +285,38 @@ if (kubejsRun) {
 }
 val kubejsMod: Configuration by configurations.creating
 if (kubejsRun) dependencies {
-    for (mod in listOfNotNull(propOrNull("deps.kubejs_bat")?.let { "dev.latvian.mods:better-advanced-tooltips:$it" }, "dev.latvian.mods:kubejs-neoforge:${prop("deps.kubejs")}", "dev.latvian.mods:rhino:${prop("deps.kubejs_rhino")}")) {
+    for (mod in listOfNotNull(
+        propOrNull("deps.kubejs_bat")?.let { "dev.latvian.mods:better-advanced-tooltips:$it" },
+        "dev.latvian.mods:kubejs-neoforge:${prop("deps.kubejs")}",
+        "dev.latvian.mods:rhino:${prop("deps.kubejs_rhino")}"
+    )) {
         kubejsMod(mod) { isTransitive = false }
     }
 }
 // Mod files, not classpath entries (KubeJS carries mixins, which FML registers only for a jar in the mods folder).
 // Always registered and run, so a run without the flag also clears the jars a flagged run left behind.
-for ((run, task) in listOf("client" to "runClient", "harness" to "runClient", "server" to "runServer", "gametest" to "runGameTestServer")) {
+for ((run, task) in listOf(
+    "client" to "runClient",
+    "harness" to "runClient",
+    "server" to "runServer",
+    "gametest" to "runGameTestServer"
+)) {
     val modsDir = layout.projectDirectory.dir("runs/$run/mods")
+    val runMods = if (run == "client" || run == "harness") listOf(kubejsMod, devModJar) else listOf(kubejsMod)
     val sync = tasks.register("syncKubeJs${run.replaceFirstChar { it.uppercase() }}") {
-        description = "Places KubeJS in the $run run's mods folder (-Pkubejs.run)."
-        inputs.files(kubejsMod)
+        description = "Places opt-in dev mod jars in the $run run's mods folder."
+        inputs.files(runMods)
         outputs.dir(modsDir)
-        doLast { project.sync { from(kubejsMod); into(modsDir) } }
+        doLast { project.sync { from(runMods); into(modsDir) } }
     }
     val prepare = "prepare${task.removePrefix("run")}Run"
     tasks.matching { it.name == task || it.name == prepare }.configureEach { dependsOn(sync) }
 }
-for ((run, tasksOfRun) in listOf("client" to listOf("runClient", "prepareClientRun"), "server" to listOf("runServer", "prepareServerRun"), "gametest" to listOf("runGameTestServer", "prepareGameTestServerRun"))) {
+for ((run, tasksOfRun) in listOf(
+    "client" to listOf("runClient", "prepareClientRun"),
+    "server" to listOf("runServer", "prepareServerRun"),
+    "gametest" to listOf("runGameTestServer", "prepareGameTestServerRun")
+)) {
     if (!kubejsRun) break
     val copy = tasks.register<Copy>("copyKubeJsScripts${run.replaceFirstChar { it.uppercase() }}") {
         description = "Copies harness/kubejs into the $run run's kubejs folder (-Pkubejs.run)."

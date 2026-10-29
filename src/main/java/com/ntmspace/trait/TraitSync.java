@@ -7,10 +7,14 @@ import dev.golem.core.net.GolemCodec;
 import dev.golem.core.net.GolemNetwork;
 import dev.golem.core.net.GolemPayload;
 import dev.golem.core.platform.Lifecycle;
+import dev.golem.core.world.Deaths;
+import dev.golem.core.world.EntityRemovals;
+
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+
 import net.minecraft.network.RegistryFriendlyByteBuf;
 import net.minecraft.resources.Identifier;
 import net.minecraft.server.MinecraftServer;
@@ -24,21 +28,25 @@ import net.minecraft.server.level.ServerPlayer;
  */
 public final class TraitSync {
 
-    private TraitSync() {}
+    private TraitSync() {
+    }
 
-    public record Payload(Map<String, Map<Class<? extends CelestialBodyTrait>, CelestialBodyTrait>> traits) implements GolemPayload {
+    public record Payload(
+            Map<String, Map<Class<? extends CelestialBodyTrait>, CelestialBodyTrait>> traits) implements GolemPayload {
         @Override
         public Identifier id() {
             return CODEC.id();
         }
     }
 
-    public static final GolemCodec<Payload> CODEC = GolemCodec.ofRegistry(Payload.class, Ids.of(NtmSpace.MOD_ID, "celestial_traits"),
+    public static final GolemCodec<Payload> CODEC = GolemCodec.ofRegistry(Payload.class,
+            Ids.of(NtmSpace.MOD_ID, "celestial_traits"),
             TraitSync::write, TraitSync::read);
 
     private static void write(Payload payload, RegistryFriendlyByteBuf buf) {
         buf.writeVarInt(payload.traits().size());
-        for (Map.Entry<String, Map<Class<? extends CelestialBodyTrait>, CelestialBodyTrait>> body : payload.traits().entrySet()) {
+        for (Map.Entry<String, Map<Class<? extends CelestialBodyTrait>, CelestialBodyTrait>> body : payload.traits()
+                                                                                                           .entrySet()) {
             buf.writeUtf(body.getKey());
             List<CelestialBodyTrait> traits = new ArrayList<>(body.getValue().values());
             buf.writeVarInt(traits.size());
@@ -68,7 +76,9 @@ public final class TraitSync {
         return new Payload(traits);
     }
 
-    /** Common start-up: the payload, the server tick and the join sync. */
+    /**
+     * Common start-up: the payload, the server tick and the join sync.
+     */
     public static void init() {
         CelestialTimeSync.init();
         GolemNetwork.declarePlayToClient(CODEC);
@@ -77,11 +87,8 @@ public final class TraitSync {
         Lifecycle.onBeforeLevelTicks(CelestialTraits::serverTick);
         Lifecycle.onServerTick(TraitSync::tick);
         // 1.7 ModEventHandler.onLivingDeath: a kill counts for the body's invasion
-        dev.golem.core.world.Deaths.onDeath((entity, source) -> {
-            if (entity.level().isClientSide()) return;
-            CBT_Invasion invasion = CelestialTraits.getTrait(entity.level(), CBT_Invasion.class);
-            if (invasion != null) invasion.onKill(entity, CelestialTraits.bodyOf(entity.level()));
-        });
+        Deaths.onDeath((entity, unusedSource) -> CBT_Invasion.onDeath(entity));
+        EntityRemovals.AFTER.register(CBT_Invasion::onRemoval);
         Lifecycle.onEntityLoad((entity, level) -> {
             if (entity instanceof ServerPlayer player) {
                 CelestialTraits.attach(level);
@@ -90,7 +97,9 @@ public final class TraitSync {
         });
     }
 
-    /** Client start-up: the handler. */
+    /**
+     * Client start-up: the handler.
+     */
     public static void initClient() {
         CelestialTimeClient.init();
         GolemNetwork.registerPlayToClient(CODEC, (payload, context) -> CelestialTraits.receive(payload.traits()));
@@ -110,10 +119,13 @@ public final class TraitSync {
         if (GolemNetwork.canSendToPlayer(player, CODEC)) GolemNetwork.sendToPlayer(player, CODEC, snapshot());
     }
 
-    /** The saved traits, copied so the payload never shares objects with the save (an integrated server shares a JVM). */
+    /**
+     * The saved traits, copied so the payload never shares objects with the save (an integrated server shares a JVM).
+     */
     private static Payload snapshot() {
         Map<String, Map<Class<? extends CelestialBodyTrait>, CelestialBodyTrait>> copy = new HashMap<>();
-        for (Map.Entry<String, Map<Class<? extends CelestialBodyTrait>, CelestialBodyTrait>> body : CelestialTraits.savedTraits().entrySet()) {
+        for (Map.Entry<String, Map<Class<? extends CelestialBodyTrait>, CelestialBodyTrait>> body : CelestialTraits.savedTraits()
+                                                                                                                   .entrySet()) {
             Map<Class<? extends CelestialBodyTrait>, CelestialBodyTrait> set = new HashMap<>();
             for (CelestialBodyTrait trait : body.getValue().values()) set.put(trait.getClass(), trait.copy());
             copy.put(body.getKey(), set);
