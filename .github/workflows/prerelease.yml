@@ -43,6 +43,15 @@ jobs:
     env:
       ORG_GRADLE_PROJECT_hbmProjectDir: ../NTM-Continuum
     steps:
+      # The three chiseled builds plus the Gradle home cache save outgrow a hosted runner's free disk; drop preinstalled
+      # SDKs this job never uses.
+      - name: Free disk space
+        run: |
+          df -h /
+          sudo rm -rf /usr/local/lib/android /usr/share/dotnet /opt/ghc /usr/local/.ghcup /opt/hostedtoolcache/CodeQL \
+            /usr/local/share/boost /usr/share/swift
+          df -h /
+
       # Override the HBM composite path to match this job's checkout directory.
       - uses: actions/checkout@v4
         with:
