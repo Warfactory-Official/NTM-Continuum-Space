@@ -15,9 +15,7 @@ import com.ntmspace.trait.CBT_Atmosphere;
 import dev.golem.core.data.EntityData;
 import dev.golem.core.platform.Lifecycle;
 import dev.golem.core.world.Compat;
-
 import java.util.function.Predicate;
-
 import net.minecraft.core.registries.Registries;
 import net.minecraft.resources.ResourceKey;
 import net.minecraft.server.level.ServerLevel;
@@ -50,16 +48,13 @@ import org.jetbrains.annotations.Nullable;
  */
 public final class Breathing {
 
-    private Breathing() {
-    }
+    private Breathing() {}
 
     public static final int FULL_BREATH = 100;
     public static final EquipmentSlot[] ARMOR_SLOTS = {
             EquipmentSlot.FEET, EquipmentSlot.LEGS, EquipmentSlot.CHEST, EquipmentSlot.HEAD};
 
-    /**
-     * Per-entity breath: 1.7 {@code HbmLivingProps} oxygen, cached atmosphere and "has gravity" (= has an atmosphere).
-     */
+    /** Per-entity breath: 1.7 {@code HbmLivingProps} oxygen, cached atmosphere and "has gravity" (= has an atmosphere). */
     public static final class State {
         public int oxygen = FULL_BREATH;
         @Nullable CBT_Atmosphere atmosphere;
@@ -67,8 +62,7 @@ public final class Breathing {
         int tankTicks;
     }
 
-    public static final EntityData<State> STATE = EntityData.of(NtmSpace.MOD_ID, "breath", LivingEntity.class,
-            State::new,
+    public static final EntityData<State> STATE = EntityData.of(NtmSpace.MOD_ID, "breath", LivingEntity.class, State::new,
             (state, out) -> {
                 out.putInt("oxygen", state.oxygen);
                 out.putBoolean("gravity", state.gravity);
@@ -80,8 +74,7 @@ public final class Breathing {
 
     public static final ResourceKey<DamageType> OXYPRIME =
             ResourceKey.create(Registries.DAMAGE_TYPE, dev.golem.core.Ids.of(NtmSpace.MOD_ID, "oxyprime"));
-    public static final ResourceKey<DamageType> ACID_KEY = ResourceKey.create(Registries.DAMAGE_TYPE,
-            dev.golem.core.Ids.of("hbm", "acid"));
+    public static final ResourceKey<DamageType> ACID_KEY = ResourceKey.create(Registries.DAMAGE_TYPE, dev.golem.core.Ids.of("hbm", "acid"));
 
     /**
      * 1.7 skipped entities riding its rideable rocket ("breathe easy in your ship"); the rocket port answers true for
@@ -104,9 +97,7 @@ public final class Breathing {
         handleCorrosion(entity, atmosphere);
     }
 
-    /**
-     * 1.7: players every tick, other living entities once per second.
-     */
+    /** 1.7: players every tick, other living entities once per second. */
     private static @Nullable CBT_Atmosphere getAtmosphereCached(LivingEntity entity) {
         State state = STATE.get(entity);
         if (entity instanceof ServerPlayer || entity.tickCount % 20 == 0) {
@@ -117,9 +108,7 @@ public final class Breathing {
         return state.atmosphere;
     }
 
-    /**
-     * 1.7 {@code HbmLivingProps.hasGravity}: the entity was last in some air (the orbit uses it for station gravity).
-     */
+    /** 1.7 {@code HbmLivingProps.hasGravity}: the entity was last in some air (the orbit uses it for station gravity). */
     public static boolean hasGravity(LivingEntity entity) {
         return STATE.get(entity).gravity;
     }
@@ -163,9 +152,7 @@ public final class Breathing {
         return STATE.get(entity).oxygen;
     }
 
-    /**
-     * 1.7 {@code HbmLivingProps.setOxy}: at 0 and below the entity takes oxyprime damage.
-     */
+    /** 1.7 {@code HbmLivingProps.setOxy}: at 0 and below the entity takes oxyprime damage. */
     public static void setOxy(LivingEntity entity, int oxygen) {
         if (oxygen <= 0) {
             if (entity.tickCount < 20) oxygen = 0; // limit overdamage effects when relogging
@@ -188,9 +175,7 @@ public final class Breathing {
         return ModDamageSources.source(level, OXYPRIME);
     }
 
-    /**
-     * 1.7 {@code handleOxy}.
-     */
+    /** 1.7 {@code handleOxy}. */
     public static void handleOxy(LivingEntity entity, @Nullable CBT_Atmosphere atmosphere) {
         if (entity.level().isClientSide()) return;
         if (entity.getType().builtInRegistryHolder().is(Sealing.SUFFOCATION_IMMUNE)) return;
@@ -204,9 +189,7 @@ public final class Breathing {
         }
     }
 
-    /**
-     * 1.7 {@code ArmorUtil.checkForOxy}.
-     */
+    /** 1.7 {@code ArmorUtil.checkForOxy}. */
     public static boolean checkForOxy(LivingEntity entity, @Nullable CBT_Atmosphere atmosphere) {
         if (!(entity instanceof Player player)) return AtmosphereHandler.canBreathe(atmosphere);
 
@@ -240,9 +223,7 @@ public final class Breathing {
         return stack.is(Sealing.CORROSION_PROTECTION);
     }
 
-    /**
-     * 1.7 {@code getOxygenTank}: every armour piece sealed and a PLSS in the helmet, else empty.
-     */
+    /** 1.7 {@code getOxygenTank}: every armour piece sealed and a PLSS in the helmet, else empty. */
     public static ItemStack getOxygenTank(Player player) {
         // Check that all the armor pieces are sealed
         for (EquipmentSlot slot : ARMOR_SLOTS) {
@@ -259,9 +240,7 @@ public final class Breathing {
         return ItemStack.EMPTY;
     }
 
-    /**
-     * 1.7: creative mode, or a full DNT suit. The port counts spectators as creative (1.7 had none).
-     */
+    /** 1.7: creative mode, or a full DNT suit. The port counts spectators as creative (1.7 had none). */
     private static boolean checkSpecialBreathing(Player player) {
         if (player.isCreative() || player.isSpectator()) return true;
         for (EquipmentSlot slot : ARMOR_SLOTS) {
@@ -277,10 +256,8 @@ public final class Breathing {
     public static void handleCorrosion(LivingEntity entity, @Nullable CBT_Atmosphere atmosphere) {
         if (entity.level().isClientSide()) return;
         // 1.7: glyphids and cyber crabs; the port names the same mobs by type id
-        String id = String.valueOf(
-                net.minecraft.core.registries.BuiltInRegistries.ENTITY_TYPE.getKey(entity.getType()));
-        if (id.startsWith("hbm:entity_glyphid") || id.equals("hbm:entity_cyber_crab") || id.equals(
-                "hbm:entity_taint_crab")
+        String id = String.valueOf(net.minecraft.core.registries.BuiltInRegistries.ENTITY_TYPE.getKey(entity.getType()));
+        if (id.startsWith("hbm:entity_glyphid") || id.equals("hbm:entity_cyber_crab") || id.equals("hbm:entity_taint_crab")
                 || id.equals("hbm:entity_tesla_crab")) return;
         Entity vehicle = entity.getVehicle();
         if (vehicle != null && SHELTERED_VEHICLE.test(vehicle)) return;
@@ -291,9 +268,7 @@ public final class Breathing {
         }
     }
 
-    /**
-     * 1.7 {@code ArmorUtil.checkForCorrosion}.
-     */
+    /** 1.7 {@code ArmorUtil.checkForCorrosion}. */
     public static boolean checkForCorrosion(LivingEntity entity, @Nullable CBT_Atmosphere atmosphere) {
         if (!AtmosphereHandler.willCorrode(atmosphere)) return false;
         if (!(entity instanceof Player player)) return true;
@@ -320,17 +295,14 @@ public final class Breathing {
             if ((stack.isDamageableItem() && stack.getDamageValue() >= stack.getMaxDamage())
                     || !(stack.getItem() instanceof ArmorFSB) || !enabled) {
                 player.setItemSlot(slot, ItemStack.EMPTY);
-                entity.level().playSound(null, entity.getX(), entity.getY(), entity.getZ(), SoundEvents.FIRE_EXTINGUISH,
-                        SoundSource.PLAYERS, 0.2F, 1F);
+                entity.level().playSound(null, entity.getX(), entity.getY(), entity.getZ(), SoundEvents.FIRE_EXTINGUISH, SoundSource.PLAYERS, 0.2F, 1F);
             }
         }
         // 1.7 also showed the red "info.corrosion" notice here; HBM has no inform toast yet
         return !isSealed;
     }
 
-    /**
-     * 1.7 {@code getCorrosionProtection}: a chestplate insert that protects against corrosion ({@code #ntmspace:corrosion_protection}).
-     */
+    /** 1.7 {@code getCorrosionProtection}: a chestplate insert that protects against corrosion ({@code #ntmspace:corrosion_protection}). */
     public static ItemStack getCorrosionProtection(Player player) {
         ItemStack chest = player.getItemBySlot(EquipmentSlot.CHEST);
         if (!chest.isEmpty() && ArmorModHandler.hasMods(chest)) {

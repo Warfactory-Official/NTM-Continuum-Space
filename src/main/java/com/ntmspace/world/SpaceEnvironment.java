@@ -51,8 +51,7 @@ public final class SpaceEnvironment {
     private static final String SAFE_FALL = BODY.toString();
     private static final String FALL_DAMAGE = BODY.toString();
 
-    private SpaceEnvironment() {
-    }
+    private SpaceEnvironment() {}
 
     public static void init() {
         // breathing, pressure and the other trait-driven hooks: the bodies' runtime traits and the sealed rooms
@@ -73,8 +72,7 @@ public final class SpaceEnvironment {
             return Environment.breatheAir(level, pos, 0) ? Verdict.PASS : Verdict.DENY;
         });
         Physics.EFFECTIVE_GRAVITY.register(SpaceEnvironment::effective);
-        Physics.VERTICAL_AIR_DRAG.register(
-                (entity, vertical, horizontal) -> weightless(entity) ? horizontal : vertical);
+        Physics.VERTICAL_AIR_DRAG.register((entity, vertical, horizontal) -> weightless(entity) ? horizontal : vertical);
         Lifecycle.onEntityLoad(SpaceEnvironment::entered);
     }
 
@@ -88,9 +86,7 @@ public final class SpaceEnvironment {
         }
     }
 
-    /**
-     * Surface pull on a body, or the current station pull measured from the entity's air in orbit.
-     */
+    /** Surface pull on a body, or the current station pull measured from the entity's air in orbit. */
     public static void measure(LivingEntity living) {
         if (Orbit.inOrbit(living.level())) {
             apply(living, OrbitEnvironment.gravity(living));
@@ -104,9 +100,7 @@ public final class SpaceEnvironment {
         apply(living, body == null ? CelestialBodies.STANDARD_GRAVITY : body.playerGravity());
     }
 
-    /**
-     * High gravity leaves ascent at standard pull; low-gravity heavy boots do the same while crouching.
-     */
+    /** High gravity leaves ascent at standard pull; low-gravity heavy boots do the same while crouching. */
     public static double effective(LivingEntity entity, double gravity) {
         var attribute = Physics.gravity(entity);
         if (!Attributes.has(attribute, GRAVITY)) return gravity;
@@ -125,9 +119,7 @@ public final class SpaceEnvironment {
         return Attributes.has(attribute, GRAVITY) && Attributes.modifierAmount(attribute, GRAVITY) == -1D;
     }
 
-    /**
-     * The body's transient gravity and fall-distance bands, in the legacy 1.6-standard units.
-     */
+    /** The body's transient gravity and fall-distance bands, in the legacy 1.6-standard units. */
     public static void apply(LivingEntity living, float gravity) {
         if (gravity >= 1.5F && gravity <= 1.7F) {
             Attributes.removeTransient(Physics.gravity(living), GRAVITY);
@@ -138,15 +130,12 @@ public final class SpaceEnvironment {
         double k = gravity == 0F ? 0D : (double) Math.max(gravity, 0.2F) / CelestialBodies.STANDARD_GRAVITY;
         Attributes.setTransient(Physics.gravity(living), GRAVITY, k - 1.0D, Attributes.Op.MULTIPLY_TOTAL);
         if (gravity < 0.3F) {
-            Attributes.setTransient(Physics.fallDamageMultiplier(living), FALL_DAMAGE, -1.0D,
-                    Attributes.Op.MULTIPLY_TOTAL);
+            Attributes.setTransient(Physics.fallDamageMultiplier(living), FALL_DAMAGE, -1.0D, Attributes.Op.MULTIPLY_TOTAL);
             Attributes.removeTransient(Physics.safeFallDistance(living), SAFE_FALL);
         } else if (gravity < 1.5F) {
             double fall = (double) gravity / CelestialBodies.STANDARD_GRAVITY;
-            Attributes.setTransient(Physics.safeFallDistance(living), SAFE_FALL, 1.0D / fall - 1.0D,
-                    Attributes.Op.MULTIPLY_TOTAL);
-            Attributes.setTransient(Physics.fallDamageMultiplier(living), FALL_DAMAGE, fall - 1.0D,
-                    Attributes.Op.MULTIPLY_TOTAL);
+            Attributes.setTransient(Physics.safeFallDistance(living), SAFE_FALL, 1.0D / fall - 1.0D, Attributes.Op.MULTIPLY_TOTAL);
+            Attributes.setTransient(Physics.fallDamageMultiplier(living), FALL_DAMAGE, fall - 1.0D, Attributes.Op.MULTIPLY_TOTAL);
         } else {
             Attributes.removeTransient(Physics.safeFallDistance(living), SAFE_FALL);
             Attributes.removeTransient(Physics.fallDamageMultiplier(living), FALL_DAMAGE);

@@ -11,9 +11,7 @@ import com.ntmspace.world.SpaceDimensions;
 import com.ntmspace.world.SpaceSkies;
 import dev.golem.core.render.Sky;
 import dev.golem.core.render.Skyboxes;
-
 import java.util.List;
-
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.multiplayer.ClientLevel;
 import net.minecraft.util.Mth;
@@ -59,9 +57,7 @@ public final class MunSky implements Skyboxes.Skybox {
      */
     static volatile double pinnedTicks = Double.NaN;
 
-    /**
-     * {@code getTotalWorldTime() + partialTicks}, the time the orbits are computed at ({@link #pinnedTicks}).
-     */
+    /** {@code getTotalWorldTime() + partialTicks}, the time the orbits are computed at ({@link #pinnedTicks}). */
     static double skyTicks(ClientLevel level, float partialTicks) {
         double pinned = pinnedTicks;
         return Double.isNaN(pinned) ? level.getGameTime() + (double) partialTicks : pinned;
@@ -96,8 +92,7 @@ public final class MunSky implements Skyboxes.Skybox {
         float fogIntensity = CelestialSkyColors.fogIntensity(level);
         if (fogIntensity > 0.01F) {
             Vec3 fog = sky.fogColor();
-            planetTint = new Vec3(clampedLerp(skyColor.x, fog.x, fogIntensity),
-                    clampedLerp(skyColor.y, fog.y, fogIntensity),
+            planetTint = new Vec3(clampedLerp(skyColor.x, fog.x, fogIntensity), clampedLerp(skyColor.y, fog.y, fogIntensity),
                     clampedLerp(skyColor.z, fog.z, fogIntensity));
         }
 
@@ -121,8 +116,7 @@ public final class MunSky implements Skyboxes.Skybox {
         // texture is 4 times larger than the sun itself, for the glow
         double sunSize = SolarSystem.calculateSunSize(body) * SolarSystem.SUN_RENDER_SCALE;
         double coronaSize = sunSize * (3 - Mth.clamp(pressure, 0.0F, 1.0F));
-        renderSun(sky, body.getStar(), CelestialSkyColors.sunColor(level), (float) sunSize, (float) coronaSize,
-                visibility, pressure);
+        renderSun(sky, body.getStar(), CelestialSkyColors.sunColor(level), (float) sunSize, (float) coronaSize, visibility, pressure);
 
         float blendAmount = hasAtmosphere ? Mth.clamp(1 - SpaceSkies.daylight(level, partialTicks), 0.25F, 1F) : 1F;
         List<SolarSystem.AstroMetric> metrics = SolarSystem.calculateClientMetricsFromBody(ticks, body, solarAngle);
@@ -154,20 +148,18 @@ public final class MunSky implements Skyboxes.Skybox {
         SolarSystem.Body body = SpaceSkies.body(level);
         net.minecraft.world.entity.Entity camera = net.minecraft.client.Minecraft.getInstance().getCameraEntity();
         if (body == null || camera == null) return;
-        double y = camera.getY();
+        double y = camera.getEyeY();
         float alpha = ((float) y - 200.0F) / 300.0F;
         if (alpha <= 0.0F) return;
         double sc = 1 / (y / 1000);
         float uvOffset = (float) ((camera.getX() / 1024) % 1);
-        float base = SpaceSkies.isKerbin(level) ? vanillaSunBrightness(sky.celestialAngle()) : SpaceSkies.sunBrightness(
-                level, sky.partialTick());
+        float base = SpaceSkies.isKerbin(level) ? vanillaSunBrightness(sky.celestialAngle()) : SpaceSkies.sunBrightness(level, sky.partialTick());
         float sunBrightness = CelestialSkyColors.sunBrightness(level, base, sky.partialTick());
         float s = (float) (115 * sc);
         PoseStack pose = sky.pose();
         pose.pushPose();
         pose.mulPose(Axis.XP.rotationDegrees(180.0F));
-        sky.texturedQuads(Sky.Texture.of(NtmSpace.MOD_ID, body.texture()), Sky.Blend.ALPHA, sunBrightness,
-                sunBrightness, sunBrightness,
+        sky.texturedQuads(Sky.Texture.of(NtmSpace.MOD_ID, body.texture()), Sky.Blend.ALPHA, sunBrightness, sunBrightness, sunBrightness,
                 Math.min(alpha, 1.0F),
                 -s, 100, -s, uvOffset, 0,
                 s, 100, -s, 1 + uvOffset, 0,
@@ -176,27 +168,21 @@ public final class MunSky implements Skyboxes.Skybox {
         pose.popPose();
     }
 
-    /**
-     * 1.7 {@code World.getSunBrightness} at {@code angle}, without weather.
-     */
+    /** 1.7 {@code World.getSunBrightness} at {@code angle}, without weather. */
     private static float vanillaSunBrightness(float angle) {
         float f = 1.0F - (Mth.cos(angle * (float) Math.PI * 2.0F) * 2.0F + 0.2F);
         f = 1.0F - Mth.clamp(f, 0.0F, 1.0F);
         return f * 0.8F + 0.2F;
     }
 
-    /**
-     * {@code BobMathUtil.clampedLerp}.
-     */
+    /** {@code BobMathUtil.clampedLerp}. */
     private static double clampedLerp(double a, double b, double t) {
         if (t < 0) return a;
         if (t > 1) return b;
         return a + (b - a) * t;
     }
 
-    /**
-     * Whether this native sky uses Laythe's three additive sunset fans.
-     */
+    /** Whether this native sky uses Laythe's three additive sunset fans. */
     public static boolean laytheSunset(ResourceKey<Level> dimension) {
         return dimension.equals(SpaceDimensions.LAYTHE);
     }
@@ -209,8 +195,7 @@ public final class MunSky implements Skyboxes.Skybox {
      */
     private static void renderSunset(Sky sky, ClientLevel level, float solarAngle) {
         boolean laythe = laytheSunset(level.dimension());
-        float[] c = laythe ? CelestialSkyColors.providerSunset(level, solarAngle) : CelestialSkyColors.skySunset(level,
-                solarAngle);
+        float[] c = laythe ? CelestialSkyColors.providerSunset(level, solarAngle) : CelestialSkyColors.skySunset(level, solarAngle);
         if (c == null) return;
         float direction = Mth.sin(solarAngle * (float) Math.PI * 2.0F) < 0.0F ? 180.0F : 0.0F;
         PoseStack pose = sky.pose();
@@ -223,8 +208,7 @@ public final class MunSky implements Skyboxes.Skybox {
             // charged dust over an airless horizon (1.7: below 0.05 atm, in the same frame)
             String air = SpaceSkies.airBody(level);
             float pressure = air == null ? 0.0F : (float) Atmospheres.pressure(air);
-            if (pressure < 0.05F)
-                CelestialSkyObjects.chargedDust(sky, level, SpaceSkies.body(level), c[3], sky.partialTick());
+            if (pressure < 0.05F) CelestialSkyObjects.chargedDust(sky, level, SpaceSkies.body(level), c[3], sky.partialTick());
             pose.popPose();
             return;
         }
@@ -332,9 +316,7 @@ public final class MunSky implements Skyboxes.Skybox {
         pose.popPose();
     }
 
-    /**
-     * {@code renderSkyboxSide}: one face of the star box, a third by a half of night.png.
-     */
+    /** {@code renderSkyboxSide}: one face of the star box, a third by a half of night.png. */
     private static void skyboxSide(Sky sky, int side, float alpha) {
         float u = side % 3 / 3.0F;
         float v = side / 3 / 2.0F;
@@ -346,9 +328,8 @@ public final class MunSky implements Skyboxes.Skybox {
                 100, -100, -100, u + w, v);
     }
 
-    static void renderSun(Sky sky, SolarSystem.Body sun, float[] sunColor, float sunSize, float coronaSize,
-                          float visibility,
-                          float pressure) {
+    static void renderSun(Sky sky, SolarSystem.Body sun, float[] sunColor, float sunSize, float coronaSize, float visibility,
+                                  float pressure) {
         // BLACK HOLE SUN, WON'T YOU COME: a destroyed star with a shader (only Kerbol has one, withShader(blackhole.frag, 3));
         // any other star draws as usual, as in 1.7
         if (sun.name.equals("kerbol") && CelestialSkyObjects.starDestroyed(sun)) {
@@ -356,15 +337,13 @@ public final class MunSky implements Skyboxes.Skybox {
             return;
         }
         // tinted by the air (WorldProviderCelestial.getSunColor)
-        sky.texturedQuads(Sky.Texture.of(NtmSpace.MOD_ID, sun.texture()), Sky.Blend.ADDITIVE, sunColor[0], sunColor[1],
-                sunColor[2], visibility,
+        sky.texturedQuads(Sky.Texture.of(NtmSpace.MOD_ID, sun.texture()), Sky.Blend.ADDITIVE, sunColor[0], sunColor[1], sunColor[2], visibility,
                 -sunSize, 100, -sunSize, 0, 0,
                 sunSize, 100, -sunSize, 1, 0,
                 sunSize, 100, sunSize, 1, 1,
                 -sunSize, 100, sunSize, 0, 1);
         // a big ol' spiky flare, less so with an atmosphere
-        sky.texturedQuads(SUNSPIKE, Sky.Blend.ADDITIVE, sunColor[0], sunColor[1], sunColor[2],
-                1 - Mth.clamp(pressure, 0.0F, 1.0F) * 0.75F,
+        sky.texturedQuads(SUNSPIKE, Sky.Blend.ADDITIVE, sunColor[0], sunColor[1], sunColor[2], 1 - Mth.clamp(pressure, 0.0F, 1.0F) * 0.75F,
                 -coronaSize, 99.9F, -coronaSize, 0, 0,
                 coronaSize, 99.9F, -coronaSize, 1, 0,
                 coronaSize, 99.9F, coronaSize, 1, 1,
@@ -373,8 +352,7 @@ public final class MunSky implements Skyboxes.Skybox {
         DysonSky.renderSwarm(sky, sun, sunSize);
     }
 
-    private static void renderCelestials(Sky sky, List<SolarSystem.AstroMetric> metrics, Vec3 planetTint,
-                                         float visibility,
+    private static void renderCelestials(Sky sky, List<SolarSystem.AstroMetric> metrics, Vec3 planetTint, float visibility,
                                          float blendAmount, float maxSize) {
         renderCelestials(sky, metrics, planetTint, visibility, blendAmount, maxSize, null, 0);
     }
@@ -413,8 +391,7 @@ public final class MunSky implements Skyboxes.Skybox {
                 // Draw the back half of the ring (obscured by body)
                 CelestialSkyObjects.ringBack(sky, metric.body, metric.angle, s, visibility);
                 com.ntmspace.trait.CBT_Destroyed destroyed = CelestialSkyObjects.destroyed(metric.body);
-                PlanetShaders.BodyFrame shaded = new PlanetShaders.BodyFrame(sky.level(), metric.body, metric.phase,
-                        uvOffset,
+                PlanetShaders.BodyFrame shaded = new PlanetShaders.BodyFrame(sky.level(), metric.body, metric.phase, uvOffset,
                         patternOffset, s, sky.partialTick());
                 if (destroyed != null) {
                     CelestialSkyObjects.destroyedBody(sky, metric.body, s, uvOffset, destroyed);
@@ -455,8 +432,7 @@ public final class MunSky implements Skyboxes.Skybox {
                     float tintAlpha = 1 - blendAmount * visibility;
                     if (tintAlpha > 0.0F) {
                         sky.quads(Sky.Blend.ADDITIVE, Math.max(0.0F, (float) planetTint.x - blendDarken),
-                                Math.max(0.0F, (float) planetTint.y - blendDarken),
-                                Math.max(0.0F, (float) planetTint.z - blendDarken),
+                                Math.max(0.0F, (float) planetTint.y - blendDarken), Math.max(0.0F, (float) planetTint.z - blendDarken),
                                 tintAlpha,
                                 -s, 100, -s, s, 100, -s, s, 100, s, -s, 100, s);
                     }
@@ -469,8 +445,7 @@ public final class MunSky implements Skyboxes.Skybox {
 
             if (renderPoint) {
                 float alpha = Mth.clamp(s * 100.0F, 0.0F, 1.0F);
-                alpha *= 1 - Mth.clamp(
-                        (s - (float) transitionMinSize) / (float) (transitionMaxSize - transitionMinSize), 0.0F, 1.0F);
+                alpha *= 1 - Mth.clamp((s - (float) transitionMinSize) / (float) (transitionMaxSize - transitionMinSize), 0.0F, 1.0F);
                 // additive: a point-only body inherits the sun's blend in 1.7, and a drawn body's overlays end by setting
                 // the additive blend again (renderCelestials, after renderLightningOverlay)
                 sky.texturedQuads(PLANET, Sky.Blend.ADDITIVE,

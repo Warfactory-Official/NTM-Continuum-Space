@@ -14,18 +14,12 @@ import com.ntmspace.fork.client.ForkClient;
 import com.ntmspace.tileentity.machine.StardarHeightmap;
 import com.ntmspace.trait.TraitSync;
 import dev.golem.core.client.ItemModelProperties;
-import dev.golem.core.client.Sounds;
-
-/**
- * NTM: Space's client start-up, the same on every loader (each loader's client init calls it).
- */
+/** NTM: Space's client start-up, the same on every loader (each loader's client init calls it). */
 public final class SpaceClient {
 
-    private SpaceClient() {
-    }
+    private SpaceClient() {}
 
     public static void init() {
-        Sounds.spatialize(NtmSpace.MOD_ID);
         ObjBlockModels.install();
         MunSky.init();
         SkyWeatherClient.init();

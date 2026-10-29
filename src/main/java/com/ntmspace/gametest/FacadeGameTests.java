@@ -30,29 +30,21 @@ public final class FacadeGameTests {
 
     private static final GameTests.Suite TESTS = SpaceGameTests.TESTS;
 
-    /**
-     * Every body but Kerbin keeps its own clock; it is saved, read back and drives the sky's solar angle.
-     */
+    /** Every body but Kerbin keeps its own clock; it is saved, read back and drives the sky's solar angle. */
     public static final GameTests.Function BODY_CLOCKS = TESTS.function("facade_body_time_of_day", 40,
             () -> FacadeGameTests::bodyClocks);
 
-    /**
-     * "The Martian": its preset, parameter list and tag are loaded, its overworld is stable, this test world is not one.
-     */
+    /** "The Martian": its preset, parameter list and tag are loaded, its overworld is stable, this test world is not one. */
     public static final GameTests.Function MARTIAN = TESTS.function("facade_martian_world_type", 20,
             () -> FacadeGameTests::martian);
 
-    /**
-     * The launch burst is an addon effect under its namespaced name.
-     */
+    /** The launch burst is an addon effect under its namespaced name. */
     public static final GameTests.Function EFFECT = TESTS.function("facade_dyson_launch_effect", 20,
             () -> FacadeGameTests::effect);
 
-    private FacadeGameTests() {
-    }
+    private FacadeGameTests() {}
 
-    public static void init() {
-    }
+    public static void init() {}
 
     private static void bodyClocks(GameTestHelper helper) {
         for (var dimension : java.util.List.of(SpaceDimensions.MUN, SpaceDimensions.MINMUS, SpaceDimensions.DUNA,
@@ -77,10 +69,8 @@ public final class FacadeGameTests {
             helper.assertTrue(readBack, "an own clock reads back what was set, vanilla's day time untouched");
             helper.assertTrue(advancing ? now >= probe + 4 && now <= probe + 6 : now == probe,
                     "an own clock ticks with the daylight rule (" + advancing + "): " + probe + " -> " + now);
-            helper.assertTrue(TimeOfDay.get(level) == TimeOfDay.vanilla(level),
-                    "a released clock reads vanilla's again");
-            helper.assertTrue(SolarSystem.solarAngle(SolarSystem.body("mun"), probe, 0.0F) == expected,
-                    "the solar angle is a function of the clock");
+            helper.assertTrue(TimeOfDay.get(level) == TimeOfDay.vanilla(level), "a released clock reads vanilla's again");
+            helper.assertTrue(SolarSystem.solarAngle(SolarSystem.body("mun"), probe, 0.0F) == expected, "the solar angle is a function of the clock");
             helper.succeed();
         });
     }
@@ -92,13 +82,11 @@ public final class FacadeGameTests {
                 dev.golem.core.Ids.of("ntmspace", MartianWorld.NAME));
         var list = registries.lookupOrThrow(Registries.MULTI_NOISE_BIOME_SOURCE_PARAMETER_LIST).get(listKey);
         helper.assertTrue(list.isPresent(), "parameter list ntmspace:martian is loaded");
-        var presetKey = ResourceKey.create(Registries.WORLD_PRESET,
-                dev.golem.core.Ids.of("ntmspace", MartianWorld.NAME));
+        var presetKey = ResourceKey.create(Registries.WORLD_PRESET, dev.golem.core.Ids.of("ntmspace", MartianWorld.NAME));
         var preset = registries.lookupOrThrow(Registries.WORLD_PRESET).get(presetKey);
         helper.assertTrue(preset.isPresent(), "world preset ntmspace:martian is loaded");
         var normal = net.minecraft.tags.TagKey.create(Registries.WORLD_PRESET, dev.golem.core.Ids.minecraft("normal"));
-        helper.assertTrue(preset.get().is(normal),
-                "ntmspace:martian is listed on the create-world screen (#minecraft:normal)");
+        helper.assertTrue(preset.get().is(normal), "ntmspace:martian is listed on the create-world screen (#minecraft:normal)");
         // the preset's overworld names the parameter list, and Golem calls it stable (no experimental screen)
         var stem = preset.get().value().overworld();
         helper.assertTrue(stem.isPresent() && WorldTypes.isStableOverworld(LevelStem.OVERWORLD, stem.get()),

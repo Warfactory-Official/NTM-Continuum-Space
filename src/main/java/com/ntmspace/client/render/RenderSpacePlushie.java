@@ -57,14 +57,11 @@ public final class RenderSpacePlushie extends GemBER<BlockSpacePlushie.Plushie, 
 
     public RenderSpacePlushie() {
         for (Type type : Type.VALUES) {
-            models[type.ordinal()] = WavefrontObj.load(
-                    Ids.of(NtmSpace.MOD_ID, "models/trinkets/" + model(type) + ".obj"));
+            models[type.ordinal()] = WavefrontObj.load(Ids.of(NtmSpace.MOD_ID, "models/trinkets/" + model(type) + ".obj"));
         }
     }
 
-    /**
-     * FAT TETO is drawn with Teto's model and textures.
-     */
+    /** FAT TETO is drawn with Teto's model and textures. */
     private static String model(Type type) {
         return type == Type.FATO ? "teto" : type.name().toLowerCase(java.util.Locale.ROOT);
     }
@@ -97,9 +94,7 @@ public final class RenderSpacePlushie extends GemBER<BlockSpacePlushie.Plushie, 
         pose.popPose();
     }
 
-    /**
-     * 1.7 {@code renderPlushie(type, squishTimer)}.
-     */
+    /** 1.7 {@code renderPlushie(type, squishTimer)}. */
     void renderPlushie(PoseStack pose, SubmitSink sink, Type type, int squishTimer, int light) {
         WavefrontObj model = models[type.ordinal()];
         Identifier texture = squishTimer > 6 ? BLUSH[type.ordinal()] : TEXTURE[type.ordinal()];
@@ -107,9 +102,7 @@ public final class RenderSpacePlushie extends GemBER<BlockSpacePlushie.Plushie, 
                 (p, b) -> model.renderAll(p, b, light, OverlayTexture.NO_OVERLAY));
     }
 
-    /**
-     * The plushie items' renderer ({@code ntmspace:plushie}, HBM's {@code hbm:custom_item}).
-     */
+    /** The plushie items' renderer ({@code ntmspace:plushie}, HBM's {@code hbm:custom_item}). */
     public static final class Item implements CustomItemRenderer {
 
         private final RenderSpacePlushie renderer = new RenderSpacePlushie();

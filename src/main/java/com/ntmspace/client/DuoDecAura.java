@@ -6,17 +6,13 @@ import com.ntmspace.particle.ParticleDuoDec;
 import com.ntmspace.registry.SpaceParticles;
 import dev.golem.core.client.ClientRegistrations;
 import dev.golem.core.render.Particles;
-
 import java.util.UUID;
-
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.multiplayer.ClientLevel;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.phys.Vec3;
 
-/**
- * hbm-space ModEventHandler.onPlayerTick START and ParticleUtil's two independent note rolls.
- */
+/** hbm-space ModEventHandler.onPlayerTick START and ParticleUtil's two independent note rolls. */
 public final class DuoDecAura {
     private static final UUID DUODEC = UUID.fromString(ForkCapes.DUODEC_);
 

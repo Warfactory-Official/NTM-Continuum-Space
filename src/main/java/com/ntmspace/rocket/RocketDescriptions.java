@@ -6,17 +6,13 @@ import com.hbm.handler.MissileStruct;
 import com.hbm.items.weapon.ItemCustomMissile;
 import com.hbm.items.weapon.ItemCustomMissilePart;
 import com.hbm.items.weapon.ItemCustomMissilePart.FuelType;
-
 import java.util.Locale;
 import java.util.function.Consumer;
-
 import net.minecraft.ChatFormatting;
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.network.chat.Component;
 
-/**
- * Space 1.7's replacement missile descriptions: rocket masses, thrust and ISP rather than part health.
- */
+/** Space 1.7's replacement missile descriptions: rocket masses, thrust and ISP rather than part health. */
 public final class RocketDescriptions {
     private RocketDescriptions() {
     }
@@ -62,10 +58,11 @@ public final class RocketDescriptions {
             }
         }
         if (part.rarity != null) output.accept(stat("rarity", part.rarity.getDisplay()));
-        if (part.author() != null) output.accept(Component.translatable("item.missile.part.by")
-                                                          .append(" " + part.author()).withStyle(ChatFormatting.WHITE));
-        if (part.witty() != null) output.accept(Component.literal("\"" + part.witty() + "\"")
-                                                         .withStyle(ChatFormatting.GOLD, ChatFormatting.ITALIC));
+        // 1.7 indented the byline and the witty line with three spaces
+        if (part.author() != null) output.accept(Component.literal("   ").append(Component.translatable("item.missile.part.by"))
+                .append(" " + part.author()).withStyle(ChatFormatting.WHITE));
+        if (part.witty() != null) output.accept(Component.literal("   \"" + part.witty() + "\"")
+                .withStyle(ChatFormatting.GOLD, ChatFormatting.ITALIC));
         return true;
     }
 

@@ -2,24 +2,17 @@ package com.ntmspace.gametest;
 
 import com.ntmspace.NtmSpace;
 import dev.golem.core.gametest.GameTests;
-
 import java.util.ServiceLoader;
-
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.gametest.framework.GameTestHelper;
 
-/**
- * NTM: Space's GameTests (the ntmspace:* namespace).
- */
+/** NTM: Space's GameTests (the ntmspace:* namespace). */
 public final class SpaceGameTests {
 
     public static final GameTests.Suite TESTS = GameTests.suite(NtmSpace.MOD_ID);
 
-    /**
-     * The addon loaded on top of HBM: an HBM block resolves from the addon's code.
-     */
-    public static final GameTests.Function LOADED = TESTS.function("addon_loaded_on_hbm", 20,
-            () -> SpaceGameTests::loaded);
+    /** The addon loaded on top of HBM: an HBM block resolves from the addon's code. */
+    public static final GameTests.Function LOADED = TESTS.function("addon_loaded_on_hbm", 20, () -> SpaceGameTests::loaded);
 
     /**
      * The Mun generator on its own (a GameTest world never has datapack dimensions; the in-world check is the harness's
@@ -37,14 +30,11 @@ public final class SpaceGameTests {
     public static final GameTests.Function CHEMICAL_PLANT = TESTS.function("chemical_plant_space_recipes", 20,
             () -> SpaceGameTests::chemicalPlant);
 
-    /**
-     * {@code hbm:fan} is NTM: Space's substitute (same id, same block entity), and HBM's own handle returns it.
-     */
+    /** {@code hbm:fan} is NTM: Space's substitute (same id, same block entity), and HBM's own handle returns it. */
     public static final GameTests.Function FAN_SUBSTITUTION = TESTS.function("fan_substitution", 20,
             () -> SpaceGameTests::fanSubstitution);
 
-    private SpaceGameTests() {
-    }
+    private SpaceGameTests() {}
 
     private static void fanSubstitution(GameTestHelper helper) {
         net.minecraft.world.level.block.Block fan = com.hbm.blocks.machine.ModMachineBlocks.fan.get();
@@ -55,15 +45,14 @@ public final class SpaceGameTests {
         net.minecraft.core.BlockPos pos = new net.minecraft.core.BlockPos(1, 1, 1);
         helper.setBlock(pos, fan.defaultBlockState());
         // throws (failing the test) if the substitute has no HBM fan block entity
-        dev.golem.core.gametest.GameTestHelpers.blockEntity(helper, pos,
-                com.hbm.blocks.machine.MachineFan.TileEntityFan.class);
+        dev.golem.core.gametest.GameTestHelpers.blockEntity(helper, pos, com.hbm.blocks.machine.MachineFan.TileEntityFan.class);
         helper.succeed();
     }
 
     private static void chemicalPlant(GameTestHelper helper) {
         com.hbm.inventory.recipes.ChemicalPlantRecipes plant = com.hbm.inventory.recipes.ChemicalPlantRecipes.INSTANCE;
         plant.registerRecipes();
-        for (String off : new String[]{"chem.oxygen", "chem.xenon", "chem.xenonoxy", "chem.birkeland"}) {
+        for (String off : new String[] {"chem.oxygen", "chem.xenon", "chem.xenonoxy", "chem.birkeland"}) {
             if (plant.getRecipe(off) != null) {
                 fail(helper, off + " should be switched off by NTM: Space");
                 return;
@@ -72,34 +61,27 @@ public final class SpaceGameTests {
         com.hbm.inventory.recipes.loader.GenericRecipe hcl = plant.getRecipe("chem.hcl");
         if (hcl == null || hcl.outputFluid == null || hcl.outputFluid[0].type != com.ntmspace.fluid.SpaceFluids.HCL
                 || hcl.outputFluid[0].fill != 1000 || hcl.inputFluid.length != 2) {
-            fail(helper,
-                    "chem.hcl missing or wrong: " + (hcl == null ? null : com.hbm.inventory.recipes.loader.GenericRecipeCodec.describe(
-                            hcl)));
+            fail(helper, "chem.hcl missing or wrong: " + (hcl == null ? null : com.hbm.inventory.recipes.loader.GenericRecipeCodec.describe(hcl)));
             return;
         }
         com.hbm.inventory.fluid.trait.FT_Corrosive corrosive =
                 com.ntmspace.fluid.SpaceFluids.HCL.getTrait(com.hbm.inventory.fluid.trait.FT_Corrosive.class);
         if (corrosive == null || corrosive.getRating() != 30
-                || !com.ntmspace.fluid.SpaceFluids.HCL.hasTrait(
-                com.hbm.inventory.fluid.trait.FluidTraitSimple.FT_Liquid.class)) {
+                || !com.ntmspace.fluid.SpaceFluids.HCL.hasTrait(com.hbm.inventory.fluid.trait.FluidTraitSimple.FT_Liquid.class)) {
             fail(helper, "ntmspace:hcl did not get hbm-space's traits from data/ntmspace/fluid_property/hcl.json");
             return;
         }
-        net.minecraft.world.level.material.Fluid vanilla = com.hbm.inventory.fluid.Fluids.toVanilla(
-                com.ntmspace.fluid.SpaceFluids.HCL);
+        net.minecraft.world.level.material.Fluid vanilla = com.hbm.inventory.fluid.Fluids.toVanilla(com.ntmspace.fluid.SpaceFluids.HCL);
         String id = String.valueOf(BuiltInRegistries.FLUID.getKey(vanilla));
-        if (!id.equals("ntmspace:hcl") || com.hbm.inventory.fluid.Fluids.fromVanilla(
-                vanilla) != com.ntmspace.fluid.SpaceFluids.HCL
-                || com.hbm.inventory.fluid.Fluids.byRegistryName(
-                "ntmspace:hcl") != com.ntmspace.fluid.SpaceFluids.HCL) {
+        if (!id.equals("ntmspace:hcl") || com.hbm.inventory.fluid.Fluids.fromVanilla(vanilla) != com.ntmspace.fluid.SpaceFluids.HCL
+                || com.hbm.inventory.fluid.Fluids.byRegistryName("ntmspace:hcl") != com.ntmspace.fluid.SpaceFluids.HCL) {
             fail(helper, "ntmspace:hcl is not registered as an HBM and a vanilla fluid: " + id);
             return;
         }
         helper.succeed();
     }
 
-    public static void init() {
-    }
+    public static void init() {}
 
     private static boolean initialised;
 
@@ -149,7 +131,7 @@ public final class SpaceGameTests {
         StardarThatmoGameTests.init();
         ThatmoStrikeGameTests.init();
         ServiceLoader.load(SpaceGameTestExtension.class, SpaceGameTestExtension.class.getClassLoader())
-                     .forEach(SpaceGameTestExtension::register);
+                .forEach(SpaceGameTestExtension::register);
     }
 
     private static void munGenerator(GameTestHelper helper) {
@@ -185,16 +167,14 @@ public final class SpaceGameTests {
                     String at = net.minecraft.core.registries.BuiltInRegistries.BLOCK.getKey(
                             noise.getBlock(top).getBlock()).toString();
                     if (top >= 0 && !at.equals(primer.blocks[column + top].id)) {
-                        fail(helper,
-                                "base column says " + at + " where the primer has " + primer.blocks[column + top].id);
+                        fail(helper, "base column says " + at + " where the primer has " + primer.blocks[column + top].id);
                         return;
                     }
                     if (top > 40) surfaces++;
                 }
             }
         }
-        if (surfaces < chunks.length * 256 / 2)
-            fail(helper, "most Mun columns should reach above y 40, only " + surfaces + " did");
+        if (surfaces < chunks.length * 256 / 2) fail(helper, "most Mun columns should reach above y 40, only " + surfaces + " did");
         helper.succeed();
     }
 
@@ -204,9 +184,7 @@ public final class SpaceGameTests {
         helper.succeed();
     }
 
-    /**
-     * Fails the test, logging the reason too: 1.20.1 Fabric's runner prints only the failed test's name.
-     */
+    /** Fails the test, logging the reason too: 1.20.1 Fabric's runner prints only the failed test's name. */
     private static void fail(GameTestHelper helper, String message) {
         com.ntmspace.NtmSpace.LOG.error("GameTest failure: {}", message);
         helper.fail(message);

@@ -29,9 +29,7 @@ import dev.golem.core.Ids;
 import dev.golem.core.registry.Substitutions;
 import dev.golem.core.world.Compat;
 import dev.golem.core.world.CompatConsumables;
-
 import java.util.List;
-
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.entity.npc.villager.Villager;
 import net.minecraft.core.BlockPos;
@@ -39,17 +37,12 @@ import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.Level;
 
-/**
- * Space changes to HBM explosions, cabinet contents and consumable containers.
- */
+/** Space changes to HBM explosions, cabinet contents and consumable containers. */
 public final class ForkTweaks {
 
-    private ForkTweaks() {
-    }
+    private ForkTweaks() {}
 
-    /**
-     * Space 1.7 ModItems food values, applied before construction while retaining each item's class and other properties.
-     */
+    /** Space 1.7 ModItems food values, applied before construction while retaining each item's class and other properties. */
     public static void substituteFoods() {
         substituteLemon("bio_wafer", 4, 0.6F);
         substituteLemon("fooditem", 2, 0.6F);
@@ -89,24 +82,19 @@ public final class ForkTweaks {
                 ? BuiltInRegistries.ITEM.getOptional(Ids.of("ntmspace", "cmug_empty")).orElse(null) : null);
     }
 
-    /**
-     * hbm-space {@code TileEntityFileCabinet.updateEntity}'s soyuz check.
-     */
+    /** hbm-space {@code TileEntityFileCabinet.updateEntity}'s soyuz check. */
     static void soyuz(TileEntityFileCabinet cabinet) {
         Level level = cabinet.getLevel();
         if (level == null || level.isClientSide()) return;
         for (int i = 0; i < cabinet.getContainerSize(); i++) {
             ItemStack slot = cabinet.getItem(i);
-            if (slot.isEmpty() || !BuiltInRegistries.ITEM.getKey(slot.getItem()).toString()
-                                                         .startsWith("hbm:missile_soyuz")) continue;
+            if (slot.isEmpty() || !BuiltInRegistries.ITEM.getKey(slot.getItem()).toString().startsWith("hbm:missile_soyuz")) continue;
             BlockPos pos = cabinet.getBlockPos();
             double x = pos.getX() + 0.5, y = pos.getY() + 0.5, z = pos.getZ() + 0.5;
             ExplosionVNT xnt = new ExplosionVNT(level, x, y, z, 15);
             xnt.setBlockAllocator(new BlockAllocatorStandard(48));
             xnt.setBlockProcessor(new BlockProcessorStandard().setNoDrop()
-                                                              .withBlockEffect(new BlockMutatorDebris(
-                                                                      () -> ModBlocks.block_slag.get()
-                                                                                                .defaultBlockState())));
+                    .withBlockEffect(new BlockMutatorDebris(() -> ModBlocks.block_slag.get().defaultBlockState())));
             xnt.setEntityProcessor(new EntityProcessorCross(7.5D).withRangeMod(3));
             xnt.setPlayerProcessor(new PlayerProcessorStandard());
             xnt.explode();
@@ -116,11 +104,10 @@ public final class ForkTweaks {
         }
     }
 
-    /**
-     * hbm-space {@code BlockRefueler.printHook}; the readout contains no client-only state.
-     */
+
+    /** hbm-space {@code BlockRefueler.printHook}; the readout contains no client-only state. */
     static ILookOverlay.Data refueler(Level level, BlockPos pos,
-                                      Player player) {
+                                                       Player player) {
         if (!(level.getBlockState(pos).getBlock() instanceof BlockRefueler block)
                 || !(level.getBlockEntity(pos) instanceof TileEntityRefueler refueler)) return null;
         var type = refueler.tank.getTankType();

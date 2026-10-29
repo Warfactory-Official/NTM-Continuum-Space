@@ -11,9 +11,7 @@ import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.level.Level;
 import org.jspecify.annotations.Nullable;
 
-/**
- * Space 1.7 providers select the death world's breathable bed without discarding a temporarily unusable point.
- */
+/** Space 1.7 providers select the death world's breathable bed without discarding a temporarily unusable point. */
 public final class SpaceRespawns {
     private SpaceRespawns() {
     }

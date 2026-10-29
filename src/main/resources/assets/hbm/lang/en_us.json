@@ -1,9 +1,0 @@
-{
-  "desc.repair.with": "Repair with:",
-  "overlay.ntmspace.repair.tool": "Tool: Blowtorch",
-  "desc.ntmspace.magma.noLava": "INSUFFICIENT LAVA FOUND",
-  "block.hbm.fissure_bomb": "Fissure bomb",
-  "block.hbm.moon_turf": "Mun Turf",
-  "desc.gui.nukeCustom.amat": "Caps at 350\n§o\"Antimatter, Balefire, whatever.\"",
-  "desc.gui.nukeCustom.schrab": "Requires nuclear level 50\nCaps at 250\n§o\"For the hundredth time,\n§oyou can't bypass these caps!\""
-}

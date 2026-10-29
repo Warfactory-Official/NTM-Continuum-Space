@@ -5,9 +5,7 @@ import com.ntmspace.weather.DustStorm;
 import dev.golem.core.world.WorldAttributes;
 import dev.golem.core.world.TimeOfDay;
 
-/**
- * Vanilla gameplay queries use the same live storm state as the body's sky and daylight.
- */
+/** Vanilla gameplay queries use the same live storm state as the body's sky and daylight. */
 public final class SpaceEnvironmentAttributes {
     private SpaceEnvironmentAttributes() {
     }

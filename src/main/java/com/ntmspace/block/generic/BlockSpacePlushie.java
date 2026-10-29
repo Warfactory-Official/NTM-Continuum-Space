@@ -37,9 +37,7 @@ import org.jspecify.annotations.Nullable;
  */
 public class BlockSpacePlushie extends BlockTrinket implements TickingBlock {
 
-    /**
-     * Space 1.7 BlockPlushie.onBlockActivated plays every original plushie at volume 0.25.
-     */
+    /** Space 1.7 BlockPlushie.onBlockActivated plays every original plushie at volume 0.25. */
     public static final class Base extends BlockPlushie {
 
         public Base(Properties properties) {
@@ -72,9 +70,7 @@ public class BlockSpacePlushie extends BlockTrinket implements TickingBlock {
 
         public final String label;
         public final String inscription;
-        /**
-         * The {@code ntmspace} sound event path.
-         */
+        /** The {@code ntmspace} sound event path. */
         public final String sound;
 
         Type(String label, String inscription, String sound) {
@@ -87,9 +83,7 @@ public class BlockSpacePlushie extends BlockTrinket implements TickingBlock {
             return VALUES[Math.floorMod(ordinal, VALUES.length)];
         }
 
-        /**
-         * {@code plushie_teto} ...
-         */
+        /** {@code plushie_teto} ... */
         public String id() {
             return "plushie_" + name().toLowerCase(java.util.Locale.ROOT);
         }
@@ -115,8 +109,7 @@ public class BlockSpacePlushie extends BlockTrinket implements TickingBlock {
     }
 
     @Override
-    protected InteractionResult onUseItem(BlockState state, Level level, BlockPos pos, Player player,
-                                          InteractionHand hand,
+    protected InteractionResult onUseItem(BlockState state, Level level, BlockPos pos, Player player, InteractionHand hand,
                                           ItemStack stack, BlockHitResult hit) {
         if (feed(level, pos, player, stack)) return InteractionResult.SUCCESS;
         // Butter is only for Teto: anyone else holding it passes, rather than squishing.
@@ -125,17 +118,13 @@ public class BlockSpacePlushie extends BlockTrinket implements TickingBlock {
     }
 
     @Override
-    protected InteractionResult onUseWithoutItem(BlockState state, Level level, BlockPos pos, Player player,
-                                                 BlockHitResult hit) {
+    protected InteractionResult onUseWithoutItem(BlockState state, Level level, BlockPos pos, Player player, BlockHitResult hit) {
         return squish(level, pos) ? InteractionResult.SUCCESS : InteractionResult.TRY_WITH_EMPTY_HAND;
     }
 
-    /**
-     * The butter half of 1.7 {@code onBlockActivated}: a Teto fed butter becomes FAT TETO. Whether it happened.
-     */
+    /** The butter half of 1.7 {@code onBlockActivated}: a Teto fed butter becomes FAT TETO. Whether it happened. */
     public static boolean feed(Level level, BlockPos pos, Player player, ItemStack stack) {
-        if (!(level.getBlockEntity(pos) instanceof Plushie plushie) || plushie.type() != Type.TETO || !isButter(stack))
-            return false;
+        if (!(level.getBlockEntity(pos) instanceof Plushie plushie) || plushie.type() != Type.TETO || !isButter(stack)) return false;
         plushie.squishTimer = 11;
         if (!level.isClientSide()) {
             plushie.setTypeOrdinal(Type.FATO.ordinal());
@@ -145,9 +134,7 @@ public class BlockSpacePlushie extends BlockTrinket implements TickingBlock {
         return true;
     }
 
-    /**
-     * The rest of 1.7 {@code onBlockActivated}: the client squishes, the server squeaks. Whether there was a plushie.
-     */
+    /** The rest of 1.7 {@code onBlockActivated}: the client squishes, the server squeaks. Whether there was a plushie. */
     public static boolean squish(Level level, BlockPos pos) {
         if (!(level.getBlockEntity(pos) instanceof Plushie plushie)) return false;
         if (level.isClientSide()) {
@@ -159,9 +146,7 @@ public class BlockSpacePlushie extends BlockTrinket implements TickingBlock {
         return true;
     }
 
-    /**
-     * hbm-space's {@code ModItems.butter}.
-     */
+    /** hbm-space's {@code ModItems.butter}. */
     public static boolean isButter(ItemStack stack) {
         return !stack.isEmpty() && BuiltInRegistries.ITEM.getKey(stack.getItem()).equals(Ids.of("ntmspace", "butter"));
     }
@@ -169,14 +154,11 @@ public class BlockSpacePlushie extends BlockTrinket implements TickingBlock {
     private static void sound(Level level, BlockPos pos, String namespace, String path, float volume, float pitch) {
         SoundEvent event = BuiltInRegistries.SOUND_EVENT.getOptional(Ids.of(namespace, path)).orElse(null);
         if (event != null) {
-            level.playSound(null, pos.getX() + 0.5, pos.getY() + 0.5, pos.getZ() + 0.5, event, SoundSource.BLOCKS,
-                    volume, pitch);
+            level.playSound(null, pos.getX() + 0.5, pos.getY() + 0.5, pos.getZ() + 0.5, event, SoundSource.BLOCKS, volume, pitch);
         }
     }
 
-    /**
-     * hbm-space {@code TileEntityPlushie}: the type (saved by name) and the client's squish timer.
-     */
+    /** hbm-space {@code TileEntityPlushie}: the type (saved by name) and the client's squish timer. */
     public static class Plushie extends TileEntityPressablePlushie {
 
         public Plushie(BlockEntityType<?> type, BlockPos pos, BlockState state) {

@@ -36,22 +36,16 @@ public final class MartianWorld {
 
     public static final String NAME = "martian";
 
-    /**
-     * The real single-origin lifecycle build, also available to previews and metadata inspection.
-     */
-    public record BasePlan(ResourceKey<Level> dimension, BlockPos column, NBTStructure template) {
-    }
+    /** The real single-origin lifecycle build, also available to previews and metadata inspection. */
+    public record BasePlan(ResourceKey<Level> dimension, BlockPos column, NBTStructure template) {}
 
     public static BasePlan basePlan() {
         return new BasePlan(SpaceDimensions.DUNA, BlockPos.ZERO, SpaceStructures.Files.MARTIAN_BASE);
     }
 
-    private MartianWorld() {
-    }
+    private MartianWorld() {}
 
-    /**
-     * Dejson: the world type is listed on the create-world screen (tag {@code minecraft:normal}).
-     */
+    /** Dejson: the world type is listed on the create-world screen (tag {@code minecraft:normal}). */
     public static void declare() {
         dev.golem.core.dejson.Tags.member("worldgen/world_preset", "minecraft", "normal", NtmSpace.MOD_ID + ":" + NAME);
     }
@@ -66,16 +60,13 @@ public final class MartianWorld {
         });
     }
 
-    /**
-     * Whether this world is "The Martian".
-     */
+    /** Whether this world is "The Martian". */
     public static boolean is(MinecraftServer server) {
         return server != null && WorldTypes.is(server, NtmSpace.MOD_ID, NAME);
     }
 
-    /**
-     * The martian base on Duna's (0, 0), once per world.
-     */
+
+    /** The martian base on Duna's (0, 0), once per world. */
     static void buildBase(MinecraftServer server) {
         if (!is(server)) return;
         var plan = basePlan();
@@ -101,15 +92,12 @@ public final class MartianWorld {
         NtmSpace.LOG.info("Built the martian base on Duna at (0, {}, 0)", y);
     }
 
-    /**
-     * Duna's record that the base stands.
-     */
+    /** Duna's record that the base stands. */
     static final class BaseData extends CompatSavedData<BaseData> {
         static final String ID = "ntmspace:martian_base";
         static final com.mojang.serialization.Codec<BaseData> CODEC =
                 com.mojang.serialization.codecs.RecordCodecBuilder.create(instance -> instance.group(
-                        com.mojang.serialization.Codec.BOOL.optionalFieldOf("built", false)
-                                                           .forGetter(data -> data.built)
+                        com.mojang.serialization.Codec.BOOL.optionalFieldOf("built", false).forGetter(data -> data.built)
                 ).apply(instance, BaseData::new));
 
         boolean built;

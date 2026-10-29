@@ -2,34 +2,41 @@ package com.ntmspace.item.special;
 
 import com.hbm.handler.ArmorModHandler;
 import com.hbm.items.armor.ItemArmorMod;
+import dev.golem.core.world.ArmorSlot;
 import dev.golem.core.world.CompatTooltipContext;
-import dev.golem.core.world.ArmorModelSelection;
-
+import dev.golem.core.world.Wearable;
 import java.util.List;
-
 import net.minecraft.ChatFormatting;
 import net.minecraft.network.chat.Component;
+import net.minecraft.world.InteractionHand;
+import net.minecraft.world.InteractionResult;
 import net.minecraft.world.entity.EquipmentSlot;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.TooltipFlag;
+import net.minecraft.world.level.Level;
 
 /**
  * hbm-space {@code ItemModHeavyBoots}: a boots module that, while the wearer crouches in mid-air, pulls them down until
  * their fall matches the overworld (bodies with gravity up to 1.5, counted as at least 0.2).
  *
- * <p>The item also equips in the feet slot with its own humanoid equipment asset on component-based targets.
+ * <p>1.7's {@code isValidArmor} lets it be worn on its own as boots; {@code HeavyBootsRenderLayer} draws it.
  */
-public class ItemModHeavyBoots extends ItemArmorMod implements ArmorModelSelection {
+public class ItemModHeavyBoots extends ItemArmorMod implements Wearable {
 
     public ItemModHeavyBoots(Item.Properties properties) {
         super(ArmorModHandler.boots_only, false, false, false, true, properties);
     }
 
     @Override
-    public EquipmentSlot armorModelSlot() {
-        return EquipmentSlot.LEGS;
+    public ArmorSlot wornSlot() {
+        return ArmorSlot.BOOTS;
+    }
+
+    @Override
+    protected InteractionResult compatUse(Level level, Player player, InteractionHand hand) {
+        return wear(level, player, hand);
     }
 
     @Override

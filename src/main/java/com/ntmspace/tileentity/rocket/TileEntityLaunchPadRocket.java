@@ -29,12 +29,10 @@ import com.ntmspace.rocket.RocketTarget;
 import dev.golem.core.data.DataIn;
 import dev.golem.core.data.DataOut;
 import it.unimi.dsi.fastutil.longs.LongOpenHashSet;
-
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
-
 import net.minecraft.ChatFormatting;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
@@ -90,6 +88,7 @@ public class TileEntityLaunchPadRocket extends TileEntityMachineBase implements 
     public boolean canSeeSky = true;
     public @Nullable RocketStruct rocket;
     public int height;
+    // port: the tower as built, which the world's top can cut short of the rocket's height
     private int tower;
 
     public int towerHeight() {
@@ -97,8 +96,7 @@ public class TileEntityLaunchPadRocket extends TileEntityMachineBase implements 
     }
 
     public TileEntityLaunchPadRocket(BlockPos pos, BlockState state) {
-        super(RocketBlocks.LAUNCH_PAD_ROCKET_BE.get(), pos, state,
-                SLOT_COUNT); // 0 rocket, 1 drive, 2 battery, 3/4 liquid/solid fuel in/out
+        super(RocketBlocks.LAUNCH_PAD_ROCKET_BE.get(), pos, state, SLOT_COUNT); // 0 rocket, 1 drive, 2 battery, 3/4 liquid/solid fuel in/out
         tanks = new FluidTankNTM[RocketStruct.MAX_STAGES * 2]; // enough tanks for any combination of rocket stages
         for (int i = 0; i < tanks.length; i++) tanks[i] = new FluidTankNTM(Fluids.NONE, 64_000);
     }
@@ -126,11 +124,9 @@ public class TileEntityLaunchPadRocket extends TileEntityMachineBase implements 
         // Fills, note that the liquid input also takes solid fuel
         te.power = Library.chargeTEFromItems(te.inventory, SLOT_BATTERY, te.power, te.maxPower);
         for (FluidTankNTM tank : te.tanks) {
-            if (tank.getTankType() != Fluids.NONE)
-                MachineFluidContainerIO.load(tank, te.inventory, SLOT_FUEL_IN, SLOT_FUEL_OUT);
+            if (tank.getTankType() != Fluids.NONE) MachineFluidContainerIO.load(tank, te.inventory, SLOT_FUEL_IN, SLOT_FUEL_OUT);
         }
-        if (!te.getItem(SLOT_FUEL_IN).isEmpty() && te.getItem(SLOT_FUEL_IN)
-                                                     .getItem() == ModFuelItems.rocket_fuel.get() && te.solidFuel.level < te.solidFuel.max) {
+        if (!te.getItem(SLOT_FUEL_IN).isEmpty() && te.getItem(SLOT_FUEL_IN).getItem() == ModFuelItems.rocket_fuel.get() && te.solidFuel.level < te.solidFuel.max) {
             te.removeItem(SLOT_FUEL_IN, 1);
             te.solidFuel.level += 250;
             if (te.solidFuel.level > te.solidFuel.max) te.solidFuel.level = te.solidFuel.max;
@@ -138,8 +134,7 @@ public class TileEntityLaunchPadRocket extends TileEntityMachineBase implements 
 
         te.rocket = ItemCustomRocket.get(te.getItem(SLOT_ROCKET));
         if (te.rocket != null) {
-            int newHeight = (int) Math.floor(
-                    te.rocket.getHeight() - (te.rocket.capsule != null ? te.rocket.capsule.height() : 0) + 1);
+            int newHeight = (int) Math.floor(te.rocket.getHeight() - (te.rocket.capsule != null ? te.rocket.capsule.height() : 0) + 1);
             if (newHeight <= 8) newHeight = 0;
 
             if (newHeight != te.height) {
@@ -160,9 +155,7 @@ public class TileEntityLaunchPadRocket extends TileEntityMachineBase implements 
         te.registerClimbable();
     }
 
-    /**
-     * Fills in the tower with structure cells (1.7 under {@code safeRem}).
-     */
+    /** Fills in the tower with structure cells (1.7 under {@code safeRem}). */
     private void buildTower(Level level, int newHeight) {
         LaunchPadRocket block = RocketBlocks.LAUNCH_PAD_ROCKET.get();
         var old = new LongOpenHashSet();
@@ -210,9 +203,7 @@ public class TileEntityLaunchPadRocket extends TileEntityMachineBase implements 
         super.setRemoved();
     }
 
-    /**
-     * 1.7 {@code canBlockSeeTheSky(x, y + 2, z)} of the core column.
-     */
+    /** 1.7 {@code canBlockSeeTheSky(x, y + 2, z)} of the core column. */
     private boolean isPadObstructed(Level level) {
         return !level.canSeeSky(worldPosition.above(2));
     }
@@ -222,8 +213,7 @@ public class TileEntityLaunchPadRocket extends TileEntityMachineBase implements 
     public void launch(@Nullable LivingEntity player) {
         if (!canLaunch()) return;
 
-        EntityRideableRocket entity = EntityRideableRocket.create(level, worldPosition.getX() + 0.5,
-                worldPosition.getY() + 3.0,
+        EntityRideableRocket entity = EntityRideableRocket.create(level, worldPosition.getX() + 0.5, worldPosition.getY() + 3.0,
                 worldPosition.getZ() + 0.5, getItem(SLOT_ROCKET)).withProgram(getItem(SLOT_DRIVE)).launchedBy(player);
         level.addFreshEntity(entity);
 
@@ -239,9 +229,7 @@ public class TileEntityLaunchPadRocket extends TileEntityMachineBase implements 
 
     private PortDef[] cachedPorts;
 
-    /**
-     * 1.7 {@code getConPos}: the 13 input cells, each aimed back out of the pad.
-     */
+    /** 1.7 {@code getConPos}: the 13 input cells, each aimed back out of the pad. */
     public PortDef[] getPorts() {
         if (cachedPorts == null) {
             ForgeDirection back = ForgeDirection.getOrientation(facing()).getOpposite();
@@ -261,8 +249,7 @@ public class TileEntityLaunchPadRocket extends TileEntityMachineBase implements 
     }
 
     private boolean areTanksFull() {
-        for (FluidTankNTM tank : tanks)
-            if (tank.getTankType() != Fluids.NONE && tank.getFill() < tank.getMaxFill()) return false;
+        for (FluidTankNTM tank : tanks) if (tank.getTankType() != Fluids.NONE && tank.getFill() < tank.getMaxFill()) return false;
         if (solidFuel.level < solidFuel.max) return false;
         return true;
     }
@@ -277,8 +264,7 @@ public class TileEntityLaunchPadRocket extends TileEntityMachineBase implements 
         String capsule = rocket.capsule != null ? rocket.capsule.id() : "";
 
         DriveBody target = ItemVOTVdrive.getBody(getItem(SLOT_DRIVE));
-        if (target == DriveBody.ORBIT && !RocketParts.CAPSULE.equals(capsule) && !RocketParts.STATION_CORE.equals(
-                capsule))
+        if (target == DriveBody.ORBIT && !RocketParts.CAPSULE.equals(capsule) && !RocketParts.STATION_CORE.equals(capsule))
             return false;
 
         RocketTarget from = RocketTarget.of(level, worldPosition.getX(), worldPosition.getZ());
@@ -307,8 +293,7 @@ public class TileEntityLaunchPadRocket extends TileEntityMachineBase implements 
         updateStorageTanks(rocket, tanks, solidFuel, hasFuel);
     }
 
-    public static void updateStorageTanks(RocketStruct rocket, FluidTankNTM[] tanks, SolidFuelTank solidFuel,
-                                          boolean hasFuel) {
+    public static void updateStorageTanks(RocketStruct rocket, FluidTankNTM[] tanks, SolidFuelTank solidFuel, boolean hasFuel) {
         Map<FluidType, Integer> fuels = rocket.getFillRequirement();
 
         // Remove solid fuels (listed as NONE fluid) from tank updates
@@ -397,8 +382,7 @@ public class TileEntityLaunchPadRocket extends TileEntityMachineBase implements 
 
         String capsule = rocket.capsule != null ? rocket.capsule.id() : "";
         DriveBody target = ItemVOTVdrive.getBody(drive);
-        if (target == DriveBody.ORBIT && !RocketParts.CAPSULE.equals(capsule) && !RocketParts.STATION_CORE.equals(
-                capsule)) {
+        if (target == DriveBody.ORBIT && !RocketParts.CAPSULE.equals(capsule) && !RocketParts.STATION_CORE.equals(capsule)) {
             issues.add(Component.translatable("desc.gui.launchPadRocket.satelliteOrbit").withStyle(ChatFormatting.RED));
             return true;
         }
@@ -406,8 +390,7 @@ public class TileEntityLaunchPadRocket extends TileEntityMachineBase implements 
         return false;
     }
 
-    public static void findTravelIssues(List<Component> issues, RocketStruct rocket, RocketTarget from,
-                                        RocketTarget to) {
+    public static void findTravelIssues(List<Component> issues, RocketStruct rocket, RocketTarget from, RocketTarget to) {
         String capsule = rocket.capsule != null ? rocket.capsule.id() : "";
         if (to.inOrbit() && !to.isValid() && !RocketParts.STATION_CORE.equals(capsule)) {
             issues.add(Component.translatable("desc.gui.launchPadRocket.notLaunched").withStyle(ChatFormatting.RED));
@@ -524,7 +507,7 @@ public class TileEntityLaunchPadRocket extends TileEntityMachineBase implements 
         solidFuel.level = input.getIntOr("solid", 0);
         solidFuel.max = input.getIntOr("maxSolid", 0);
         height = input.getIntOr("height", 0);
-        tower = input.getIntOr("tower", 0);
+        tower = input.getIntOr("tower", height);
         canSeeSky = input.getBooleanOr("sky", true);
         for (int i = 0; i < tanks.length; i++) tanks[i].readFromNBT(input, "t" + i);
     }
@@ -535,8 +518,7 @@ public class TileEntityLaunchPadRocket extends TileEntityMachineBase implements 
     }
 
     @Override
-    public void receiveControl(CompoundTag data) {
-    }
+    public void receiveControl(CompoundTag data) {}
 
     @Override
     public void receiveControl(Player player, CompoundTag data) {
@@ -545,30 +527,11 @@ public class TileEntityLaunchPadRocket extends TileEntityMachineBase implements 
         }
     }
 
-    @Override
-    public long getPower() {
-        return power;
-    }
-
-    @Override
-    public void setPower(long power) {
-        this.power = power;
-    }
-
-    @Override
-    public long getMaxPower() {
-        return maxPower;
-    }
-
-    @Override
-    public FluidTankNTM[] getAllTanks() {
-        return this.tanks;
-    }
-
-    @Override
-    public FluidTankNTM[] getReceivingTanks() {
-        return this.tanks;
-    }
+    @Override public long getPower() { return power; }
+    @Override public void setPower(long power) { this.power = power; }
+    @Override public long getMaxPower() { return maxPower; }
+    @Override public FluidTankNTM[] getAllTanks() { return this.tanks; }
+    @Override public FluidTankNTM[] getReceivingTanks() { return this.tanks; }
 
     @Override
     public Component getDisplayName() {
@@ -580,13 +543,10 @@ public class TileEntityLaunchPadRocket extends TileEntityMachineBase implements 
         return new ContainerLaunchPadRocket(containerId, inventory, this);
     }
 
-    /**
-     * 1.7 {@code isUseableByPlayer}: within 32 blocks of the core.
-     */
+    /** 1.7 {@code isUseableByPlayer}: within 32 blocks of the core. */
     @Override
     public boolean stillValid(Player player) {
         if (level == null || level.getBlockEntity(worldPosition) != this) return false;
-        return player.distanceToSqr(worldPosition.getX() + 0.5D, worldPosition.getY() + 0.5D,
-                worldPosition.getZ() + 0.5D) <= 1024;
+        return player.distanceToSqr(worldPosition.getX() + 0.5D, worldPosition.getY() + 0.5D, worldPosition.getZ() + 0.5D) <= 1024;
     }
 }

@@ -16,13 +16,11 @@ import com.ntmspace.fluid.trait.FT_Rocket;
 import com.ntmspace.fluid.trait.SpaceFluidTraits;
 import com.ntmspace.registry.SpaceFluidBlocks;
 import dev.golem.core.gametest.GameTests;
-
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 import java.util.TreeMap;
-
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.gametest.framework.GameTestHelper;
@@ -36,14 +34,12 @@ import net.minecraft.gametest.framework.GameTestHelper;
  */
 public final class SpaceFluidGameTests {
 
-    private SpaceFluidGameTests() {
-    }
+    private SpaceFluidGameTests() {}
 
     public static final GameTests.Function PROPERTIES = SpaceGameTests.TESTS.function("space_fluid_properties", 20,
             () -> SpaceFluidGameTests::properties);
 
-    public static final GameTests.Function BLOCKS = SpaceGameTests.TESTS.function("space_fluid_blocks_and_containers",
-            20,
+    public static final GameTests.Function BLOCKS = SpaceGameTests.TESTS.function("space_fluid_blocks_and_containers", 20,
             () -> SpaceFluidGameTests::blocksAndContainers);
 
     public static final GameTests.Function PATCHES = SpaceGameTests.TESTS.function("space_fluid_patches", 20,
@@ -58,8 +54,7 @@ public final class SpaceFluidGameTests {
     public static final GameTests.Function SKY = SpaceGameTests.TESTS.function("space_sky_owner", 20,
             () -> SpaceFluidGameTests::skyOwner);
 
-    public static void init() {
-    }
+    public static void init() {}
 
     /**
      * hbm-space's changes to HBM's own fluids ({@code Fluids.java} lines 347-436 and 843-863), applied by the patches in
@@ -70,8 +65,7 @@ public final class SpaceFluidGameTests {
 
     static {
         PATCHED.put("hbm:kerosene", List.of("rocket:308:981000", "combustible:AERO:3850000"));
-        PATCHED.put("hbm:hydrogen",
-                List.of("rocket:380:700000", "heatable:300,1,ntmspace:superheated_hydrogen,1/PWR=1.0"));
+        PATCHED.put("hbm:hydrogen", List.of("rocket:380:700000", "heatable:300,1,ntmspace:superheated_hydrogen,1/PWR=1.0"));
         PATCHED.put("hbm:xenon", List.of("rocket:4200:80000"));
         // The modern Space declarations close WASTEFLUID's 1:1, 300-heat heating/cooling pair.
         PATCHED.put("hbm:wastegas", List.of("rocket:900:700000", "coolable:hbm:wastefluid:1:1:300/"));
@@ -82,11 +76,9 @@ public final class SpaceFluidGameTests {
         PATCHED.put("hbm:plasma_bf", List.of("rocket:50000:700000"));
         PATCHED.put("hbm:plasma_dh3", List.of("rocket:20000:700000"));
         PATCHED.put("hbm:kerosene_reform", List.of("rocket:321:1564000"));
-        PATCHED.put("hbm:watz",
-                List.of("heatable:300,1,ntmspace:gas_watz,1/PWR=1.0", "pwrmoderator:1.4", "corrosive:60"));
+        PATCHED.put("hbm:watz", List.of("heatable:300,1,ntmspace:gas_watz,1/PWR=1.0", "pwrmoderator:1.4", "corrosive:60"));
         PATCHED.put("hbm:wastefluid", List.of("heatable:300,1,hbm:wastegas,1/PWR=1.0", "pwrmoderator:1.2"));
-        PATCHED.put("hbm:coolant",
-                List.of("heatable:300,1,hbm:coolant_hot,1/BOILER=1.0,HEATEXCHANGER=1.0,ICF=1.0,PWR=1.0"));
+        PATCHED.put("hbm:coolant", List.of("heatable:300,1,hbm:coolant_hot,1/BOILER=1.0,HEATEXCHANGER=1.0,ICF=1.0,PWR=1.0"));
         PATCHED.put("hbm:nitric_acid", List.of("!polluting", "corrosive:60", "liquid"));
     }
 
@@ -96,21 +88,18 @@ public final class SpaceFluidGameTests {
             List<String> have = tokens(Fluids.byRegistryName(id));
             for (String token : want) {
                 if (token.startsWith("!")) {
-                    if (have.stream().anyMatch(t -> t.startsWith(token.substring(1))))
-                        wrong.add(id + " still has " + token.substring(1));
+                    if (have.stream().anyMatch(t -> t.startsWith(token.substring(1)))) wrong.add(id + " still has " + token.substring(1));
                 } else if (!have.contains(token)) {
                     wrong.add(id + " lacks " + token + " (has " + have + ")");
                 }
             }
         });
         // no other HBM fluid is a rocket fuel (hbm-space added FT_Rocket to exactly these eleven)
-        long rockets = Arrays.stream(Fluids.getAll())
-                             .filter(f -> f.getNamespace().equals("hbm") && f.hasTrait(FT_Rocket.class)).count();
+        long rockets = Arrays.stream(Fluids.getAll()).filter(f -> f.getNamespace().equals("hbm") && f.hasTrait(FT_Rocket.class)).count();
         if (rockets != 11) wrong.add(rockets + " HBM rocket fluids, expected 11");
         long patchFiles = com.hbm.inventory.fluid.FluidProperties.patchFiles().keySet().stream()
-                                                                 .filter(k -> k.startsWith("ntmspace:hbm/")).count();
-        if (patchFiles != PATCHED.size())
-            wrong.add(patchFiles + " ntmspace patch files loaded, expected " + PATCHED.size());
+                .filter(k -> k.startsWith("ntmspace:hbm/")).count();
+        if (patchFiles != PATCHED.size()) wrong.add(patchFiles + " ntmspace patch files loaded, expected " + PATCHED.size());
         if (!wrong.isEmpty()) {
             helper.fail(wrong.size() + " wrong: " + wrong);
             return;
@@ -152,13 +141,10 @@ public final class SpaceFluidGameTests {
                 continue;
             }
             var expected = new com.hbm.inventory.fluid.FluidHazard(Integer.parseInt(row[1]), Integer.parseInt(row[2]),
-                    Integer.parseInt(row[3]), com.hbm.inventory.fluid.FluidHazard.Symbol.valueOf(
-                    row[4].equals("CROYGENIC") ? "CRYOGENIC" : row[4]));
-            if (!fluid.getHazard().equals(expected))
-                wrong.add(row[0] + " " + fluid.getHazard() + ", expected " + expected);
+                    Integer.parseInt(row[3]), com.hbm.inventory.fluid.FluidHazard.Symbol.valueOf(row[4].equals("CROYGENIC") ? "CRYOGENIC" : row[4]));
+            if (!fluid.getHazard().equals(expected)) wrong.add(row[0] + " " + fluid.getHazard() + ", expected " + expected);
         }
-        if (HAZARDS_SPACE.length != EXPECTED.size())
-            wrong.add(HAZARDS_SPACE.length + " rows, expected " + EXPECTED.size());
+        if (HAZARDS_SPACE.length != EXPECTED.size()) wrong.add(HAZARDS_SPACE.length + " rows, expected " + EXPECTED.size());
         if (!wrong.isEmpty()) {
             helper.fail(wrong.size() + " wrong: " + wrong);
             return;
@@ -166,50 +152,38 @@ public final class SpaceFluidGameTests {
         helper.succeed();
     }
 
-    /**
-     * hbm-space's rocket trait adds its 1.7 lines to HBM's fluid tooltip, after HBM's own traits.
-     */
+    /** hbm-space's rocket trait adds its 1.7 lines to HBM's fluid tooltip, after HBM's own traits. */
     private static void tooltips(GameTestHelper helper) {
         List<net.minecraft.network.chat.Component> lines = new ArrayList<>();
         Fluids.byRegistryName("hbm:kerosene").addInfo(lines, true);
         List<String> text = lines.stream().map(net.minecraft.network.chat.Component::getString).toList();
         int n = text.size();
-        helper.assertTrue(
-                n >= 4 && text.get(n - 4).equals("[Rocket Grade]") && text.get(n - 3).startsWith("Provides 308 ISP")
-                        && text.get(n - 2).equals("[Thrust power]") && text.get(n - 1)
-                                                                           .contains("N of thrust per bucket"),
+        helper.assertTrue(n >= 4 && text.get(n - 4).equals("[Rocket Grade]") && text.get(n - 3).startsWith("Provides 308 ISP")
+                        && text.get(n - 2).equals("[Thrust power]") && text.get(n - 1).contains("N of thrust per bucket"),
                 "kerosene's tooltip does not end with the rocket lines: " + text);
         helper.succeed();
     }
 
-    /**
-     * NTM: Space draws every body's sky (Kerbin is the overworld), so HBM's overworld sky layers are off it.
-     */
+    /** NTM: Space draws every body's sky (Kerbin is the overworld), so HBM's overworld sky layers are off it. */
     private static void skyOwner(GameTestHelper helper) {
         var server = helper.getLevel().getServer();
-        helper.assertTrue(com.hbm.api.environment.SkyOwnership.claimed(server.overworld()),
-                "the overworld sky is not NTM: Space's");
+        helper.assertTrue(com.hbm.api.environment.SkyOwnership.claimed(server.overworld()), "the overworld sky is not NTM: Space's");
         var nether = server.getLevel(net.minecraft.world.level.Level.NETHER);
-        helper.assertTrue(nether == null || !com.hbm.api.environment.SkyOwnership.claimed(nether),
-                "the Nether sky was claimed");
+        helper.assertTrue(nether == null || !com.hbm.api.environment.SkyOwnership.claimed(nether), "the Nether sky was claimed");
         helper.succeed();
     }
 
-    private record Expected(String key, int color, int temperature, List<String> traits) {
-    }
+    private record Expected(String key, int color, int temperature, List<String> traits) {}
 
     private static Expected e(String key, int color, int temperature, String... traits) {
         return new Expected(key, color, temperature, sorted(Arrays.asList(traits)));
     }
 
-    /**
-     * hbm-space's 60 new fluids in its declaration order: key, colour, temperature, traits (canonical tokens).
-     */
+    /** hbm-space's 60 new fluids in its declaration order: key, colour, temperature, traits (canonical tokens). */
     static final List<Expected> EXPECTED = List.of(
             e("nitrogen", 0xB3C6D2, -90, "liquid", "gaseous_art"),
             e("ammonia", 0x00A0F7, 20, "poison:true:4", "gaseous", "terraformer:DUNA"),
-            e("hydrazine", 0x31517D, 20, "flammable:500000", "combustible:HIGH:1250000", "corrosive:30", "liquid",
-                    "rocket:210:600000"),
+            e("hydrazine", 0x31517D, 20, "flammable:500000", "combustible:HIGH:1250000", "corrosive:30", "liquid", "rocket:210:600000"),
             e("bloodgas", 0x591000, 20, "flammable:2040000", "combustible:AERO:5120000", "liquid"),
             e("earthair", 0xD1CEEE, 20, "gaseous"),
             e("hcl", 0x00D452, 20, "corrosive:30", "liquid"),
@@ -233,8 +207,7 @@ public final class SpaceFluidGameTests {
             e("fluorine", 0xC5C539, 20, "gaseous", "corrosive:40", "poison:true:1", "flammable:10000"),
             e("tektoair", 0x245F46, 20, "gaseous", "poison:true:1", "flammable:30000"),
             e("elbowgrease", 0xCBC433, 20, "flammable:600000", "liquid"),
-            e("nmasstetranol", 0xF1DB0F, 20, "flammable:256000000000", "liquid", "corrosive:70", "poison:true:0",
-                    "ventradiation:" + 0.01F, "combustible:HIGH:2688000000000"),
+            e("nmasstetranol", 0xF1DB0F, 20, "flammable:256000000000", "liquid", "corrosive:70", "poison:true:0", "ventradiation:" + 0.01F, "combustible:HIGH:2688000000000"),
             e("nmass", 0x53A9F4, 20, "liquid", "corrosive:10", "poison:true:0", "ventradiation:" + 0.04F),
             e("scutterblood", 0x6C166C, 20, "liquid", "viscous", "delicious"),
             e("htco4", 0x675454, 20, "liquid", "corrosive:10", "ventradiation:" + 0.5F),
@@ -250,25 +223,16 @@ public final class SpaceFluidGameTests {
             e("brine", 0xD1A73E, 20, "liquid", "viscous"),
             e("conglomera", 0x364D47, 20, "liquid", "viscous"),
             e("dunaair", 0xD4704E, 20, "gaseous", "polluting:" + "POISON=" + 2.0000001e-05F + "/" + ""),
-            e("superheated_hydrogen", 0xE39393, 2200, "gaseous", "nocontainer", "noid", "rocket:900:700000",
-                    "coolable:hbm:hydrogen:1:1:300/" + ""),
-            e("gas_watz", 0x86653E, 2500, "gaseous", "nocontainer", "noid",
-                    "polluting:" + "POISON=" + 0.0005F + "/" + "", "rocket:1200:700000",
-                    "coolable:hbm:watz:1:1:300/" + ""),
-            e("uranium_bromide", 0xD1CEBE, 200, "liquid", "viscous", "corrosive:65", "ventradiation:" + 0.1F,
-                    "heatable:" + "300,1,ntmspace:gaseous_uranium_bromide,1" + "/" + "PWR=" + 1.0D,
-                    "pwrmoderator:" + 1.75D),
+            e("superheated_hydrogen", 0xE39393, 2200, "gaseous", "nocontainer", "noid", "rocket:900:700000", "coolable:hbm:hydrogen:1:1:300/" + ""),
+            e("gas_watz", 0x86653E, 2500, "gaseous", "nocontainer", "noid", "polluting:" + "POISON=" + 0.0005F + "/" + "", "rocket:1200:700000", "coolable:hbm:watz:1:1:300/" + ""),
+            e("uranium_bromide", 0xD1CEBE, 200, "liquid", "viscous", "corrosive:65", "ventradiation:" + 0.1F, "heatable:" + "300,1,ntmspace:gaseous_uranium_bromide,1" + "/" + "PWR=" + 1.0D, "pwrmoderator:" + 1.75D),
             e("aqueous_copper", 0x4CC2A2, 20, "liquid", "viscous"),
             e("coppersulfate", 0x55E5CF, 20, "liquid", "viscous"),
-            e("thorium_bromide", 0x7A5542, 200, "liquid", "viscous", "corrosive:65", "ventradiation:" + 0.1F,
-                    "heatable:" + "300,1,ntmspace:gaseous_thorium_bromide,1" + "/" + "PWR=" + 1.0D,
-                    "pwrmoderator:" + 1.50D),
-            e("gaseous_uranium_bromide", 0xD1CEBE, 2500, "gaseous", "nocontainer", "noid", "rocket:1500:700000",
-                    "coolable:ntmspace:uranium_bromide:1:1:300/" + ""),
+            e("thorium_bromide", 0x7A5542, 200, "liquid", "viscous", "corrosive:65", "ventradiation:" + 0.1F, "heatable:" + "300,1,ntmspace:gaseous_thorium_bromide,1" + "/" + "PWR=" + 1.0D, "pwrmoderator:" + 1.50D),
+            e("gaseous_uranium_bromide", 0xD1CEBE, 2500, "gaseous", "nocontainer", "noid", "rocket:1500:700000", "coolable:ntmspace:uranium_bromide:1:1:300/" + ""),
             e("gaseous_plutonium_bromide", 0x4C4C4C, 2600, "gaseous", "nocontainer", "noid", "rocket:2000:700000"),
             e("gaseous_schrabidium_bromide", 0x006B6B, 3000, "gaseous", "nocontainer", "noid", "rocket:3000:700000"),
-            e("gaseous_thorium_bromide", 0x7A5542, 2300, "gaseous", "nocontainer", "noid", "rocket:1300:700000",
-                    "coolable:ntmspace:thorium_bromide:1:1:300/" + ""),
+            e("gaseous_thorium_bromide", 0x7A5542, 2300, "gaseous", "nocontainer", "noid", "rocket:1300:700000", "coolable:ntmspace:thorium_bromide:1:1:300/" + ""),
             e("hgas", 0x999368, 20, "gaseous", "corrosive:120"),
             e("aqueous_nickel", 0xDACEBA, 20, "liquid"),
             e("vinyl", 0xA2A2A2, 20, "liquid"),
@@ -278,13 +242,9 @@ public final class SpaceFluidGameTests {
             e("lithydro", 0xD1CEBE, 20, "gaseous"),
             e("lithcarbonate", 0xD1CEBE, 20, "gaseous"));
 
-    /**
-     * The new fluids hbm-space gave containers ({@code addContainers}).
-     */
+    /** The new fluids hbm-space gave containers ({@code addContainers}). */
     static final String[] CONTAINER_KEYS = {"hydrazine", "bloodgas", "earthair", "neon", "argon", "krypton", "eveair", "tektoair", "elbowgrease", "nmasstetranol", "joolgas", "sarnusgas", "ugas", "ngas", "dunaair"};
-    /**
-     * Their canister colour, gas bottle colour and gas label colour (-1: none).
-     */
+    /** Their canister colour, gas bottle colour and gas label colour (-1: none). */
     static final int[][] CONTAINERS = {
             {0x31517D, -1, -1},
             {0x591000, -1, -1},
@@ -307,28 +267,21 @@ public final class SpaceFluidGameTests {
         for (Expected expected : EXPECTED) {
             String id = "ntmspace:" + expected.key();
             FluidType fluid = Fluids.byRegistryName(id);
-            if (fluid == Fluids.NONE || !fluid.getRegistryName().equals(id) || !fluid.getNamespace()
-                                                                                     .equals("ntmspace")) {
+            if (fluid == Fluids.NONE || !fluid.getRegistryName().equals(id) || !fluid.getNamespace().equals("ntmspace")) {
                 wrong.add(id + " is not registered");
                 continue;
             }
-            if ((fluid.getColor() & 0xFFFFFF) != expected.color())
-                wrong.add(id + " colour " + Integer.toHexString(fluid.getColor()));
-            if (fluid.getTemperature() != expected.temperature())
-                wrong.add(id + " temperature " + fluid.getTemperature());
+            if ((fluid.getColor() & 0xFFFFFF) != expected.color()) wrong.add(id + " colour " + Integer.toHexString(fluid.getColor()));
+            if (fluid.getTemperature() != expected.temperature()) wrong.add(id + " temperature " + fluid.getTemperature());
             List<String> actual = tokens(fluid);
-            if (!actual.equals(expected.traits()))
-                wrong.add(id + " traits " + actual + ", expected " + expected.traits());
+            if (!actual.equals(expected.traits())) wrong.add(id + " traits " + actual + ", expected " + expected.traits());
             net.minecraft.world.level.material.Fluid vanilla = Fluids.toVanilla(fluid);
-            if (!id.equals(String.valueOf(BuiltInRegistries.FLUID.getKey(vanilla))) || Fluids.fromVanilla(
-                    vanilla) != fluid) {
+            if (!id.equals(String.valueOf(BuiltInRegistries.FLUID.getKey(vanilla))) || Fluids.fromVanilla(vanilla) != fluid) {
                 wrong.add(id + " is not the vanilla fluid " + id);
             }
         }
-        long registered = Arrays.stream(Fluids.getAll())
-                                .filter(f -> f.getNamespace().equals("ntmspace") && !f.isForeign()).count();
-        if (registered != EXPECTED.size())
-            wrong.add(registered + " ntmspace fluids registered, expected " + EXPECTED.size());
+        long registered = Arrays.stream(Fluids.getAll()).filter(f -> f.getNamespace().equals("ntmspace") && !f.isForeign()).count();
+        if (registered != EXPECTED.size()) wrong.add(registered + " ntmspace fluids registered, expected " + EXPECTED.size());
         if (!wrong.isEmpty()) {
             helper.fail(wrong.size() + " wrong: " + wrong);
             return;
@@ -347,13 +300,11 @@ public final class SpaceFluidGameTests {
                 wrong.add(CONTAINER_KEYS[i] + " containers " + c);
             }
         }
-        for (String block : new String[]{"ntmspace:mercury_block", "ntmspace:bromine_block", "ntmspace:ccl_block"}) {
-            if (BuiltInRegistries.BLOCK.getOptional(dev.golem.core.Ids.parse(block)).isEmpty())
-                wrong.add(block + " not registered");
+        for (String block : new String[] {"ntmspace:mercury_block", "ntmspace:bromine_block", "ntmspace:ccl_block"}) {
+            if (BuiltInRegistries.BLOCK.getOptional(dev.golem.core.Ids.parse(block)).isEmpty()) wrong.add(block + " not registered");
         }
         // 1.7 FluidContainerRegistry: the three buckets and the vanilla milk bucket
-        Map<String, String> buckets = Map.of("ntmspace:bucket_mercury", "hbm:mercury", "ntmspace:bucket_bromine",
-                "ntmspace:bromine",
+        Map<String, String> buckets = Map.of("ntmspace:bucket_mercury", "hbm:mercury", "ntmspace:bucket_bromine", "ntmspace:bromine",
                 "ntmspace:bucket_ccl", "ntmspace:ccl", "minecraft:milk_bucket", "ntmspace:milk");
         var fixed = com.hbm.api.data.FluidDataMaps.FLUID_CONTAINER.byId();
         buckets.forEach((item, fluid) -> {
@@ -365,8 +316,7 @@ public final class SpaceFluidGameTests {
         });
         BlockPos pos = new BlockPos(1, 1, 1);
         helper.setBlock(pos, SpaceFluidBlocks.MERCURY_BLOCK.get().defaultBlockState());
-        if (!helper.getBlockState(pos).is(SpaceFluidBlocks.MERCURY_BLOCK.get()))
-            wrong.add("mercury_block did not place");
+        if (!helper.getBlockState(pos).is(SpaceFluidBlocks.MERCURY_BLOCK.get())) wrong.add("mercury_block did not place");
         if (!wrong.isEmpty()) {
             helper.fail(wrong.size() + " wrong: " + wrong);
             return;
@@ -374,9 +324,7 @@ public final class SpaceFluidGameTests {
         helper.succeed();
     }
 
-    /**
-     * A fluid's traits as canonical tokens (the form of {@link #EXPECTED}); a trait not known here is {@code unknown:}.
-     */
+    /** A fluid's traits as canonical tokens (the form of {@link #EXPECTED}); a trait not known here is {@code unknown:}. */
     static List<String> tokens(FluidType fluid) {
         List<String> out = new ArrayList<>();
         for (Object trait : fluid.traits()) out.add(token(trait));
@@ -406,8 +354,7 @@ public final class SpaceFluidGameTests {
         if (t instanceof FT_Heatable h) {
             List<String> steps = new ArrayList<>();
             for (FT_Heatable.HeatingStep s : h.steps()) {
-                steps.add(
-                        s.heatReq + "," + s.amountReq + "," + s.typeProduced.getRegistryName() + "," + s.amountProduced);
+                steps.add(s.heatReq + "," + s.amountReq + "," + s.typeProduced.getRegistryName() + "," + s.amountProduced);
             }
             return "heatable:" + String.join(";", steps) + "/" + byName(h.getEfficiencies());
         }
@@ -419,9 +366,7 @@ public final class SpaceFluidGameTests {
         return "unknown:" + t.getClass().getName();
     }
 
-    /**
-     * {@code NAME=value,...} sorted by name.
-     */
+    /** {@code NAME=value,...} sorted by name. */
     private static String byName(Map<? extends Enum<?>, ?> map) {
         TreeMap<String, Object> sorted = new TreeMap<>();
         map.forEach((k, v) -> sorted.put(k.name(), v));

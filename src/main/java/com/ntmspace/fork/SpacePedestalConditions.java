@@ -3,13 +3,10 @@ package com.ntmspace.fork;
 import com.hbm.inventory.recipes.PedestalRecipes.PedestalExtraCondition;
 import com.ntmspace.world.SpaceSkies;
 
-/**
- * Space's BlockPedestal interprets NEW_MOON as an eclipse under a high sun on celestial worlds.
- */
+/** Space's BlockPedestal interprets NEW_MOON as an eclipse under a high sun on celestial worlds. */
 public final class SpacePedestalConditions {
 
-    public static final PedestalExtraCondition NEW_MOON = PedestalExtraCondition.register(
-            "ntmspace:new_moon", PedestalExtraCondition.NEW_MOON.icon, SpacePedestalConditions::newMoon);
+    public static PedestalExtraCondition NEW_MOON;
 
     private SpacePedestalConditions() {
     }
@@ -22,5 +19,7 @@ public final class SpacePedestalConditions {
     }
 
     public static void init() {
+        NEW_MOON = PedestalExtraCondition.register("ntmspace:new_moon", PedestalExtraCondition.NEW_MOON.icon,
+                SpacePedestalConditions::newMoon);
     }
 }

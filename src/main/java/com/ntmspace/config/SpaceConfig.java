@@ -3,9 +3,7 @@ package com.ntmspace.config;
 import com.hbm.config.CommonConfig;
 import com.hbm.config.Configuration;
 import com.ntmspace.world.gen.legacy.MapGenVolcano17;
-
 import java.nio.file.Path;
-
 import net.minecraft.util.Mth;
 
 /**
@@ -19,8 +17,7 @@ import net.minecraft.util.Mth;
  */
 public final class SpaceConfig {
 
-    private SpaceConfig() {
-    }
+    private SpaceConfig() {}
 
     /**
      * hbm-space {@code RadiationConfig.disableNeutron} ({@code HAZ_01_disableNeutrons}, default true): the neutron
@@ -40,9 +37,7 @@ public final class SpaceConfig {
     public static boolean enableMunCows = true;
     public static boolean serverSafety = false;
 
-    /**
-     * hbm-space RadiationConfig: 1 = 1 rad/s under the Mun's open sky.
-     */
+    /** hbm-space RadiationConfig: 1 = 1 rad/s under the Mun's open sky. */
     public static double celestialRadMultiplier = 0.25D;
 
     // hbm-space WorldConfig: what a drill sucks from one fluid-ore block, and the chance it runs dry
@@ -80,14 +75,6 @@ public final class SpaceConfig {
     public static double ikeBrineDrainChance = 0.05D;
 
     private static boolean loaded;
-    private static Configuration configuration;
-
-    /**
-     * The declarations and defaults captured by the last successful native configuration load.
-     */
-    public static Configuration configuration() {
-        return configuration;
-    }
 
     public static Path file() {
         return dev.golem.core.platform.ConfigFiles.configDir().resolve("ntmspace.cfg");
@@ -99,9 +86,7 @@ public final class SpaceConfig {
         load(new Configuration(file()));
     }
 
-    /**
-     * Reads {@code config} (and writes missing keys back); the GameTests use a scratch file.
-     */
+    /** Reads {@code config} (and writes missing keys back); the GameTests use a scratch file. */
     public static void load(Configuration config) {
         config.load();
         // hbm-space RadiationConfig: CATEGORY_HAZ, the same "14_hazard" category as HBM's hazard switches
@@ -112,12 +97,9 @@ public final class SpaceConfig {
         loadSpace(config);
         loadReserves(config);
         config.save();
-        configuration = config;
     }
 
-    /**
-     * hbm-space SpaceConfig, MobConfig, GeneralConfig and RadiationConfig keys, under their 1.7 categories.
-     */
+    /** hbm-space SpaceConfig, MobConfig, GeneralConfig and RadiationConfig keys, under their 1.7 categories. */
     private static void loadSpace(Configuration config) {
         allowNetherPortals = CommonConfig.createConfigBool(config, CATEGORY_DIMENSIONS, "17.00_allowNetherPortals",
                 "Should Nether portals function on other celestial bodies?", false);
@@ -125,110 +107,79 @@ public final class SpaceConfig {
                 "How far from the center of the dimension can probes generate landing coordinates", maxProbeDistance);
         // port: probes draw nextInt(2 * distance), which overflows above half the int range
         maxProbeDistance = Mth.clamp(maxProbeDistance, 1, Integer.MAX_VALUE / 2);
-        maxStationDistance = CommonConfig.createConfigInt(config, CommonConfig.CATEGORY_GENERAL,
-                "1.93_maxStationDistance",
+        maxStationDistance = CommonConfig.createConfigInt(config, CommonConfig.CATEGORY_GENERAL, "1.93_maxStationDistance",
                 "How far from the center of the dimension can orbital stations be generated", maxStationDistance);
         maxStationDistance = Math.max(maxStationDistance, 1024);
-        MapGenVolcano17.enableVolcanoGen = CommonConfig.createConfigBool(config, CommonConfig.CATEGORY_GENERAL,
-                "1.91_enableVolcanoGen",
-                "Should volcanoes be active when spawning, disabling will prevent natural volcanoes from spewing lava and growing",
-                MapGenVolcano17.enableVolcanoGen);
+        MapGenVolcano17.enableVolcanoGen = CommonConfig.createConfigBool(config, CommonConfig.CATEGORY_GENERAL, "1.91_enableVolcanoGen",
+                "Should volcanoes be active when spawning, disabling will prevent natural volcanoes from spewing lava and growing", MapGenVolcano17.enableVolcanoGen);
         combatPodDespawn = CommonConfig.createConfigBool(config, CommonConfig.CATEGORY_GENERAL, "1.94_combatPodDespawn",
                 "wether combat pods should despawn after a certian amount of time.", combatPodDespawn);
         enableMunCows = CommonConfig.createConfigBool(config, CommonConfig.CATEGORY_MOBS, "12.D03_enableMunCows",
                 "Whether Mun Cows should spawn on the Mun", enableMunCows);
         serverSafety = CommonConfig.createConfigBool(config, CommonConfig.CATEGORY_GENERAL, "1.43_serverSafety",
                 "Allows for automated entity culling to function properly.", serverSafety);
-        celestialRadMultiplier = CommonConfig.createConfigDouble(config, CommonConfig.CATEGORY_RADIATION,
-                "CELESTIAL_00_radMultiplier",
+        celestialRadMultiplier = CommonConfig.createConfigDouble(config, CommonConfig.CATEGORY_RADIATION, "CELESTIAL_00_radMultiplier",
                 "Radiation multiplier on celestial bodies, 1 = 1 rad/s on the Mun", celestialRadMultiplier);
     }
 
     private static void loadReserves(Configuration config) {
-        bedrockOilPerDeposit = CommonConfig.createConfigInt(config, CommonConfig.CATEGORY_ORES,
-                "2.O00_bedrockOilPerDeposit",
+        bedrockOilPerDeposit = CommonConfig.createConfigInt(config, CommonConfig.CATEGORY_ORES, "2.O00_bedrockOilPerDeposit",
                 "Oil extracted per bedrock oil block suck", bedrockOilPerDeposit);
-        bedrockGasPerDepositMin = CommonConfig.createConfigInt(config, CommonConfig.CATEGORY_ORES,
-                "2.O01_bedrockGasPerDepositMin",
+        bedrockGasPerDepositMin = CommonConfig.createConfigInt(config, CommonConfig.CATEGORY_ORES, "2.O01_bedrockGasPerDepositMin",
                 "Minimum natural gas extracted per bedrock oil block suck", bedrockGasPerDepositMin);
-        bedrockGasPerDepositMax = CommonConfig.createConfigInt(config, CommonConfig.CATEGORY_ORES,
-                "2.O02_bedrockGasPerDepositMax",
+        bedrockGasPerDepositMax = CommonConfig.createConfigInt(config, CommonConfig.CATEGORY_ORES, "2.O02_bedrockGasPerDepositMax",
                 "Maximum natural gas extracted per bedrock oil block suck", bedrockGasPerDepositMax);
-        earthOilPerDeposit = CommonConfig.createConfigInt(config, CommonConfig.CATEGORY_ORES,
-                "2.O03_earthOilPerDeposit",
+        earthOilPerDeposit = CommonConfig.createConfigInt(config, CommonConfig.CATEGORY_ORES, "2.O03_earthOilPerDeposit",
                 "Oil extracted per Earth oil block suck", earthOilPerDeposit);
-        earthGasPerDepositMin = CommonConfig.createConfigInt(config, CommonConfig.CATEGORY_ORES,
-                "2.O04_earthGasPerDepositMin",
+        earthGasPerDepositMin = CommonConfig.createConfigInt(config, CommonConfig.CATEGORY_ORES, "2.O04_earthGasPerDepositMin",
                 "Minimum natural gas extracted per Earth oil block suck", earthGasPerDepositMin);
-        earthGasPerDepositMax = CommonConfig.createConfigInt(config, CommonConfig.CATEGORY_ORES,
-                "2.O05_earthGasPerDepositMax",
+        earthGasPerDepositMax = CommonConfig.createConfigInt(config, CommonConfig.CATEGORY_ORES, "2.O05_earthGasPerDepositMax",
                 "Maximum natural gas extracted per Earth oil block suck", earthGasPerDepositMax);
-        earthOilDrainChance = CommonConfig.createConfigDouble(config, CommonConfig.CATEGORY_ORES,
-                "2.O06_earthOilDrainChance",
+        earthOilDrainChance = CommonConfig.createConfigDouble(config, CommonConfig.CATEGORY_ORES, "2.O06_earthOilDrainChance",
                 "Chance for an Earth oil block to become empty on suck", earthOilDrainChance);
         dunaOilPerDeposit = CommonConfig.createConfigInt(config, CommonConfig.CATEGORY_ORES, "2.O07_dunaOilPerDeposit",
                 "Oil extracted per Duna oil block suck", dunaOilPerDeposit);
-        dunaGasPerDepositMin = CommonConfig.createConfigInt(config, CommonConfig.CATEGORY_ORES,
-                "2.O08_dunaGasPerDepositMin",
+        dunaGasPerDepositMin = CommonConfig.createConfigInt(config, CommonConfig.CATEGORY_ORES, "2.O08_dunaGasPerDepositMin",
                 "Minimum natural gas extracted per Duna oil block suck", dunaGasPerDepositMin);
-        dunaGasPerDepositMax = CommonConfig.createConfigInt(config, CommonConfig.CATEGORY_ORES,
-                "2.O09_dunaGasPerDepositMax",
+        dunaGasPerDepositMax = CommonConfig.createConfigInt(config, CommonConfig.CATEGORY_ORES, "2.O09_dunaGasPerDepositMax",
                 "Maximum natural gas extracted per Duna oil block suck", dunaGasPerDepositMax);
-        dunaOilDrainChance = CommonConfig.createConfigDouble(config, CommonConfig.CATEGORY_ORES,
-                "2.O10_dunaOilDrainChance",
+        dunaOilDrainChance = CommonConfig.createConfigDouble(config, CommonConfig.CATEGORY_ORES, "2.O10_dunaOilDrainChance",
                 "Chance for a Duna oil block to become empty on suck", dunaOilDrainChance);
-        laytheOilPerDeposit = CommonConfig.createConfigInt(config, CommonConfig.CATEGORY_ORES,
-                "2.O11_laytheOilPerDeposit",
+        laytheOilPerDeposit = CommonConfig.createConfigInt(config, CommonConfig.CATEGORY_ORES, "2.O11_laytheOilPerDeposit",
                 "Desulfurized Oil extracted per Laythe oil block suck", laytheOilPerDeposit);
-        laytheGasPerDepositMin = CommonConfig.createConfigInt(config, CommonConfig.CATEGORY_ORES,
-                "2.O12_laytheGasPerDepositMin",
+        laytheGasPerDepositMin = CommonConfig.createConfigInt(config, CommonConfig.CATEGORY_ORES, "2.O12_laytheGasPerDepositMin",
                 "Minimum natural gas extracted per Laythe oil block suck", laytheGasPerDepositMin);
-        laytheGasPerDepositMax = CommonConfig.createConfigInt(config, CommonConfig.CATEGORY_ORES,
-                "2.O13_laytheGasPerDepositMax",
+        laytheGasPerDepositMax = CommonConfig.createConfigInt(config, CommonConfig.CATEGORY_ORES, "2.O13_laytheGasPerDepositMax",
                 "Maximum natural gas extracted per Laythe oil block suck", laytheGasPerDepositMax);
-        laytheOilDrainChance = CommonConfig.createConfigDouble(config, CommonConfig.CATEGORY_ORES,
-                "2.O14_laytheOilDrainChance",
+        laytheOilDrainChance = CommonConfig.createConfigDouble(config, CommonConfig.CATEGORY_ORES, "2.O14_laytheOilDrainChance",
                 "Chance for a Laythe oil block to become empty on suck", laytheOilDrainChance);
         eveGasPerDeposit = CommonConfig.createConfigInt(config, CommonConfig.CATEGORY_ORES, "2.O15_eveGasPerDeposit",
                 "Natural Gas extracted per Eve gas block suck", eveGasPerDeposit);
-        evePetPerDepositMin = CommonConfig.createConfigInt(config, CommonConfig.CATEGORY_ORES,
-                "2.O16_evePetPerDepositMin",
+        evePetPerDepositMin = CommonConfig.createConfigInt(config, CommonConfig.CATEGORY_ORES, "2.O16_evePetPerDepositMin",
                 "Minimum petroleum gas extracted per Eve oil block suck", evePetPerDepositMin);
-        evePetPerDepositMax = CommonConfig.createConfigInt(config, CommonConfig.CATEGORY_ORES,
-                "2.O17_evePetPerDepositMax",
+        evePetPerDepositMax = CommonConfig.createConfigInt(config, CommonConfig.CATEGORY_ORES, "2.O17_evePetPerDepositMax",
                 "Maximum petroleum gas extracted per Eve oil block suck", evePetPerDepositMax);
-        eveGasDrainChance = CommonConfig.createConfigDouble(config, CommonConfig.CATEGORY_ORES,
-                "2.O18_eveGasDrainChance",
+        eveGasDrainChance = CommonConfig.createConfigDouble(config, CommonConfig.CATEGORY_ORES, "2.O18_eveGasDrainChance",
                 "Chance for an Eve gas block to become empty on suck", eveGasDrainChance);
-        munBrinePerDeposit = CommonConfig.createConfigInt(config, CommonConfig.CATEGORY_ORES,
-                "2.O19_munBrinePerDeposit",
+        munBrinePerDeposit = CommonConfig.createConfigInt(config, CommonConfig.CATEGORY_ORES, "2.O19_munBrinePerDeposit",
                 "Brine extracted per Mun brine block suck", munBrinePerDeposit);
-        munBrineDrainChance = CommonConfig.createConfigDouble(config, CommonConfig.CATEGORY_ORES,
-                "2.O20_munBrineDrainChance",
+        munBrineDrainChance = CommonConfig.createConfigDouble(config, CommonConfig.CATEGORY_ORES, "2.O20_munBrineDrainChance",
                 "Chance for an Mun brine block to become empty on suck", munBrineDrainChance);
-        minmusBrinePerDeposit = CommonConfig.createConfigInt(config, CommonConfig.CATEGORY_ORES,
-                "2.O21_minmusBrinePerDeposit",
+        minmusBrinePerDeposit = CommonConfig.createConfigInt(config, CommonConfig.CATEGORY_ORES, "2.O21_minmusBrinePerDeposit",
                 "Brine extracted per Minmus brine block suck", minmusBrinePerDeposit);
-        minmusBrineDrainChance = CommonConfig.createConfigDouble(config, CommonConfig.CATEGORY_ORES,
-                "2.O22_minmusBrineDrainChance",
+        minmusBrineDrainChance = CommonConfig.createConfigDouble(config, CommonConfig.CATEGORY_ORES, "2.O22_minmusBrineDrainChance",
                 "Chance for an Minmus brine block to become empty on suck", minmusBrineDrainChance);
-        ikeBrinePerDeposit = CommonConfig.createConfigInt(config, CommonConfig.CATEGORY_ORES,
-                "2.O23_ikeBrinePerDeposit",
+        ikeBrinePerDeposit = CommonConfig.createConfigInt(config, CommonConfig.CATEGORY_ORES, "2.O23_ikeBrinePerDeposit",
                 "Brine extracted per Ike brine block suck", ikeBrinePerDeposit);
-        ikeBrineDrainChance = CommonConfig.createConfigDouble(config, CommonConfig.CATEGORY_ORES,
-                "2.O24_ikeBrineDrainChance",
+        ikeBrineDrainChance = CommonConfig.createConfigDouble(config, CommonConfig.CATEGORY_ORES, "2.O24_ikeBrineDrainChance",
                 "Chance for an Ike brine block to become empty on suck", ikeBrineDrainChance);
-        tektoOilPerDeposit = CommonConfig.createConfigInt(config, CommonConfig.CATEGORY_ORES,
-                "2.O25_tektoOilPerDeposit",
+        tektoOilPerDeposit = CommonConfig.createConfigInt(config, CommonConfig.CATEGORY_ORES, "2.O25_tektoOilPerDeposit",
                 "Oil extracted per Tekto oil block suck", tektoOilPerDeposit);
-        tektoGasPerDepositMin = CommonConfig.createConfigInt(config, CommonConfig.CATEGORY_ORES,
-                "2.O26_tektoGasPerDepositMin",
+        tektoGasPerDepositMin = CommonConfig.createConfigInt(config, CommonConfig.CATEGORY_ORES, "2.O26_tektoGasPerDepositMin",
                 "Minimum natural gas extracted per Tekto oil block suck", tektoGasPerDepositMin);
-        tektoGasPerDepositMax = CommonConfig.createConfigInt(config, CommonConfig.CATEGORY_ORES,
-                "2.O27_tektoGasPerDepositMax",
+        tektoGasPerDepositMax = CommonConfig.createConfigInt(config, CommonConfig.CATEGORY_ORES, "2.O27_tektoGasPerDepositMax",
                 "Maximum natural gas extracted per Tekto oil block suck", tektoGasPerDepositMax);
-        tektoOilDrainChance = CommonConfig.createConfigDouble(config, CommonConfig.CATEGORY_ORES,
-                "2.O28_tektoOilDrainChance",
+        tektoOilDrainChance = CommonConfig.createConfigDouble(config, CommonConfig.CATEGORY_ORES, "2.O28_tektoOilDrainChance",
                 "Chance for a Tekto oil block to become empty on suck", tektoOilDrainChance);
     }
 }

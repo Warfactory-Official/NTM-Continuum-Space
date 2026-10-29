@@ -37,19 +37,10 @@ public class MachineSolar extends BlockMultiblockMachine implements IEnergyConne
         return new TileEntityMachineSolarPanel(pos, state);
     }
 
-    @Override
-    public int[] getDimensions() {
-        return new int[]{0, 0, 2, 2, 0, 0};
-    }
+    @Override public int[] getDimensions() { return new int[] {0, 0, 2, 2, 0, 0}; }
+    @Override public int getOffset() { return 0; }
 
-    @Override
-    public int getOffset() {
-        return 0;
-    }
-
-    /**
-     * The six visual connectors, using the same native contact query as the panel renderer.
-     */
+    /** The six visual connectors, using the same native contact query as the panel renderer. */
     public static int powerConnectionMask(Level level, BlockPos core) {
         var mask = 0;
         for (var side : Direction.values()) {
@@ -62,11 +53,6 @@ public class MachineSolar extends BlockMultiblockMachine implements IEnergyConne
         return mask;
     }
 
-    /**
-     * The core provides on every face (1.7 {@code ForgeDirection.VALID_DIRECTIONS}).
-     */
-    @Override
-    public int coreMask() {
-        return MASK_ALL;
-    }
+    /** The core provides on every face (1.7 {@code ForgeDirection.VALID_DIRECTIONS}). */
+    @Override public int coreMask() { return MASK_ALL; }
 }

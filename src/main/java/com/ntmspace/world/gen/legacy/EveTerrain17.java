@@ -1,7 +1,6 @@
 package com.ntmspace.world.gen.legacy;
 
 import com.ntmspace.world.gen.noise.Noise17Perlin;
-
 import java.util.Random;
 
 /**
@@ -23,26 +22,16 @@ import java.util.Random;
  */
 public class EveTerrain17 extends LayeredBodyTerrain17 {
 
-    /**
-     * {@code SolarSystem.Body.EVE.ordinal()}: Eve's ore metadata in hbm-space.
-     */
+    /** {@code SolarSystem.Body.EVE.ordinal()}: Eve's ore metadata in hbm-space. */
     public static final byte EVE_META = 7;
-    /**
-     * hbm-space's {@code WorldConfig.eveGasSpawn} default.
-     */
+    /** hbm-space's {@code WorldConfig.eveGasSpawn} default. */
     public static final int GAS_SPAWN = 100;
-
-    public MapGenVNoise17 oceanPlates() {
-        return noise;
-    }
 
     private final Noise17Perlin crackNoise;
     private final MapGenVNoise17 noise = new MapGenVNoise17();
     private final MapGenBubble oil = new MapGenBubble(GAS_SPAWN);
     private final long sessionSeed;
-    /**
-     * Stands in for {@code Math.random()} in the surface pass; reseeded per chunk.
-     */
+    /** Stands in for {@code Math.random()} in the surface pass; reseeded per chunk. */
     private final Random mathRandom = new Random();
 
     public final Biome17 plains = new Eve(0.125F, 0.05F, Surface.PLAINS);
@@ -111,8 +100,7 @@ public class EveTerrain17 extends LayeredBodyTerrain17 {
             for (int z = 0; z < 16; z++) {
                 if (biomes[x + z * 16] != EveLayers17.SEISMIC_PLAINS) continue;
 
-                double crackValue = crackNoise.value((chunkX * 16 + x) * 0.3,
-                        (chunkZ * 16 + z) * 0.3); // Lower scale value for more spread-out cracks
+                double crackValue = crackNoise.value((chunkX * 16 + x) * 0.3, (chunkZ * 16 + z) * 0.3); // Lower scale value for more spread-out cracks
 
                 if (crackValue > 0.9) {
                     int bedrockY = -1;
@@ -135,11 +123,9 @@ public class EveTerrain17 extends LayeredBodyTerrain17 {
         }
     }
 
-    private enum Surface {PLAINS, OCEAN, SEISMIC}
+    private enum Surface { PLAINS, OCEAN, SEISMIC }
 
-    /**
-     * hbm-space's {@code BiomeGenBaseEve} and its five subclasses' {@code genTerrainBlocks}.
-     */
+    /** hbm-space's {@code BiomeGenBaseEve} and its five subclasses' {@code genTerrainBlocks}. */
     private final class Eve extends Biome17 {
 
         private final Surface surface;

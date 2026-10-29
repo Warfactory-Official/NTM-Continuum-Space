@@ -11,10 +11,8 @@ import com.ntmspace.orbit.OrbitalStation;
 import com.ntmspace.registry.RocketItems;
 import com.ntmspace.world.SolarSystem;
 import dev.golem.core.world.CompatTooltipContext;
-
 import java.util.List;
 import java.util.function.Supplier;
-
 import net.minecraft.ChatFormatting;
 import net.minecraft.network.chat.Component;
 import net.minecraft.sounds.SoundSource;
@@ -43,9 +41,7 @@ import org.jspecify.annotations.Nullable;
  */
 public class ItemVOTVdrive extends ItemEnumMulti {
 
-    /**
-     * The client's level for tooltips (set by the client start-up; null on a server).
-     */
+    /** The client's level for tooltips (set by the client start-up; null on a server). */
     public static volatile Supplier<@Nullable Level> clientLevel = () -> null;
 
     private final DriveBody body;
@@ -59,22 +55,18 @@ public class ItemVOTVdrive extends ItemEnumMulti {
         return body;
     }
 
-    /**
-     * The orbit agent's hooks: the drive's destination for the station computer and {@code /ntmstations}.
-     */
+    /** The orbit agent's hooks: the drive's destination for the station computer and {@code /ntmstations}. */
     public static void registerHooks() {
         NavDrives.READERS.register(stack -> {
             if (!(stack.getItem() instanceof ItemVOTVdrive)) return null;
             Destination destination = getDestination(stack);
-            return new NavDrives.Destination(
-                    destination.body == DriveBody.ORBIT ? NavDrives.ORBIT : destination.body.name,
+            return new NavDrives.Destination(destination.body == DriveBody.ORBIT ? NavDrives.ORBIT : destination.body.name,
                     destination.x, destination.z);
         });
         // 1.7 /ntmstations fetch: a processed orbit drive for the station's grid square
         NavDrives.FACTORIES.register((x, z, name) -> {
             ItemStack drive = new ItemStack(RocketItems.drive(DriveBody.ORBIT));
-            RocketItems.DRIVE.set(drive,
-                    DriveData.EMPTY.withCoordinates(x, z).withProcessed(true).withStation(name, "", false));
+            RocketItems.DRIVE.set(drive, DriveData.EMPTY.withCoordinates(x, z).withProcessed(true).withStation(name, "", false));
             return drive;
         });
     }
@@ -109,8 +101,7 @@ public class ItemVOTVdrive extends ItemEnumMulti {
         if (destination.body == DriveBody.ORBIT) {
             DriveData data = data(stack);
             if (level == null || level.isClientSide() || level.getServer() == null) {
-                SolarSystem.Body body = data.stationBody().isEmpty() ? SolarSystem.body("kerbin") : SolarSystem.body(
-                        data.stationBody());
+                SolarSystem.Body body = data.stationBody().isEmpty() ? SolarSystem.body("kerbin") : SolarSystem.body(data.stationBody());
                 return new RocketTarget(body, true, data.stationHas());
             }
 
@@ -123,9 +114,7 @@ public class ItemVOTVdrive extends ItemEnumMulti {
         }
     }
 
-    /**
-     * Publishes the station snapshot while a server machine owns the installed drive.
-     */
+    /** 1.7 {@code getTarget}'s server side: writes the station onto an orbit drive, the only way the client learns it. */
     public static void publishStation(ItemStack stack, Level level) {
         if (!(stack.getItem() instanceof ItemVOTVdrive) || getBody(stack) != DriveBody.ORBIT) return;
         var destination = getDestination(stack);
@@ -253,15 +242,13 @@ public class ItemVOTVdrive extends ItemEnumMulti {
     }
 
     private static void message(@Nullable Player player, String text) {
-        if (player != null)
-            player.sendSystemMessage(Component.literal(text).withStyle(ChatFormatting.YELLOW, ChatFormatting.ITALIC));
+        if (player != null) player.sendSystemMessage(Component.literal(text).withStyle(ChatFormatting.YELLOW, ChatFormatting.ITALIC));
     }
 
     // ---------------------------------------------------------------------------------------- tooltip
 
     @Override
-    protected void appendCompatHoverText(ItemStack stack, CompatTooltipContext context, List<Component> list,
-                                         TooltipFlag flag) {
+    protected void appendCompatHoverText(ItemStack stack, CompatTooltipContext context, List<Component> list, TooltipFlag flag) {
         Destination destination = getDestination(stack);
         Level level = clientLevel.get();
 
@@ -289,8 +276,7 @@ public class ItemVOTVdrive extends ItemEnumMulti {
         SolarSystem.Body from = level != null ? Orbit.bodyOf(level) : SolarSystem.body("kerbin");
         int processingLevel = destination.body.getProcessingLevel(from);
 
-        list.add(Component.literal("Destination: ").append(Component.translatable("body." + destination.body.name)
-                                                                    .withStyle(ChatFormatting.AQUA)));
+        list.add(Component.literal("Destination: ").append(Component.translatable("body." + destination.body.name).withStyle(ChatFormatting.AQUA)));
 
         if (destination.x == 0 && destination.z == 0) {
             list.add(Component.literal("Needs destination coordinates!").withStyle(ChatFormatting.GOLD));
@@ -312,19 +298,14 @@ public class ItemVOTVdrive extends ItemEnumMulti {
         }
     }
 
-    /**
-     * 1.7 {@code getSubItems}: the creative drives are processed, {@code x = 1}, {@code ax = 1}.
-     */
+    /** 1.7 {@code getSubItems}: the creative drives are processed, {@code x = 1}, {@code ax = 1}. */
     public static ItemStack creativeStack(DriveBody body) {
         ItemStack stack = new ItemStack(RocketItems.drive(body));
-        RocketItems.DRIVE.set(stack,
-                new DriveData(1, 0, true, false, java.util.Optional.of(1), java.util.Optional.empty(), "", "", false));
+        RocketItems.DRIVE.set(stack, new DriveData(1, 0, true, false, java.util.Optional.of(1), java.util.Optional.empty(), "", "", false));
         return stack;
     }
 
-    /**
-     * 1.7 {@code Destination}: a drive body and coordinates (grid square for the orbit).
-     */
+    /** 1.7 {@code Destination}: a drive body and coordinates (grid square for the orbit). */
     public static final class Destination {
         public int x;
         public int z;
@@ -336,9 +317,7 @@ public class ItemVOTVdrive extends ItemEnumMulti {
             this.z = z;
         }
 
-        /**
-         * A landing location is the body and exact x/z; drive flags and owning stacks are separate data.
-         */
+        /** A landing location is the body and exact x/z; drive flags and owning stacks are separate data. */
         @Override
         public boolean equals(Object other) {
             return this == other || other instanceof Destination destination

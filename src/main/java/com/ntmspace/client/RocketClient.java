@@ -24,8 +24,7 @@ import net.minecraft.client.player.LocalPlayer;
  */
 public final class RocketClient {
 
-    private RocketClient() {
-    }
+    private RocketClient() {}
 
     public static void init() {
         ClientRegistrations.screens(screens -> {
@@ -57,8 +56,7 @@ public final class RocketClient {
      * translated to the player, so the pivot is the camera, not the player: odd, kept (the rider swings with the rocket's
      * turn as seen from the camera).
      */
-    private static void tiltRider(net.minecraft.world.entity.player.Player player,
-                                  com.mojang.blaze3d.vertex.PoseStack pose,
+    private static void tiltRider(net.minecraft.world.entity.player.Player player, com.mojang.blaze3d.vertex.PoseStack pose,
                                   float partialTick) {
         if (!(player.getVehicle() instanceof EntityRideableRocket rocket)) return;
         float pitch = rocket.getXRot();

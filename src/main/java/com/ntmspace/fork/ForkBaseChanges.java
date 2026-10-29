@@ -10,8 +10,10 @@ import com.ntmspace.config.SpaceConfig;
 import com.ntmspace.inventory.material.SpaceAlloyMaterials;
 import com.ntmspace.registry.SpaceItems;
 import net.minecraft.world.item.ItemStack;
+import com.hbm.blocks.ModPowerGenBlocks;
 import com.hbm.blocks.generic.BlockBobble.BobbleType;
 import com.hbm.blocks.machine.MachineElectrolyser;
+import com.hbm.blocks.machine.ModMachineBlocks;
 import com.hbm.blocks.multiblock.BlockMultiblockCore;
 import com.hbm.creativetabs.HbmTab;
 import com.hbm.entity.item.EntityTntNtm;
@@ -24,6 +26,8 @@ import com.hbm.tileentity.machine.TileEntityGeiger;
 import com.hbm.tileentity.network.TileEntityCranePartitioner;
 import com.hbm.tileentity.network.pneumatic.TileEntityPneumoTube;
 import com.hbm.util.ContaminationUtil;
+import com.hbm.world.feature.ImpactAftermathFeature;
+import com.hbm.world.gen.NTMStructureDeclarations;
 import com.ntmspace.NtmSpace;
 import dev.golem.core.Ids;
 import dev.golem.core.data.GolemComponent;
@@ -37,9 +41,8 @@ import dev.golem.core.registry.Loot;
 import dev.golem.core.registry.Registrar;
 import dev.golem.core.registry.RegistryObject;
 import dev.golem.core.world.Compat;
-
+import dev.golem.core.world.ItemModels;
 import java.util.List;
-
 import net.minecraft.core.registries.Registries;
 import net.minecraft.network.chat.Component;
 import net.minecraft.tags.TagKey;
@@ -82,15 +85,10 @@ public final class ForkBaseChanges {
     public static final DeferredRegister.BlockEntityTypes BLOCK_ENTITIES = DeferredRegister.createBlockEntityTypes(NS);
     private static final Registrar REG = Registrar.of(BLOCKS, ITEMS, BLOCK_ENTITIES);
 
-    /**
-     * A carried complex capacitor keeps its stored charge and actual capacity together.
-     */
+    /** A carried complex capacitor keeps its stored charge and actual capacity together. */
     public static final GolemComponent<CapacitorCharge> CAPACITOR_STATE =
             GolemComponent.of(NS, "capacitor_state", CapacitorCharge.CODEC);
-
-    /**
-     * hbm-space {@code MachineCapacitor.addInformation}'s lines for {@code capacitor_complex}, after the description.
-     */
+    /** hbm-space {@code MachineCapacitor.addInformation}'s lines for {@code capacitor_complex}, after the description. */
     public static final List<String> COMPLEX_LORE = List.of(
             "TaCdSa236-7 N-Boosted Anti Mass core surrounded by",
             "Flashlead antimatter lattice in a BF Stabilization Matrix",
@@ -102,26 +100,21 @@ public final class ForkBaseChanges {
      * resistance 10, machine tab, {@code @Deprecated} like the other legacy capacitors (no recipe: creative only).
      */
     public static final RegistryObject<ComplexCapacitor> CAPACITOR_COMPLEX = REG.block("capacitor_complex",
-                                                                                        p -> new ComplexCapacitor(p, 100_000_000_000_000_000L),
-                                                                                        p -> p.strength(5.0F, 10.0F).sound(SoundType.METAL).requiresCorrectToolForDrops().noOcclusion())
-                                                                                .transform(Presets.statesOnly(
-                                                                                        Variants.facingUp()))
-                                                                                .icon(d -> d.models(Models.blockItem(
-                                                                                        NS + ":block/capacitor_complex")))
-                                                                                .loot(Loot.self())
-                                                                                .tag(BlockTag.PICKAXE);
+                    p -> new ComplexCapacitor(p, 100_000_000_000_000_000L),
+                    p -> p.strength(5.0F, 10.0F).sound(SoundType.METAL).requiresCorrectToolForDrops().noOcclusion())
+            .transform(Presets.statesOnly(Variants.facingUp()))
+            .icon(d -> d.models(Models.blockItem(NS + ":block/capacitor_complex")))
+            .loot(Loot.self()).tag(BlockTag.PICKAXE);
     public static final RegistryObject<BlockItem> CAPACITOR_COMPLEX_ITEM = REG.<BlockItem>item("capacitor_complex",
-                                                                                      (Item.Properties p) -> new EnergyNetBlockItem(CAPACITOR_COMPLEX.get(), Compat.blockDescription(p),
-                                                                                              stack -> CAPACITOR_COMPLEX.get().tooltip(stack, COMPLEX_LORE.stream()
-                                                                                                                                                          .<Component>map(Component::literal)
-                                                                                                                                                          .toList())))
-                                                                              .tab(HbmTab.MACHINES);
+                    (Item.Properties p) -> new EnergyNetBlockItem(CAPACITOR_COMPLEX.get(), Compat.blockDescription(p),
+                            stack -> CAPACITOR_COMPLEX.get().tooltip(stack, COMPLEX_LORE.stream()
+                                    .<Component>map(Component::literal).toList())))
+            .tab(HbmTab.MACHINES);
     public static final RegistryObject<BlockEntityType<ComplexCapacitorEntity>> CAPACITOR_COMPLEX_BE =
             REG.blockEntity("capacitor_complex", () -> BlockEntities.serverTicking(ComplexCapacitorEntity::new,
                     ComplexCapacitorEntity::serverTick, CAPACITOR_COMPLEX.get()));
 
-    private ForkBaseChanges() {
-    }
+    private ForkBaseChanges() {}
 
     private static boolean started;
 
@@ -133,10 +126,16 @@ public final class ForkBaseChanges {
                 source.is(Breathing.OXYPRIME));
         BlockMultiblockCore.wallPlacement = true;
         BlockMultiblockCore.walkOutAfterPlacing = true;
+        NTMStructureDeclarations.meteorDungeonWeight = 0;
+        ImpactAftermathFeature.recoveryChanceOverride = 4;
         TileEntityCranePartitioner.inputCount = 96;
         TileEntityCranePartitioner.outputCount = 8;
         TileEntityPneumoTube.anyGas = true;
         MachineElectrolyser.sidePorts = true;
+        // hbm-space's electrolyser hull and the damaged machines' wrecks on HBM's items (MachineItemDeclarations)
+        ItemModels.alias(ModMachineBlocks.machine_electrolyser, NS, "machine_electrolyser");
+        ItemModels.alias(ModPowerGenBlocks.MACHINE_CHUNGUS, NS, "machine_chungus");
+        ItemModels.alias(ModMachineBlocks.machine_condenser_powered, NS, "machine_condenser_powered");
         EntityTntNtm.spin = true;
         EntityGhost.watchPlayers = true;
         EntityQuackos.serverSafety = () -> SpaceConfig.serverSafety;
@@ -157,24 +156,19 @@ public final class ForkBaseChanges {
                 || new net.minecraft.world.item.ItemStack(state.getBlock()).is(stones)
                 || new net.minecraft.world.item.ItemStack(state.getBlock()).is(cobblestones)));
         // hbm-space ContaminationUtil.isRadImmune: the class list is gone; of its entries only the ocelot lost immunity
-        ContaminationUtil.RAD_IMMUNE.register(
-                entity -> entity.getType() == EntityType.OCELOT || entity.getType() == EntityType.CAT
-                        ? Verdict.DENY : Verdict.PASS);
+        ContaminationUtil.RAD_IMMUNE.register(entity -> entity.getType() == EntityType.OCELOT || entity.getType() == EntityType.CAT
+                ? Verdict.DENY : Verdict.PASS);
         bobbleCredits();
     }
 
-    /**
-     * Extends the registered native blade mold, retaining its titanium and tungsten casts.
-     */
+    /** Extends the registered native blade mold, retaining its titanium and tungsten casts. */
     public static void registered() {
         var blade = (ItemMold.MoldMulti) ModMoldItems.mold_blade.get().mold;
         blade.add(SpaceAlloyMaterials.STAINLESS,
                 () -> new ItemStack(SpaceItems.BLADE_SYNGAS.get()));
     }
 
-    /**
-     * hbm-space {@code BlockBobble.BobbleType}: the credits and plastic scraps it changed on HBM's own figures.
-     */
+    /** hbm-space {@code BlockBobble.BobbleType}: the credits and plastic scraps it changed on HBM's own figures. */
     static void bobbleCredits() {
         BobbleType.PEEP.contribution = "Coilgun, Leadburster, Congo Lake models, and the 737";
         BobbleType.PEEP.scrap = "CPU_CLOCK";

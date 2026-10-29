@@ -1,4 +1,4 @@
-if (providers.gradleProperty("gemrender.run").orNull == "true") {
+if (providers.gradleProperty("gemrender.run").orNull != "false") {
     apply(from = rootProject.file("../Golem-Core/gradle/mod/gemrender-local.gradle.kts"))
     repositories {
         exclusiveContent {

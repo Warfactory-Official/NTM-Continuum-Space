@@ -21,12 +21,10 @@ import dev.golem.core.client.ClientResourceReloads;
 import dev.golem.core.render.Sky;
 import dev.golem.core.render.TexturePixels;
 import it.unimi.dsi.fastutil.objects.Object2IntOpenHashMap;
-
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.util.Map;
 import java.util.Random;
-
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.multiplayer.ClientLevel;
 import net.minecraft.util.Mth;
@@ -52,7 +50,7 @@ import org.jetbrains.annotations.Nullable;
  *   <li>An airless body's charged dust at sunrise and sunset: 1,024 one-pixel points over the horizon
  *       ({@code renderSunset}).</li>
  * </ul>
- * <p>
+ *
  * The layers drawn by hbm-space's GLSL shaders (the atmosphere surface, emissive air, city lights, lightning, nuke rings,
  * the infected flesh sphere and the black hole that replaces a destroyed sun) are {@link PlanetShaders}'. A body's
  * crescent is {@link MunSky}'s exact reproduction of {@code crescent.frag}.
@@ -67,16 +65,11 @@ public final class CelestialSkyObjects {
     private static final Sky.Texture SHOCKWAVE = Sky.Texture.of("hbm", "textures/particle/shockwave.png");
     private static final Sky.Texture SHOCK_FLARE = Sky.Texture.of("hbm", "textures/particle/flare.png");
 
-    /**
-     * hbm-space's gas giants ({@code withGas}) and their gas colours ({@code Fluids}: JOOLGAS, SARNUSGAS, UGAS, NGAS).
-     */
-    private static final Map<String, Integer> GAS_GIANTS = Map.of("jool", 0x96B596, "sarnus", 0xE47D5C, "urlum",
-            0x718C9A,
+    /** hbm-space's gas giants ({@code withGas}) and their gas colours ({@code Fluids}: JOOLGAS, SARNUSGAS, UGAS, NGAS). */
+    private static final Map<String, Integer> GAS_GIANTS = Map.of("jool", 0x96B596, "sarnus", 0xE47D5C, "urlum", 0x718C9A,
             "neidon", 0xA37BA3);
 
-    /**
-     * {@code CelestialBody.withBlockTextures}'s surface sheet, including bodies whose atmosphere can be removed.
-     */
+    /** {@code CelestialBody.withBlockTextures}'s surface sheet, including bodies whose atmosphere can be removed. */
     private static final Map<String, String> SURFACES = Map.of(
             "mun", "hbm:textures/blocks/moon_turf.png",
             "minmus", "ntmspace:textures/blocks/minmus_regolith.png",
@@ -105,14 +98,10 @@ public final class CelestialSkyObjects {
             throw new UncheckedIOException("Cannot read charged-dust surface " + texture, failure);
         }
     }
-
-    /**
-     * {@code SatelliteBase.renderDefault} for Kerbin's delivery satellite (1.7 "JEFF BOZOS"): its seed and colour.
-     */
+    /** {@code SatelliteBase.renderDefault} for Kerbin's delivery satellite (1.7 "JEFF BOZOS"): its seed and colour. */
     private static final int BOBMAZON_SEED = 1916169;
 
-    private CelestialSkyObjects() {
-    }
+    private CelestialSkyObjects() {}
 
     private static Sky.Texture texture(String name) {
         return Sky.Texture.of(NtmSpace.MOD_ID, "textures/misc/space/" + name + ".png");
@@ -121,9 +110,7 @@ public final class CelestialSkyObjects {
     // ---------------------------------------------------------------------------------------------------------------
     // rings
 
-    /**
-     * {@code renderCelestials}: the back half of a ringed body's ring, before its disc (additive, both faces).
-     */
+    /** {@code renderCelestials}: the back half of a ringed body's ring, before its disc (additive, both faces). */
     static void ringBack(Sky sky, SolarSystem.Body body, double angle, float size, float visibility) {
         if (body.rings == null) return;
         float ringSize = size * body.rings[1];
@@ -134,9 +121,7 @@ public final class CelestialSkyObjects {
                 -ringSize, 0, 0, 0, 0.5F);
     }
 
-    /**
-     * {@code renderCelestials}: the front half, after the disc and its overlays.
-     */
+    /** {@code renderCelestials}: the front half, after the disc and its overlays. */
     static void ringFront(Sky sky, SolarSystem.Body body, double angle, float size, float visibility) {
         if (body.rings == null) return;
         float ringSize = size * body.rings[1];
@@ -155,8 +140,7 @@ public final class CelestialSkyObjects {
         pose.mulPose(Axis.XP.rotationDegrees(90.0F - body.rings[0]));
         pose.mulPose(Axis.YP.rotationDegrees((float) angle));
         // 1.7 drew it with culling off: both windings, of which the camera sees one
-        sky.texturedQuads(RINGS, Sky.Blend.ADDITIVE, body.rings[2], body.rings[3], body.rings[4], visibility,
-                bothFaces(quad, 5));
+        sky.texturedQuads(RINGS, Sky.Blend.ADDITIVE, body.rings[2], body.rings[3], body.rings[4], visibility, bothFaces(quad, 5));
         pose.popPose();
     }
 
@@ -184,16 +168,12 @@ public final class CelestialSkyObjects {
     // ---------------------------------------------------------------------------------------------------------------
     // atmospheres (AtmosphereRenderUtil)
 
-    /**
-     * 1.7 {@code body.gas != null}: Jool, Sarnus, Urlum and Neidon.
-     */
+    /** 1.7 {@code body.gas != null}: Jool, Sarnus, Urlum and Neidon. */
     static boolean isGasGiant(SolarSystem.Body body) {
         return GAS_GIANTS.containsKey(body.name);
     }
 
-    /**
-     * {@code getAtmosphereGlowAlpha}: 0.35 for a gas giant, else by the air's pressure (none below 0.02 atm).
-     */
+    /** {@code getAtmosphereGlowAlpha}: 0.35 for a gas giant, else by the air's pressure (none below 0.02 atm). */
     static float glowAlpha(SolarSystem.Body body) {
         if (GAS_GIANTS.containsKey(body.name)) return 0.35F;
         if (!Atmospheres.has(body.name)) return 0.0F;
@@ -202,9 +182,7 @@ public final class CelestialSkyObjects {
         return Mth.clamp(0.08F + pressure * 0.16F, 0.08F, 0.5F);
     }
 
-    /**
-     * {@code getBodyAtmosphereColor}: a gas giant's gas, else the air's fluids weighted by pressure; white without.
-     */
+    /** {@code getBodyAtmosphereColor}: a gas giant's gas, else the air's fluids weighted by pressure; white without. */
     static Vec3 atmosphereColor(SolarSystem.Body body) {
         Integer gas = GAS_GIANTS.get(body.name);
         if (gas != null) return hex(gas);
@@ -221,17 +199,14 @@ public final class CelestialSkyObjects {
         return new Vec3(Mth.clamp(r / total, 0, 1), Mth.clamp(g / total, 0, 1), Mth.clamp(b / total, 0, 1));
     }
 
-    /**
-     * {@code WorldProviderCelestial.getAtmosphereFluidColor}.
-     */
+    /** {@code WorldProviderCelestial.getAtmosphereFluidColor}. */
     static Vec3 fluidColor(String fluid) {
         if (fluid.equals(Atmospheres.EVEAIR)) return new Vec3(53F / 255F, 32F / 255F, 74F / 255F);
         // Slightly redder "red sand" tint for Duna-like atmospheres.
         if (fluid.equals(Atmospheres.DUNAAIR)) return new Vec3(198F / 255F, 96F / 255F, 64F / 255F);
         // Neutral/desaturated CO2 tint.
         if (fluid.equals(Atmospheres.CARBONDIOXIDE)) return new Vec3(188F / 255F, 192F / 255F, 198F / 255F);
-        if (fluid.equals(Atmospheres.EARTHAIR) || fluid.equals(Atmospheres.OXYGEN) || fluid.equals(
-                Atmospheres.NITROGEN)) {
+        if (fluid.equals(Atmospheres.EARTHAIR) || fluid.equals(Atmospheres.OXYGEN) || fluid.equals(Atmospheres.NITROGEN)) {
             return new Vec3(0.7529412F, 0.84705883F, 1.0F);
         }
         return hex(Atmospheres.color(fluid));
@@ -290,16 +265,12 @@ public final class CelestialSkyObjects {
         return CelestialTraits.getTrait(body.name, CBT_Destroyed.class, true);
     }
 
-    /**
-     * Whether the star of {@code level}'s sky is destroyed ({@code getStar().hasTrait(CBT_Destroyed.class)}).
-     */
+    /** Whether the star of {@code level}'s sky is destroyed ({@code getStar().hasTrait(CBT_Destroyed.class)}). */
     static boolean starDestroyed(SolarSystem.Body body) {
         return SkyMath.starDestroyed(body, true);
     }
 
-    /**
-     * {@code renderCelestials}' destroyed branch, in place of the body's disc and overlays.
-     */
+    /** {@code renderCelestials}' destroyed branch, in place of the body's disc and overlays. */
     static void destroyedBody(Sky sky, SolarSystem.Body body, float size, float uvOffset, CBT_Destroyed d) {
         PoseStack pose = sky.pose();
         Sky.Texture surface = Sky.Texture.of(NtmSpace.MOD_ID, body.texture());
@@ -340,11 +311,8 @@ public final class CelestialSkyObjects {
         wrapped(sky, SHOCK_FLARE, Sky.Blend.ADDITIVE, 1, 1, 1, Math.min(alpha * 2, 1.0F), size * 3, uvOffset);
     }
 
-    /**
-     * {@code renderCelestials}' impact overlays ({@code CBT_Impact}), after the disc and its crescent.
-     */
-    static void impact(Sky sky, ClientLevel level, SolarSystem.Body body, float size, float uvOffset,
-                       float partialTicks) {
+    /** {@code renderCelestials}' impact overlays ({@code CBT_Impact}), after the disc and its crescent. */
+    static void impact(Sky sky, ClientLevel level, SolarSystem.Body body, float size, float uvOffset, float partialTicks) {
         CBT_Impact impact = CelestialTraits.getTrait(body.name, CBT_Impact.class, true);
         if (impact == null) return;
         double impactTime = (level.getGameTime() - impact.time) + partialTicks;
@@ -364,11 +332,8 @@ public final class CelestialSkyObjects {
         pose.popPose();
     }
 
-    /**
-     * A square of half-size {@code s} at y 100 with u from {@code uvOffset} to 1 + it (split at the wrap, as MunSky).
-     */
-    private static void wrapped(Sky sky, Sky.Texture texture, Sky.Blend blend, float r, float g, float b, float a,
-                                float s,
+    /** A square of half-size {@code s} at y 100 with u from {@code uvOffset} to 1 + it (split at the wrap, as MunSky). */
+    private static void wrapped(Sky sky, Sky.Texture texture, Sky.Blend blend, float r, float g, float b, float a, float s,
                                 float uvOffset) {
         float wrap = uvOffset - (float) Math.floor(uvOffset);
         if (wrap == 0) {
@@ -394,8 +359,7 @@ public final class CelestialSkyObjects {
         // JEFF BOZOS WOULD LIKE TO KNOW YOUR LOCATION ... to send you a pakedge :)))
         if (SpaceSkies.isKerbin(level)) {
             satellite(sky, solarAngle, BOBMAZON_SEED, 1.0F, 0.534F, 0.385F, SatelliteOrbit.DEFAULT_INCLINATION,
-                    SatelliteOrbit.DEFAULT_ALTITUDE_KM, SatelliteOrbit.DEFAULT_PHASE_OFFSET,
-                    SatelliteOrbit.DEFAULT_IS_BLINKING,
+                    SatelliteOrbit.DEFAULT_ALTITUDE_KM, SatelliteOrbit.DEFAULT_PHASE_OFFSET, SatelliteOrbit.DEFAULT_IS_BLINKING,
                     SatelliteOrbit.DEFAULT_BLINK_PERIOD);
         }
         // Light up the sky
@@ -411,15 +375,11 @@ public final class CelestialSkyObjects {
         for (SatelliteSky.Station station : view.stations()) station(sky, station, solarAngle);
     }
 
-    /**
-     * {@code SatelliteBase.renderDefault}.
-     */
-    static void satellite(Sky sky, float solarAngle, long seed, float r, float g, float b, float inclination,
-                          float altitude,
+    /** {@code SatelliteBase.renderDefault}. */
+    static void satellite(Sky sky, float solarAngle, long seed, float r, float g, float b, float inclination, float altitude,
                           float phaseOffset, boolean blinking, float blinkPeriod) {
         double ticks = (double) System.currentTimeMillis() / 50.0D;
-        float orbitAngle = SatelliteOrbit.applyPhaseOffsetToOrbitAngle(phaseOffset, altitude,
-                (ticks / 600.0D) * -360.0D, 360.0F);
+        float orbitAngle = SatelliteOrbit.applyPhaseOffsetToOrbitAngle(phaseOffset, altitude, (ticks / 600.0D) * -360.0D, 360.0F);
         float renderAltitude = Math.max(1.0F, altitude);
         PoseStack pose = sky.pose();
         pose.pushPose();
@@ -435,9 +395,7 @@ public final class CelestialSkyObjects {
         pose.popPose();
     }
 
-    /**
-     * {@code SatelliteBase.renderOrbitLine}: a 72-segment loop at the satellite's altitude, alpha 0.35.
-     */
+    /** {@code SatelliteBase.renderOrbitLine}: a 72-segment loop at the satellite's altitude, alpha 0.35. */
     static void orbitLine(Sky sky, float solarAngle, float r, float g, float b, float inclination, float altitude,
                           boolean blinking, float blinkPeriod) {
         float renderAltitude = Math.max(1.0F, altitude);
@@ -457,9 +415,7 @@ public final class CelestialSkyObjects {
         pose.popPose();
     }
 
-    /**
-     * {@code SatelliteBase.getBlinkAlpha}: a saw from 1 to 0 over the blink period, by the wall clock.
-     */
+    /** {@code SatelliteBase.getBlinkAlpha}: a saw from 1 to 0 over the blink period, by the wall clock. */
     static float blinkAlpha(boolean blinking, float blinkPeriod) {
         if (!blinking) return 1.0F;
         long cycleMillis = (long) (SatelliteOrbit.clampBlinkPeriod(blinkPeriod) * 1000.0F);
@@ -480,16 +436,12 @@ public final class CelestialSkyObjects {
         String target = SpaceSatellites.targetBody(type);
         if (target != null && !target.equals(body.name)) return;
         SatelliteOrbit o = SpaceSatellites.orbit(held);
-        orbitLine(sky, solarAngle, o.colorR(), o.colorG(), o.colorB(), o.inclination(), o.altitude(), o.blinking(),
-                o.blinkPeriod());
-        satellite(sky, solarAngle, ISatChip.getFreqS(held), o.colorR(), o.colorG(), o.colorB(), o.inclination(),
-                o.altitude(),
+        orbitLine(sky, solarAngle, o.colorR(), o.colorG(), o.colorB(), o.inclination(), o.altitude(), o.blinking(), o.blinkPeriod());
+        satellite(sky, solarAngle, ISatChip.getFreqS(held), o.colorR(), o.colorG(), o.colorB(), o.inclination(), o.altitude(),
                 o.phaseOffset(), o.blinking(), o.blinkPeriod());
     }
 
-    /**
-     * {@code renderStation}: a {@code station.png} quad on a path seeded by the station's grid position, 80 s a lap.
-     */
+    /** {@code renderStation}: a {@code station.png} quad on a path seeded by the station's grid position, 80 s a lap. */
     static void station(Sky sky, SatelliteSky.Station station, float solarAngle) {
         long seed = station.x() * 1024L + station.z();
         double ticks = (double) (System.currentTimeMillis() % (1600 * 50)) / 50;
@@ -544,9 +496,7 @@ public final class CelestialSkyObjects {
 
     // ---------------------------------------------------------------------------------------------------------------
 
-    /**
-     * A quad list followed by the same quads in reverse winding: 1.7's {@code GL_CULL_FACE} off on a culled seam.
-     */
+    /** A quad list followed by the same quads in reverse winding: 1.7's {@code GL_CULL_FACE} off on a culled seam. */
     static float[] bothFaces(float[] quads, int stride) {
         int vertices = quads.length / stride;
         float[] out = new float[quads.length * 2];

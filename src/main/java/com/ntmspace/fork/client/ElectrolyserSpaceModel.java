@@ -2,12 +2,9 @@ package com.ntmspace.fork.client;
 
 import com.hbm.client.render.MachineObjRenderer;
 import dev.golem.core.Ids;
-
 import java.util.Set;
 
-/**
- * Space RenderElectrolyser's hull on the host's existing lazy renderer and placement.
- */
+/** Space RenderElectrolyser's hull on the host's existing lazy renderer and placement. */
 public final class ElectrolyserSpaceModel {
     private ElectrolyserSpaceModel() {
     }

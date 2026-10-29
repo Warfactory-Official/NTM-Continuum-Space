@@ -17,8 +17,7 @@ import net.minecraft.network.chat.Component;
  */
 public final class ForkBaseClient {
 
-    private ForkBaseClient() {
-    }
+    private ForkBaseClient() {}
 
     private static boolean started;
 
@@ -30,8 +29,7 @@ public final class ForkBaseClient {
         BeamPronter.alpha = 0.5F;
         Tooltips.onItemTooltip((stack, lines) -> {
             if (stack.is(ModPneumaticBlocks.PNEUMATIC_TUBE.get().asItem())) {
-                lines.add(Component.translatable("block.ntmspace.pneumatic_tube.desc_gas")
-                                   .withStyle(ChatFormatting.YELLOW));
+                lines.add(Component.translatable("block.ntmspace.pneumatic_tube.desc_gas").withStyle(ChatFormatting.YELLOW));
             }
         });
     }

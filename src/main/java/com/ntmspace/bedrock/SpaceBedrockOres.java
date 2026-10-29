@@ -11,11 +11,9 @@ import com.hbm.creativetabs.HbmTab;
 import com.hbm.creativetabs.ModTabs;
 import com.ntmspace.world.SpaceDimensions;
 import com.ntmspace.world.populate.Populate17;
-
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
-
 import net.minecraft.resources.ResourceKey;
 import net.minecraft.world.level.Level;
 import org.jspecify.annotations.Nullable;
@@ -32,21 +30,18 @@ import org.jspecify.annotations.Nullable;
  */
 public final class SpaceBedrockOres {
 
-    private SpaceBedrockOres() {
-    }
+    private SpaceBedrockOres() {}
 
     private static boolean installed;
 
-    /**
-     * At mod construction, after the types are registered.
-     */
+    /** At mod construction, after the types are registered. */
     public static synchronized void init() {
         if (installed) return;
         installed = true;
         ItemBedrockOreBase.SOURCE.register(SpaceBedrockOres::field);
         BedrockOreSet.OF.set(level -> CelestialBedrockOre.getSet(bodyOf(level.dimension())));
         BedrockOreSet.SAMPLES.set(() -> CelestialBedrockOre.BODIES.stream()
-                                                                  .map(CelestialBedrockOre::sample).toList());
+                .map(CelestialBedrockOre::sample).toList());
         ModTabs.displayStacks(HbmTab.MATERIALS, ModOreBlocks.bedrock_ore_base,
                 () -> BedrockOreSet.SAMPLES.get().get());
         // hbm-space's pyrolysis roasting loop (still code in HBM) runs over every celestial type instead of HBM's six
@@ -54,9 +49,7 @@ public final class SpaceBedrockOres {
         for (BedrockOreType type : CelestialBedrockOre.getAllTypes()) BedrockOreChainRecipes.addChainType(type);
     }
 
-    /**
-     * The raw ore field of a column of {@code dimension}; never null (every level answers a body).
-     */
+    /** The raw ore field of a column of {@code dimension}; never null (every level answers a body). */
     public static OreField field(ResourceKey<Level> dimension, long seed, int x, int z) {
         String body = bodyOf(dimension);
         List<BedrockOreType> types = CelestialBedrockOre.get(body);
@@ -72,9 +65,7 @@ public final class SpaceBedrockOres {
         return new OreField("body." + body, levels, acid(dimension));
     }
 
-    /**
-     * 1.7 {@code CelestialBody.getEnum(world).name}: the body a level is the surface of, Kerbin for anything else.
-     */
+    /** 1.7 {@code CelestialBody.getEnum(world).name}: the body a level is the surface of, Kerbin for anything else. */
     public static String bodyOf(ResourceKey<Level> dimension) {
         for (Populate17.Body body : Populate17.Body.values()) {
             if (body == Populate17.Body.THATMO) continue;
@@ -96,9 +87,7 @@ public final class SpaceBedrockOres {
         return 0;
     }
 
-    /**
-     * {@code WorldProviderCelestial.getBedrockAcid()} of the level, or null.
-     */
+    /** {@code WorldProviderCelestial.getBedrockAcid()} of the level, or null. */
     public static @Nullable FluidStack acid(ResourceKey<Level> dimension) {
         for (Populate17.Body body : Populate17.Body.values()) {
             if (levelOf(body).equals(dimension)) return body.bedrockAcid();

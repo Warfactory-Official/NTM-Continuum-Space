@@ -4,9 +4,7 @@ import dev.golem.harness.api.Expect;
 import dev.golem.harness.api.Fixtures;
 import dev.golem.harness.api.Scenario;
 
-/**
- * The solar renderer receives live server capability changes through the real client packet path.
- */
+/** The solar renderer receives live server capability changes through the real client packet path. */
 public final class SolarForeignArms implements Scenario {
     @Override
     public void run(Client client) throws Exception {

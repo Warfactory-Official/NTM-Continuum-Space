@@ -14,9 +14,7 @@ import com.ntmspace.trait.CelestialBodyTrait;
 import com.ntmspace.trait.CelestialTraits;
 import dev.golem.core.command.CompatCommands;
 import dev.golem.core.command.Permissions;
-
 import java.util.Map;
-
 import net.minecraft.commands.CommandSourceStack;
 import net.minecraft.commands.Commands;
 import net.minecraft.core.BlockPos;
@@ -48,8 +46,7 @@ import net.minecraft.world.level.Level;
  */
 public final class WarCommands {
 
-    private WarCommands() {
-    }
+    private WarCommands() {}
 
     public static void init() {
         CompatCommands.server(WarCommands::register);
@@ -57,76 +54,50 @@ public final class WarCommands {
 
     private static void register(CommandDispatcher<CommandSourceStack> dispatcher) {
         dispatcher.register(Commands.literal("ntmwar")
-                                    .requires(Permissions.gamemasters())
-                                    .then(Commands.literal("invasion")
-                                                  .then(Commands.literal("start")
-                                                                .then(Commands.argument("body",
-                                                                                      StringArgumentType.word())
-                                                                              .executes(ctx -> start(ctx, 122))
-                                                                              .then(Commands.argument("countdown",
-                                                                                                    IntegerArgumentType.integer(0))
-                                                                                            .executes(ctx -> start(ctx,
-                                                                                                    IntegerArgumentType.getInteger(
-                                                                                                            ctx,
-                                                                                                            "countdown"))))))
-                                                  .then(Commands.literal("kills")
-                                                                .then(Commands.argument("body",
-                                                                                      StringArgumentType.word())
-                                                                              .then(Commands.argument("n",
-                                                                                                    IntegerArgumentType.integer(0))
-                                                                                            .executes(
-                                                                                                    WarCommands::kills))))
-                                                  .then(Commands.literal("stop")
-                                                                .then(Commands.argument("body",
-                                                                                      StringArgumentType.word())
-                                                                              .executes(WarCommands::stop))))
-                                    .then(Commands.literal("projectile")
-                                                  .then(Commands.argument("body", StringArgumentType.word())
-                                                                .then(Commands.argument("type",
-                                                                                      StringArgumentType.word())
-                                                                              .executes(ctx -> projectile(ctx, 100))
-                                                                              .then(Commands.argument("travel",
-                                                                                                    IntegerArgumentType.integer(0))
-                                                                                            .executes(ctx -> projectile(
-                                                                                                    ctx,
-                                                                                                    IntegerArgumentType.getInteger(
-                                                                                                            ctx,
-                                                                                                            "travel")))))))
-                                    .then(Commands.literal("railgun")
-                                                  .then(Commands.argument("frequency", IntegerArgumentType.integer())
-                                                                .then(Commands.literal("fire")
-                                                                              .executes(WarCommands::fire))
-                                                                .then(Commands.literal("orbit")
-                                                                              .executes(WarCommands::orbit))
-                                                                .then(Commands.literal("remove")
-                                                                              .executes(WarCommands::remove))))
-                                    .then(Commands.literal("controller")
-                                                  .then(Commands.argument("x", IntegerArgumentType.integer())
-                                                                .then(Commands.argument("y",
-                                                                                      IntegerArgumentType.integer())
-                                                                              .then(Commands.argument("z",
-                                                                                                    IntegerArgumentType.integer())
-                                                                                            .then(Commands.argument(
-                                                                                                                  "frequency",
-                                                                                                                  IntegerArgumentType.integer())
-                                                                                                          .then(Commands.argument(
-                                                                                                                                "body",
-                                                                                                                                StringArgumentType.word())
-                                                                                                                        .executes(
-                                                                                                                                WarCommands::controller)))))))
-                                    .then(Commands.literal("clear")
-                                                  .then(Commands.argument("body", StringArgumentType.word())
-                                                                .executes(WarCommands::clear)))
-                                    .then(Commands.literal("status")
-                                                  .then(Commands.argument("body", StringArgumentType.word())
-                                                                .executes(WarCommands::status))));
+                .requires(Permissions.gamemasters())
+                .then(Commands.literal("invasion")
+                        .then(Commands.literal("start")
+                                .then(Commands.argument("body", StringArgumentType.word())
+                                        .executes(ctx -> start(ctx, 122))
+                                        .then(Commands.argument("countdown", IntegerArgumentType.integer(0))
+                                                .executes(ctx -> start(ctx, IntegerArgumentType.getInteger(ctx, "countdown"))))))
+                        .then(Commands.literal("kills")
+                                .then(Commands.argument("body", StringArgumentType.word())
+                                        .then(Commands.argument("n", IntegerArgumentType.integer(0))
+                                                .executes(WarCommands::kills))))
+                        .then(Commands.literal("stop")
+                                .then(Commands.argument("body", StringArgumentType.word())
+                                        .executes(WarCommands::stop))))
+                .then(Commands.literal("projectile")
+                        .then(Commands.argument("body", StringArgumentType.word())
+                                .then(Commands.argument("type", StringArgumentType.word())
+                                        .executes(ctx -> projectile(ctx, 100))
+                                        .then(Commands.argument("travel", IntegerArgumentType.integer(0))
+                                                .executes(ctx -> projectile(ctx, IntegerArgumentType.getInteger(ctx, "travel")))))))
+                .then(Commands.literal("railgun")
+                        .then(Commands.argument("frequency", IntegerArgumentType.integer())
+                                .then(Commands.literal("fire").executes(WarCommands::fire))
+                                .then(Commands.literal("orbit").executes(WarCommands::orbit))
+                                .then(Commands.literal("remove").executes(WarCommands::remove))))
+                .then(Commands.literal("controller")
+                        .then(Commands.argument("x", IntegerArgumentType.integer())
+                                .then(Commands.argument("y", IntegerArgumentType.integer())
+                                        .then(Commands.argument("z", IntegerArgumentType.integer())
+                                                .then(Commands.argument("frequency", IntegerArgumentType.integer())
+                                                        .then(Commands.argument("body", StringArgumentType.word())
+                                                                .executes(WarCommands::controller)))))))
+                .then(Commands.literal("clear")
+                        .then(Commands.argument("body", StringArgumentType.word())
+                                .executes(WarCommands::clear)))
+                .then(Commands.literal("status")
+                        .then(Commands.argument("body", StringArgumentType.word())
+                                .executes(WarCommands::status))));
     }
 
     private static String body(CommandContext<CommandSourceStack> ctx) {
         String body = StringArgumentType.getString(ctx, "body");
         if (!CelestialTraits.allBodies().contains(body)) {
-            ctx.getSource()
-               .sendFailure(Component.literal("unknown body " + body + ", one of " + CelestialTraits.allBodies()));
+            ctx.getSource().sendFailure(Component.literal("unknown body " + body + ", one of " + CelestialTraits.allBodies()));
             return null;
         }
         CelestialTraits.attach(ctx.getSource().getLevel());
@@ -150,8 +121,7 @@ public final class WarCommands {
         }
         invasion.kills += IntegerArgumentType.getInteger(ctx, "n");
         CelestialTraits.modifyTraits(body, invasion);
-        return ok(ctx,
-                "invasion on " + body + ": wave " + invasion.wave + ", kills " + invasion.kills + "/" + invasion.killreq);
+        return ok(ctx, "invasion on " + body + ": wave " + invasion.wave + ", kills " + invasion.kills + "/" + invasion.killreq);
     }
 
     private static int stop(CommandContext<CommandSourceStack> ctx) {
@@ -168,11 +138,9 @@ public final class WarCommands {
         if (body == null) return 0;
         CBT_War.ProjectileType type;
         try {
-            type = CBT_War.ProjectileType.valueOf(
-                    StringArgumentType.getString(ctx, "type").toUpperCase(java.util.Locale.ROOT));
+            type = CBT_War.ProjectileType.valueOf(StringArgumentType.getString(ctx, "type").toUpperCase(java.util.Locale.ROOT));
         } catch (IllegalArgumentException e) {
-            ctx.getSource().sendFailure(
-                    Component.literal("type: one of " + java.util.Arrays.toString(CBT_War.ProjectileType.values())));
+            ctx.getSource().sendFailure(Component.literal("type: one of " + java.util.Arrays.toString(CBT_War.ProjectileType.values())));
             return 0;
         }
         CBT_War war = CelestialTraits.getTrait(body, CBT_War.class, false);
@@ -206,11 +174,9 @@ public final class WarCommands {
             ctx.getSource().sendFailure(Component.literal("frequency " + freq + " is taken"));
             return 0;
         }
-        net.minecraft.world.item.ItemStack chip = new net.minecraft.world.item.ItemStack(
-                com.ntmspace.satellite.SpaceSatellites.SAT_WAR.get());
+        net.minecraft.world.item.ItemStack chip = new net.minecraft.world.item.ItemStack(com.ntmspace.satellite.SpaceSatellites.SAT_WAR.get());
         Satellite.orbit(level, chip, freq, at.x, at.y, at.z);
-        return ok(ctx, "railgun " + freq + " in orbit: " + (SatelliteSavedData.get(level, BlockPos.containing(at))
-                                                                              .getSatFromFreq(freq) != null));
+        return ok(ctx, "railgun " + freq + " in orbit: " + (SatelliteSavedData.get(level, BlockPos.containing(at)).getSatFromFreq(freq) != null));
     }
 
     private static int remove(CommandContext<CommandSourceStack> ctx) {
@@ -236,8 +202,7 @@ public final class WarCommands {
             ctx.getSource().sendFailure(Component.literal("no war controller at " + pos));
             return 0;
         }
-        net.minecraft.world.item.ItemStack chip = new net.minecraft.world.item.ItemStack(
-                com.hbm.items.ModSatelliteItems.sat_chip.get());
+        net.minecraft.world.item.ItemStack chip = new net.minecraft.world.item.ItemStack(com.hbm.items.ModSatelliteItems.sat_chip.get());
         com.hbm.items.ISatChip.setFreqS(chip, IntegerArgumentType.getInteger(ctx, "frequency"));
         te.setItem(1, new net.minecraft.world.item.ItemStack(com.ntmspace.registry.RocketItems.drive(drive)));
         te.setItem(2, chip);

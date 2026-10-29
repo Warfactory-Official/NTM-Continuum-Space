@@ -14,6 +14,7 @@ import com.ntmspace.entity.rocket.EntityRideableRocket;
 import com.ntmspace.entity.rocket.EntityRideableRocket.RocketState;
 import com.ntmspace.fluid.SpaceFluids;
 import com.ntmspace.orbit.NavDrives;
+import com.ntmspace.orbit.Orbit;
 import com.ntmspace.orbit.OrbitalStation;
 import com.ntmspace.orbit.StationData;
 import com.ntmspace.orbit.StationDock;
@@ -296,10 +297,15 @@ public final class RocketGameTests {
         vab.setItem(4, new ItemStack(RocketItems.RP_F_20_12.get()));
         vab.setItem(5, new ItemStack(RocketItems.RP_L_20.get()));
         vab.setItem(6, new ItemStack(ModCustomMissileItems.mp_thruster_20_kerosene.get()));
+        // the screen reads the station's body from the drive, which only the server can look up
+        vab.setItem(TileEntityMachineRocketAssembly.driveTo(0), driveTo(DriveBody.ORBIT, -91, 73));
 
         helper.runAfterDelay(5, () -> {
             helper.assertTrue(vab.getItem(1).getItem() == RocketItems.RP_F_20_12.get() && vab.getItem(4).isEmpty(),
                     "an empty stage takes the one above it");
+            String stationBody = ItemVOTVdrive.data(vab.getItem(TileEntityMachineRocketAssembly.driveTo(0))).stationBody();
+            helper.assertTrue(stationBody.equals(Orbit.bodyOf(helper.getLevel()).name),
+                    "the VAB writes the station's body onto an orbit drive, got '" + stationBody + "'");
             helper.assertTrue(vab.rocket.validate() && vab.rocket.stages.size() == 1, "the VAB reads a valid one-stage rocket, issues "
                     + vab.rocket.findIssues(0, null, null, false, false));
             // platform at the top of the 12 m fuselage, spire under it

@@ -8,10 +8,8 @@ import com.hbm.interfaces.ILookOverlay;
 import com.hbm.util.BobMathUtil;
 import com.ntmspace.tileentity.atmosphere.TileEntityAtmoTower;
 import com.ntmspace.registry.AtmosphereMachines;
-
 import java.util.ArrayList;
 import java.util.List;
-
 import net.minecraft.ChatFormatting;
 import net.minecraft.core.BlockPos;
 import net.minecraft.world.entity.player.Player;
@@ -44,7 +42,7 @@ public class AtmoTower extends MachineDeuteriumTower implements ICapabilityBlock
 
     @Override
     public int[] getDimensions() {
-        return new int[]{6, 0, 1, 0, 0, 1};
+        return new int[] {6, 0, 1, 0, 0, 1};
     }
 
     @Override

@@ -1,11 +1,9 @@
 package com.ntmspace.world.populate;
 
 import java.util.Random;
-
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.state.BlockState;
-import net.minecraft.world.level.levelgen.structure.BoundingBox;
 
 /**
  * Eve's {@code WorldGeneratorEve} features: hbm-space's {@code WorldGenEveSpike} (an ice-spike-shaped spire of Eve rock in
@@ -16,27 +14,14 @@ import net.minecraft.world.level.levelgen.structure.BoundingBox;
  */
 public final class EveFeatures17 {
 
-    private EveFeatures17() {
-    }
-
-    public static final int VOLCANO_HEIGHT = 30;
-    public static final int VOLCANO_WIDTH = 22;
-
-    public record VolcanoShape(int y, int l, int i1) {
-        public BoundingBox bounds(int x, int z) {
-            return new BoundingBox(x - i1, y - l + 1, z - i1,
-                    x + i1, y + Math.max(l - 1, 5), z + i1);
-        }
-    }
+    private EveFeatures17() {}
 
     private static int ceil(float value) {
         int i = (int) value;
         return value > (float) i ? i + 1 : i;
     }
 
-    /**
-     * {@code WorldGenEveSpike.generate}.
-     */
+    /** {@code WorldGenEveSpike.generate}. */
     public static boolean spike(PopulateWorld world, Random rand, int x, int y, int z, Block silt, Block rock) {
         while (world.isAir(x, y, z) && y > 2) {
             --y;
@@ -137,8 +122,7 @@ public final class EveFeatures17 {
      * hbm-space's {@code geysir_electric}; while it is not registered its cell is left as it was.
      */
     public static boolean volcano(PopulateWorld world, Random rand, int x, int y, int z, int height, int width,
-                                  Block surface, Block stone, BlockState basalt, BlockState neodymium,
-                                  BlockState geyser) {
+                                  Block surface, Block stone, BlockState basalt, BlockState neodymium, BlockState geyser) {
         if (rand.nextInt(10) != 0) {
             return false;
         }
@@ -148,24 +132,15 @@ public final class EveFeatures17 {
 
         if (!world.is(x, y, z, surface)) return false;
 
-        var shape = volcanoShape(rand, y, height, width);
-        buildVolcano(world, rand, x, z, shape, surface, stone, basalt, neodymium, geyser,
-                Blocks.AIR.defaultBlockState());
-        return true;
-    }
-
-    public static VolcanoShape volcanoShape(Random rand, int y, int height, int width) {
         y += rand.nextInt(1);
         int l = rand.nextInt(4) + height;
         int i1 = l / 4 + rand.nextInt(width);
-        if (i1 > 1 && rand.nextInt(5) == 0) rand.nextInt(30);
-        return new VolcanoShape(y, l, i1);
-    }
 
-    public static void buildVolcano(PopulateWorld world, Random rand, int x, int z, VolcanoShape shape,
-                                    Block surface, Block stone, BlockState basalt, BlockState neodymium,
-                                    BlockState geyser, BlockState air) {
-        int y = shape.y(), l = shape.l(), i1 = shape.i1();
+        if (i1 > 1 && rand.nextInt(5) == 0) {
+            rand.nextInt(30);
+        }
+
+        BlockState air = Blocks.AIR.defaultBlockState();
         for (int j1 = 0; j1 < l; ++j1) {
             float f = (1.0F - (float) j1 / (float) l) * (float) i1;
             int k1 = ceil(f);
@@ -209,5 +184,6 @@ public final class EveFeatures17 {
             }
         }
 
+        return true;
     }
 }

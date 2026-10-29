@@ -17,10 +17,8 @@ import com.ntmspace.atmosphere.BlockSealable;
 import com.ntmspace.orbit.Orbit;
 import com.ntmspace.orbit.StationDock;
 import com.ntmspace.tileentity.station.TileEntityOrbitalStation;
-
 import java.util.ArrayList;
 import java.util.List;
-
 import net.minecraft.ChatFormatting;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
@@ -55,7 +53,7 @@ public class BlockOrbitalStation extends BlockMultiblockMachine implements IFlui
     @Override
     public MachineCaps caps() {
         return MachineCaps.of(StationBlocks.ORBITAL_STATION_BE).fluidIn().itemsAtCells()
-                          .fluidFaces(TileEntityOrbitalStation.class, (be, side) -> be.needsFuel);
+                .fluidFaces(TileEntityOrbitalStation.class, (be, side) -> be.needsFuel);
     }
 
     public BlockOrbitalStation(Properties properties, boolean core) {
@@ -63,16 +61,12 @@ public class BlockOrbitalStation extends BlockMultiblockMachine implements IFlui
         this.core = core;
     }
 
-    /**
-     * Whether this is the station core ({@code orbital_station}) rather than an extra port.
-     */
+    /** Whether this is the station core ({@code orbital_station}) rather than an extra port. */
     public boolean isCore() {
         return core;
     }
 
-    /**
-     * Core cells are the same block as their unbreakable owner, so every part has the same removal rule.
-     */
+    /** Core cells are the same block as their unbreakable owner, so every part has the same removal rule. */
     public static boolean refusesRemoval(Level level, BlockPos pos, BlockState state) {
         return state.getBlock() instanceof BlockOrbitalStation station && station.isCore();
     }
@@ -82,33 +76,22 @@ public class BlockOrbitalStation extends BlockMultiblockMachine implements IFlui
         return new TileEntityOrbitalStation(pos, state);
     }
 
-    @Override
-    public int[] getDimensions() {
-        return new int[]{1, 0, 2, 2, 2, 2};
-    }
-
-    @Override
-    public int getOffset() {
-        return 2;
-    }
+    @Override public int[] getDimensions() { return new int[] {1, 0, 2, 2, 2, 2}; }
+    @Override public int getOffset() { return 2; }
 
     @Override
     public @Nullable BlockState getStateForPlacement(BlockPlaceContext context) {
         return core ? null : super.getStateForPlacement(context);
     }
 
-    /**
-     * 1.7 {@code canPlaceBlockAt}: no extra main ports by hand (use the dedicated sub-ports!).
-     */
+    /** 1.7 {@code canPlaceBlockAt}: no extra main ports by hand (use the dedicated sub-ports!). */
     @Override
     protected boolean checkRequirement(Level level, BlockPos corePos, Direction facing, BlockPos clicked) {
         if (core) return false;
         return super.checkRequirement(level, corePos, facing, clicked);
     }
 
-    /**
-     * The twelve rim cells of 1.7's {@code fillSpace}, each open on its outward face.
-     */
+    /** The twelve rim cells of 1.7's {@code fillSpace}, each open on its outward face. */
     @Override
     protected void visitCells(BlockPos corePos, Direction facing, CellVisitor visitor) {
         super.visitCells(corePos, facing, visitor);
@@ -120,9 +103,7 @@ public class BlockOrbitalStation extends BlockMultiblockMachine implements IFlui
         }
     }
 
-    /**
-     * 1.7 {@code getConPos} (world axes): the twelve rim cells, each aimed out of its outward face.
-     */
+    /** 1.7 {@code getConPos} (world axes): the twelve rim cells, each aimed out of its outward face. */
     public static PortDef[] rimPorts(BlockPos corePos) {
         PortDef[] ports = new PortDef[12];
         int n = 0;
@@ -139,9 +120,7 @@ public class BlockOrbitalStation extends BlockMultiblockMachine implements IFlui
         visitor.cell(pos, maskOf(MultiblockMaskTable.toLocal(outward, facing)), ROLE_FLUID_IN);
     }
 
-    /**
-     * 1.7 {@code TileEntityProxyCombo(true, false, true)}: inventory and fluid on every rim cell.
-     */
+    /** 1.7 {@code TileEntityProxyCombo(true, false, true)}: inventory and fluid on every rim cell. */
     @Override
     protected void visitPassiveCells(BlockPos corePos, Direction facing, PassiveCellVisitor visitor) {
         int domains = PASSIVE_FLUID_IN | PASSIVE_ITEMS;
@@ -170,8 +149,7 @@ public class BlockOrbitalStation extends BlockMultiblockMachine implements IFlui
     }
 
     @Override
-    protected InteractionResult useAtCore(BlockState state, Level level, BlockPos corePos, Player player,
-                                          BlockHitResult hit) {
+    protected InteractionResult useAtCore(BlockState state, Level level, BlockPos corePos, Player player, BlockHitResult hit) {
         if (!Orbit.inOrbit(level)) return InteractionResult.TRY_WITH_EMPTY_HAND;
 
         // If activating the side blocks, ignore, to allow placing
@@ -181,8 +159,7 @@ public class BlockOrbitalStation extends BlockMultiblockMachine implements IFlui
         }
 
         if (level.isClientSide()) return InteractionResult.SUCCESS;
-        if (!(level.getBlockEntity(corePos) instanceof TileEntityOrbitalStation station))
-            return InteractionResult.TRY_WITH_EMPTY_HAND;
+        if (!(level.getBlockEntity(corePos) instanceof TileEntityOrbitalStation station)) return InteractionResult.TRY_WITH_EMPTY_HAND;
 
         var craft = station.getDocked();
         if (station.hasStoredItems()) {
@@ -238,8 +215,7 @@ public class BlockOrbitalStation extends BlockMultiblockMachine implements IFlui
             if (station.hasDocked) {
                 if (!station.hasRider) {
                     if (player.isShiftKeyDown()) {
-                        if (player.getMainHandItem().isEmpty())
-                            text.add(Component.translatable("station.removeRocket").getString());
+                        if (player.getMainHandItem().isEmpty()) text.add(Component.translatable("station.removeRocket").getString());
                     } else {
                         text.add(Component.translatable("station.enterRocket").getString());
                     }
@@ -249,12 +225,10 @@ public class BlockOrbitalStation extends BlockMultiblockMachine implements IFlui
 
                 if (station.needsFuel) {
                     for (FluidTankNTM tank : station.tanks) {
-                        text.add(ChatFormatting.GREEN + "-> " + ChatFormatting.RESET + tank.getTankType()
-                                                                                           .getDisplayNameString() + ": "
+                        text.add(ChatFormatting.GREEN + "-> " + ChatFormatting.RESET + tank.getTankType().getDisplayNameString() + ": "
                                 + tank.getFill() + "/" + tank.getMaxFill() + "mB");
                     }
-                    if (!station.hasFuel)
-                        text.add(ChatFormatting.RED + Component.translatable("station.emptyRocket").getString());
+                    if (!station.hasFuel) text.add(ChatFormatting.RED + Component.translatable("station.emptyRocket").getString());
                 }
             } else if (!player.isShiftKeyDown()) {
                 ItemStack held = player.getMainHandItem();

@@ -14,11 +14,9 @@ import com.hbm.inventory.recipes.loader.GenericRecipeCodec;
 import com.hbm.inventory.recipes.loader.RecipeIngredients;
 import dev.golem.core.gametest.GameTests;
 import dev.golem.core.world.RecipeTables;
-
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
-
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.gametest.framework.GameTestHelper;
 import net.minecraft.world.item.ItemStack;
@@ -110,9 +108,7 @@ public final class RecipeChangeAssemblyGameTests {
             "vacuumcircuit|ass.vacuumcircuit|ntmspace:machine_vacuum_circuit|1|200|100|mat:steel/weldedplatex4,mat:tungsten/wirex16,hbm:turbine_titaniumx1,hbm:circuit_advancedx2|-|-|-|-",
     };
 
-    /**
-     * HBM rows hbm-space comments out ("we keep the old recipes for these": the old mpt/mpf parts) or drops.
-     */
+    /** HBM rows hbm-space comments out ("we keep the old recipes for these": the old mpt/mpf parts) or drops. */
     private static final String[] REMOVED = {
             "ass.mpt10kero", "ass.mpt10solid", "ass.mpt10xenon", "ass.mpt15kero", "ass.mpt15kerodual",
             "ass.mpt15kerotriple", "ass.mpt15solid", "ass.mpt15solid16", "ass.mpt15hydro", "ass.mpt15hydrodual",
@@ -123,11 +119,9 @@ public final class RecipeChangeAssemblyGameTests {
             "ass.mpf15solid", "ass.mpf15hydro", "ass.mpf1520kero", "ass.mpf1520solid", "ass.lunarminer",
     };
 
-    private RecipeChangeAssemblyGameTests() {
-    }
+    private RecipeChangeAssemblyGameTests() {}
 
-    public static void init() {
-    }
+    public static void init() {}
 
     private static void rows(GameTestHelper helper) {
         AssemblyMachineRecipes table = AssemblyMachineRecipes.INSTANCE;
@@ -154,8 +148,7 @@ public final class RecipeChangeAssemblyGameTests {
             check(errors, file, "inputs", f[6], stacks(recipe.normalInputItems()));
             check(errors, file, "fluids", f[7], fluids(recipe.normalInputFluids()));
             check(errors, file, "expensive", f[8], recipe.inputItemEx == null ? "-" : stacks(recipe.inputItemEx));
-            check(errors, file, "528 pool", f[9],
-                    recipe.blueprintPools528 == null ? "-" : String.join(",", recipe.blueprintPools528));
+            check(errors, file, "528 pool", f[9], recipe.blueprintPools528 == null ? "-" : String.join(",", recipe.blueprintPools528));
             check(errors, file, "requires", f[10], recipe.requires == null ? "-" : String.join(",", recipe.requires));
         }
         // the table's lookup: each name resolves to the row in force under the current 528 mode
@@ -163,11 +156,8 @@ public final class RecipeChangeAssemblyGameTests {
             String[] f = line.split("\\|", -1);
             if (!inForce(f, f[0])) continue;
             GenericRecipe row = table.getRecipe(f[1]);
-            if (row == null || !stacks(row.normalInputItems()).equals(f[6]) || !fluids(row.normalInputFluids()).equals(
-                    f[7])) {
-                errors.add(
-                        f[1] + " in the table is not " + f[0] + ": " + (row == null ? "missing" : GenericRecipeCodec.describe(
-                                row)));
+            if (row == null || !stacks(row.normalInputItems()).equals(f[6]) || !fluids(row.normalInputFluids()).equals(f[7])) {
+                errors.add(f[1] + " in the table is not " + f[0] + ": " + (row == null ? "missing" : GenericRecipeCodec.describe(row)));
             }
         }
         // a replacing row takes the position of HBM's row it replaces (orderOf in the addon's source), 1.7's line order
@@ -183,9 +173,7 @@ public final class RecipeChangeAssemblyGameTests {
         return RecipeTables.holds("-".equals(fields[10]) ? List.of() : List.of(fields[10].split(",")), file);
     }
 
-    /**
-     * The loaded row of an enabled file.
-     */
+    /** The loaded row of an enabled file. */
     private static GenericRecipe entry(AssemblyMachineRecipes table, String id) {
         for (RecipeTables.Entry<GenericRecipe> entry : table.table.entries()) {
             if (entry.id().equals(id)) {
@@ -199,8 +187,7 @@ public final class RecipeChangeAssemblyGameTests {
 
     private static void checkOrder(List<String> errors, AssemblyMachineRecipes table, String name, int order) {
         GenericRecipe row = table.getRecipe(name);
-        if (row == null || row.order != order)
-            errors.add(name + " order " + (row == null ? "missing" : row.order) + ", HBM's is " + order);
+        if (row == null || row.order != order) errors.add(name + " order " + (row == null ? "missing" : row.order) + ", HBM's is " + order);
     }
 
     private static void check(List<String> errors, String file, String what, String expected, String actual) {
@@ -225,8 +212,7 @@ public final class RecipeChangeAssemblyGameTests {
         if (stack instanceof RecipeIngredients.FluidItem item) {
             return "fi:" + BuiltInRegistries.ITEM.getKey(item.item) + "/" + fluid(item.fluid);
         }
-        if (stack instanceof ComparableStack comparable)
-            return String.valueOf(BuiltInRegistries.ITEM.getKey(comparable.item));
+        if (stack instanceof ComparableStack comparable) return String.valueOf(BuiltInRegistries.ITEM.getKey(comparable.item));
         return "?" + stack.getClass().getSimpleName();
     }
 

@@ -40,10 +40,8 @@ import dev.golem.core.data.DataIn;
 import dev.golem.core.data.DataOut;
 import dev.golem.core.data.SynchedData;
 import dev.golem.core.platform.Platform;
-
 import java.util.ArrayList;
 import java.util.List;
-
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.nbt.CompoundTag;
@@ -115,16 +113,11 @@ public class EntityRideableRocket extends CompatEntity implements StationDock, I
         TRANSFER,   // Flying in space!
     }
 
-    private static final EntityDataAccessor<Integer> STATE = SynchedEntityData.defineId(EntityRideableRocket.class,
-            EntityDataSerializers.INT);
-    private static final EntityDataAccessor<Integer> TIMER = SynchedEntityData.defineId(EntityRideableRocket.class,
-            EntityDataSerializers.INT);
-    private static final EntityDataAccessor<ItemStack> DRIVE = SynchedEntityData.defineId(EntityRideableRocket.class,
-            EntityDataSerializers.ITEM_STACK);
-    private static final EntityDataAccessor<ItemStack> ROCKET = SynchedEntityData.defineId(EntityRideableRocket.class,
-            EntityDataSerializers.ITEM_STACK);
-    private static final EntityDataAccessor<Float> PITCH = SynchedEntityData.defineId(EntityRideableRocket.class,
-            EntityDataSerializers.FLOAT);
+    private static final EntityDataAccessor<Integer> STATE = SynchedEntityData.defineId(EntityRideableRocket.class, EntityDataSerializers.INT);
+    private static final EntityDataAccessor<Integer> TIMER = SynchedEntityData.defineId(EntityRideableRocket.class, EntityDataSerializers.INT);
+    private static final EntityDataAccessor<ItemStack> DRIVE = SynchedEntityData.defineId(EntityRideableRocket.class, EntityDataSerializers.ITEM_STACK);
+    private static final EntityDataAccessor<ItemStack> ROCKET = SynchedEntityData.defineId(EntityRideableRocket.class, EntityDataSerializers.ITEM_STACK);
+    private static final EntityDataAccessor<Float> PITCH = SynchedEntityData.defineId(EntityRideableRocket.class, EntityDataSerializers.FLOAT);
 
     public @Nullable ItemStack navDrive;
 
@@ -132,9 +125,7 @@ public class EntityRideableRocket extends CompatEntity implements StationDock, I
 
     private int stateTimer = 0;
 
-    /**
-     * 1.7 {@code sizeSet}: false until the first server tick after construction or a load.
-     */
+    /** 1.7 {@code sizeSet}: false until the first server tick after construction or a load. */
     private boolean sizeSet = false;
     public int decoupleTimer = 0;
     public int shroudTimer = 0;
@@ -161,26 +152,18 @@ public class EntityRideableRocket extends CompatEntity implements StationDock, I
 
     public @Nullable LivingEntity thrower;
 
-    /**
-     * A screen's preview of a rocket (never added to a level): drawn deployed, without the pod's own renderer.
-     */
+    /** A screen's preview of a rocket (never added to a level): drawn deployed, without the pod's own renderer. */
     public boolean preview;
 
-    /**
-     * 1.7's rocket pitch (0 upright, 90 lying), the server's value; the client interpolates it.
-     */
+    /** 1.7's rocket pitch (0 upright, 90 lying), the server's value; the client interpolates it. */
     private float pitch;
     private float pitchO;
 
-    /**
-     * The cached rocket of the synched stack (rebuilt when the stack changes).
-     */
+    /** The cached rocket of the synched stack (rebuilt when the stack changes). */
     private @Nullable ItemStack rocketStackFor;
     private @Nullable RocketStruct rocketCache;
 
-    /**
-     * Client: where the rocket was when the contrail last ran (1.7 lastTickPos).
-     */
+    /** Client: where the rocket was when the contrail last ran (1.7 lastTickPos). */
     private double contrailX, contrailY, contrailZ;
     private boolean contrailStarted;
 
@@ -191,9 +174,7 @@ public class EntityRideableRocket extends CompatEntity implements StationDock, I
 
     }
 
-    /**
-     * 1.7 {@code EntityRideableRocket(world, x, y, z, stack)}.
-     */
+    /** 1.7 {@code EntityRideableRocket(world, x, y, z, stack)}. */
     public static EntityRideableRocket create(Level level, double x, double y, double z, ItemStack stack) {
         EntityRideableRocket rocket = new EntityRideableRocket(RocketEntities.RIDEABLE_ROCKET.get(), level);
         rocket.setPos(x, y, z);
@@ -263,8 +244,7 @@ public class EntityRideableRocket extends CompatEntity implements StationDock, I
                 }
 
                 if (!level().dimension().equals(targetLevel)) {
-                    SpaceTeleporter.teleport(rider instanceof Player ? rider : this, targetLevel, x + 0.5D, y, z + 0.5D,
-                            false);
+                    SpaceTeleporter.teleport(rider instanceof Player ? rider : this, targetLevel, x + 0.5D, y, z + 0.5D, false);
                 } else {
                     setPos(x + 0.5D, y, z + 0.5D);
                 }
@@ -275,8 +255,7 @@ public class EntityRideableRocket extends CompatEntity implements StationDock, I
                     if (orbit != null) OrbitalStation.spawn(orbit, x, z);
                 }
             } else {
-                if (rocket.capsule != null && rocket.capsule.isSatellite() && !RocketParts.STATION_CORE.equals(
-                        rocket.capsule.id())
+                if (rocket.capsule != null && rocket.capsule.isSatellite() && !RocketParts.STATION_CORE.equals(rocket.capsule.id())
                         && destination.body != DriveBody.ORBIT) {
                     ServerLevel target = server.server().getLevel(targetLevel);
                     if (target != null) {
@@ -369,8 +348,7 @@ public class EntityRideableRocket extends CompatEntity implements StationDock, I
 
             if (!sizeSet) {
                 sizeSet = true;
-                if (state == RocketState.LANDED || state == RocketState.AWAITING || state == RocketState.NEEDSFUEL)
-                    redock();
+                if (state == RocketState.LANDED || state == RocketState.AWAITING || state == RocketState.NEEDSFUEL) redock();
             }
 
             Entity rider = getFirstPassenger();
@@ -378,7 +356,7 @@ public class EntityRideableRocket extends CompatEntity implements StationDock, I
             setYRot(-90.0F);
 
             if (navDrive != null && navDrive.getItem() instanceof ItemVOTVdrive) {
-                ItemVOTVdrive.getTarget(navDrive, level());
+                ItemVOTVdrive.publishStation(navDrive, level());
                 setDrive(navDrive);
             }
 
@@ -387,8 +365,7 @@ public class EntityRideableRocket extends CompatEntity implements StationDock, I
             }
 
             // If it's a satellite launcher, launch immediately
-            if (state == RocketState.AWAITING && ((rider instanceof LivingEntity living && isJumping(
-                    living)) || !canRide())) {
+            if (state == RocketState.AWAITING && ((rider instanceof LivingEntity living && isJumping(living)) || !canRide())) {
                 attemptLaunch();
 
                 thrower = rider instanceof LivingEntity living ? living : null;
@@ -445,8 +422,7 @@ public class EntityRideableRocket extends CompatEntity implements StationDock, I
                         dropNDie(null);
                         ExplosionLarge.explode(level(), null, getX(), getY(), getZ(), 5, true, false, true);
                         Vec3 motion = getDeltaMovement();
-                        ExplosionLarge.spawnShrapnelShower(level(), getX(), getY(), getZ(), motion.x, motion.y,
-                                motion.z, 15, 0.075);
+                        ExplosionLarge.spawnShrapnelShower(level(), getX(), getY(), getZ(), motion.x, motion.y, motion.z, 15, 0.075);
                         // 1.7 played "hbm:entity.pipefail", which has no sounds.json entry in hbm-space: silent
                     }
                 }
@@ -494,8 +470,7 @@ public class EntityRideableRocket extends CompatEntity implements StationDock, I
 
                 MinecraftServerAccess server = MinecraftServerAccess.of(level());
                 if (server != null) {
-                    OrbitalStation station = OrbitalStation.getStationFromPosition(server.server(), (int) getX(),
-                            (int) getZ());
+                    OrbitalStation station = OrbitalStation.getStationFromPosition(server.server(), (int) getX(), (int) getZ());
                     station.update(level());
 
                     if (station.getUnscaledProgress(0) > 0.99 || station.state == StationState.ARRIVING) {
@@ -568,8 +543,7 @@ public class EntityRideableRocket extends CompatEntity implements StationDock, I
             // ON state transitions
             if (state != lastState) {
                 if (state == RocketState.LAUNCHING) {
-                    AudioWrapper ignition = AudioSystem.getLoopedSound(RocketSounds.ROCKET_IGNITION.get(),
-                            SoundSource.PLAYERS,
+                    AudioWrapper ignition = AudioSystem.getLoopedSound(RocketSounds.ROCKET_IGNITION.get(), SoundSource.PLAYERS,
                             (float) getX(), (float) getY(), (float) getZ(), 1.0F, 250.0F, 1.0F, 5);
                     if (ignition != null) {
                         ignition.setDoesRepeat(false);
@@ -583,12 +557,10 @@ public class EntityRideableRocket extends CompatEntity implements StationDock, I
                 // We can't start audio loops at the same time as playing a sound, for some reason
                 if (state == RocketState.LAUNCHING
                         || (state == RocketState.LANDING && getDeltaMovement().y > -0.4)
-                        || (state == RocketState.TRANSFER && OrbitalStation.clientStation.getUnscaledProgress(
-                        0) <= 0.15)) {
+                        || (state == RocketState.TRANSFER && OrbitalStation.clientStation.getUnscaledProgress(0) <= 0.15)) {
                     if (audio == null || !audio.isPlaying()) {
                         var sound = getRocket().stages.size() <= 1 ? RocketSounds.ROCKET_FLY_LIGHT.get() : RocketSounds.ROCKET_FLY_HEAVY.get();
-                        audio = AudioSystem.getLoopedSound(sound, SoundSource.PLAYERS, (float) getX(), (float) getY(),
-                                (float) getZ(),
+                        audio = AudioSystem.getLoopedSound(sound, SoundSource.PLAYERS, (float) getX(), (float) getY(), (float) getZ(),
                                 1.0F, 250.0F, 1.0F, 5);
                         if (audio != null) audio.startSound();
                     }
@@ -611,10 +583,8 @@ public class EntityRideableRocket extends CompatEntity implements StationDock, I
 
                 if (station.getUnscaledProgress(0) > 0.2) {
                     if (decoupleTimer == 0) {
-                        AudioWrapper decouple = AudioSystem.getLoopedSound(RocketSounds.ROCKET_STAGE.get(),
-                                SoundSource.PLAYERS,
-                                (float) getX(), (float) getY(), (float) getZ(), 0.5F, 250.0F,
-                                0.9F + random.nextFloat() * 0.2F, 40);
+                        AudioWrapper decouple = AudioSystem.getLoopedSound(RocketSounds.ROCKET_STAGE.get(), SoundSource.PLAYERS,
+                                (float) getX(), (float) getY(), (float) getZ(), 0.5F, 250.0F, 0.9F + random.nextFloat() * 0.2F, 40);
                         if (decouple != null) {
                             decouple.setDoesRepeat(false);
                             decouple.startSound();
@@ -622,10 +592,8 @@ public class EntityRideableRocket extends CompatEntity implements StationDock, I
                     }
 
                     if (decoupleTimer == 100 && getRocket().stages.size() > 1) {
-                        AudioWrapper decouple = AudioSystem.getLoopedSound(RocketSounds.ROCKET_STAGE.get(),
-                                SoundSource.PLAYERS,
-                                (float) getX(), (float) getY(), (float) getZ(), 0.5F, 250.0F,
-                                1.2F + random.nextFloat() * 0.2F, 40);
+                        AudioWrapper decouple = AudioSystem.getLoopedSound(RocketSounds.ROCKET_STAGE.get(), SoundSource.PLAYERS,
+                                (float) getX(), (float) getY(), (float) getZ(), 0.5F, 250.0F, 1.2F + random.nextFloat() * 0.2F, 40);
                         if (decouple != null) {
                             decouple.setDoesRepeat(false);
                             decouple.startSound();
@@ -653,9 +621,7 @@ public class EntityRideableRocket extends CompatEntity implements StationDock, I
         setStateTimer(++stateTimer);
     }
 
-    /**
-     * Public rocket sound envelopes on the server, separate from client audio and gameplay clocks.
-     */
+    /** Public rocket sound envelopes on the server, separate from client audio and gameplay clocks. */
     private void tickSoundVibrations() {
         var state = getState();
         var station = state == RocketState.TRANSFER
@@ -676,9 +642,7 @@ public class EntityRideableRocket extends CompatEntity implements StationDock, I
         }
     }
 
-    /**
-     * 1.7 {@code EntityThrowableNT}'s step: a block ray along {@code motion * motionMult}, then the move.
-     */
+    /** 1.7 {@code EntityThrowableNT}'s step: a block ray along {@code motion * motionMult}, then the move. */
     private void serverMove() {
         chunkLoader.tick();
 
@@ -687,8 +651,7 @@ public class EntityRideableRocket extends CompatEntity implements StationDock, I
 
         Vec3 from = position();
         Vec3 to = from.add(getDeltaMovement().scale(mult));
-        BlockHitResult hit = level().clip(
-                new ClipContext(from, to, ClipContext.Block.COLLIDER, ClipContext.Fluid.NONE, this));
+        BlockHitResult hit = level().clip(new ClipContext(from, to, ClipContext.Block.COLLIDER, ClipContext.Fluid.NONE, this));
 
         if (hit.getType() != HitResult.Type.MISS) onImpact(hit);
         if (isRemoved()) return;
@@ -698,9 +661,7 @@ public class EntityRideableRocket extends CompatEntity implements StationDock, I
         setPos(getX() + motion.x * mult, getY() + motion.y * mult, getZ() + motion.z * mult);
     }
 
-    /**
-     * 1.7 {@code motionMult}: parked rockets do not move.
-     */
+    /** 1.7 {@code motionMult}: parked rockets do not move. */
     protected double motionMult() {
         RocketState state = getState();
         if (state == RocketState.AWAITING || state == RocketState.LANDED || state == RocketState.NEEDSFUEL) return 0;
@@ -727,9 +688,7 @@ public class EntityRideableRocket extends CompatEntity implements StationDock, I
         }
     }
 
-    /**
-     * Other blocks a parked rocket docks to on load (the orbital station launcher): 1.7's {@code instanceof} chain.
-     */
+    /** Other blocks a parked rocket docks to on load (the orbital station launcher): 1.7's {@code instanceof} chain. */
     public static final List<DockTarget> DOCK_TARGETS = new java.util.concurrent.CopyOnWriteArrayList<>();
 
     @FunctionalInterface
@@ -737,14 +696,10 @@ public class EntityRideableRocket extends CompatEntity implements StationDock, I
         void accept(Level level, BlockPos core, EntityRideableRocket rocket);
     }
 
-    /**
-     * The game time of the pilot's last jump key press (sent by the client, {@link RocketInputs}).
-     */
+    /** The game time of the pilot's last jump key press (sent by the client, {@link RocketInputs}). */
     long pilotJumpTime = Long.MIN_VALUE;
 
-    /**
-     * 1.7 {@code rider.isJumping}: the server learnt it from the vehicle input packet; here the client says so.
-     */
+    /** 1.7 {@code rider.isJumping}: the server learnt it from the vehicle input packet; here the client says so. */
     private boolean isJumping(LivingEntity entity) {
         return entity instanceof Player && level().getGameTime() - pilotJumpTime <= 1;
     }
@@ -753,9 +708,7 @@ public class EntityRideableRocket extends CompatEntity implements StationDock, I
         return level().getHeight(Heightmap.Types.MOTION_BLOCKING, x, z);
     }
 
-    /**
-     * 1.7 {@code BobMathUtil.getDirectionFromAxisAngle(pitch - 90, 180 - yaw, length)}: the rocket's axis.
-     */
+    /** 1.7 {@code BobMathUtil.getDirectionFromAxisAngle(pitch - 90, 180 - yaw, length)}: the rocket's axis. */
     public static Vec3 direction(float pitch, float yaw, double length) {
         float p = pitch - 90.0F;
         float y = 180.0F - yaw;
@@ -767,9 +720,7 @@ public class EntityRideableRocket extends CompatEntity implements StationDock, I
 
     // ---------------------------------------------------------------------------------------- crew
 
-    /**
-     * 1.7 world-tick sneak control, before the pilot's own ride tick.
-     */
+    /** 1.7 world-tick sneak control, before the pilot's own ride tick. */
     private void exitControl(@Nullable Entity rider) {
         if (rider instanceof Player player && heldSneak(player)) {
             if (canExitCapsule() || forceExitTimer >= 60) {
@@ -793,9 +744,7 @@ public class EntityRideableRocket extends CompatEntity implements StationDock, I
         return rider instanceof ServerPlayer player && Compat.clientSneakHeld(player);
     }
 
-    /**
-     * Does this rocket accept passengers (is a capsule).
-     */
+    /** Does this rocket accept passengers (is a capsule). */
     public boolean canRide() {
         RocketStruct rocket = getRocket();
         return rocket.capsule != null && rocket.capsule.isApollo();
@@ -832,14 +781,11 @@ public class EntityRideableRocket extends CompatEntity implements StationDock, I
         }
 
         var rider = getFirstPassenger();
-        if (rider == null)
-            return player.startRiding(this) ? InteractionResult.SUCCESS : InteractionResult.TRY_WITH_EMPTY_HAND;
+        if (rider == null) return player.startRiding(this) ? InteractionResult.SUCCESS : InteractionResult.TRY_WITH_EMPTY_HAND;
         return rider == player ? InteractionResult.SUCCESS : InteractionResult.TRY_WITH_EMPTY_HAND;
     }
 
-    /**
-     * The capsule dummy's click and hit, forwarded (1.7 {@code parent.interactFirst} / {@code attackEntityFrom}).
-     */
+    /** The capsule dummy's click and hit, forwarded (1.7 {@code parent.interactFirst} / {@code attackEntityFrom}). */
     InteractionResult onInteractDummy(Player player, InteractionHand hand) {
         return onInteract(player, hand);
     }
@@ -848,9 +794,7 @@ public class EntityRideableRocket extends CompatEntity implements StationDock, I
         return onHurt(source, amount);
     }
 
-    /**
-     * 1.7 {@code getMountedYOffset}.
-     */
+    /** 1.7 {@code getMountedYOffset}. */
     public double getMountedYOffset() {
         if (isReusable()) return getBbHeight() - 2.5;
         return getBbHeight() - 3.0;
@@ -921,8 +865,7 @@ public class EntityRideableRocket extends CompatEntity implements StationDock, I
             if (getFirstPassenger() == null && source.getEntity() instanceof Player player) {
                 // A pickaxe is required to break, unless it's just the capsule (or it has tipped over)
                 RocketStruct rocket = getRocket();
-                boolean bareCapsule = rocket.stages.size() == 0 && (rocket.capsule == null || !RocketParts.POD.equals(
-                        rocket.capsule.id()));
+                boolean bareCapsule = rocket.stages.size() == 0 && (rocket.capsule == null || !RocketParts.POD.equals(rocket.capsule.id()));
                 if (bareCapsule || getState() == RocketState.TIPPING) {
                     dropNDie(source);
                 } else {
@@ -1012,8 +955,7 @@ public class EntityRideableRocket extends CompatEntity implements StationDock, I
             double groundHeight = heightValue((int) x, (int) z);
             double distanceToGround = y - groundHeight;
             if (distanceToGround < 10) {
-                RocketEffects.shock(level(), x, groundHeight + 0.5, z, 1 + random.nextInt(3),
-                        1 + random.nextGaussian());
+                RocketEffects.shock(level(), x, groundHeight + 0.5, z, 1 + random.nextInt(3), 1 + random.nextGaussian());
             }
 
             return;
@@ -1028,8 +970,7 @@ public class EntityRideableRocket extends CompatEntity implements StationDock, I
             double groundHeight = heightValue((int) x, (int) z);
             double distanceToGround = y - groundHeight;
             if (distanceToGround < 10) {
-                RocketEffects.shock(level(), x, groundHeight + 0.5, z, 1 + random.nextInt(3),
-                        1 + random.nextGaussian());
+                RocketEffects.shock(level(), x, groundHeight + 0.5, z, 1 + random.nextInt(3), 1 + random.nextGaussian());
             }
         } else if (state == RocketState.LAUNCHING || getStateTimer() < 200) {
             spawnContrailWithOffset(0, 0, 0);
@@ -1045,16 +986,13 @@ public class EntityRideableRocket extends CompatEntity implements StationDock, I
         }
     }
 
-    /**
-     * 1.7 {@code EntityMissileBaseNT.spawnContraolWithOffset}: puffs along the last step, thrown back along the axis.
-     */
+    /** 1.7 {@code EntityMissileBaseNT.spawnContraolWithOffset}: puffs along the last step, thrown back along the axis. */
     private void spawnContrailWithOffset(double offsetX, double offsetY, double offsetZ) {
         Vec3 step = new Vec3(contrailX - getX(), contrailY - getY(), contrailZ - getZ());
         double len = step.length();
         Vec3 vec = step.normalize();
         // 1.7: (0,1,0) rotated about Z by the pitch, then about Y by yaw + 90 (Vec3.rotateAroundZ/Y)
-        Vec3 thrust = rotateY(rotateZ(new Vec3(0, 1, 0), getPitch(1F) * (float) Math.PI / 180F),
-                (getYRot() + 90) * (float) Math.PI / 180F);
+        Vec3 thrust = rotateY(rotateZ(new Vec3(0, 1, 0), getPitch(1F) * (float) Math.PI / 180F), (getYRot() + 90) * (float) Math.PI / 180F);
 
         for (int i = 0; i < Math.max(Math.min(len, 10), 1); i++) {
             double j = i - len;
@@ -1064,8 +1002,7 @@ public class EntityRideableRocket extends CompatEntity implements StationDock, I
             data.putDouble("moY", -thrust.y);
             data.putDouble("moZ", -thrust.z);
             data.putInt("maxAge", 60 + random.nextInt(20));
-            HbmEffectNT.MissileContrail.summonParticle(level(), getX() - vec.x * j + offsetX,
-                    getY() - vec.y * j + offsetY,
+            HbmEffectNT.MissileContrail.summonParticle(level(), getX() - vec.x * j + offsetX, getY() - vec.y * j + offsetY,
                     getZ() - vec.z * j + offsetZ, data);
         }
     }
@@ -1084,9 +1021,7 @@ public class EntityRideableRocket extends CompatEntity implements StationDock, I
 
     // ---------------------------------------------------------------------------------------- data
 
-    /**
-     * The rocket's pitch for rendering (1.7 {@code rotationPitch}), interpolated.
-     */
+    /** The rocket's pitch for rendering (1.7 {@code rotationPitch}), interpolated. */
     public float getPitch(float partialTick) {
         return Mth.lerp(partialTick, pitchO, pitch);
     }
@@ -1116,9 +1051,7 @@ public class EntityRideableRocket extends CompatEntity implements StationDock, I
         if (ROCKET.equals(key)) refreshDimensions();
     }
 
-    /**
-     * 1.7 {@code setSize(2, rocket.getHeight() + 1)}.
-     */
+    /** 1.7 {@code setSize(2, rocket.getHeight() + 1)}. */
     @Override
     public EntityDimensions getDimensions(Pose pose) {
         return EntityDimensions.scalable(2.0F, (float) getRocket().getHeight() + 1.0F);
@@ -1195,8 +1128,7 @@ public class EntityRideableRocket extends CompatEntity implements StationDock, I
 
         if (input.getBooleanOr("hasOverride", false)) {
             DriveBody body = DriveBody.byName(input.getStringOr("overrideBody", "kerbin"));
-            destinationOverride = new Destination(body == null ? DriveBody.KERBIN : body,
-                    input.getIntOr("overrideX", 0), input.getIntOr("overrideZ", 0));
+            destinationOverride = new Destination(body == null ? DriveBody.KERBIN : body, input.getIntOr("overrideX", 0), input.getIntOr("overrideZ", 0));
         } else {
             destinationOverride = null;
         }
@@ -1247,9 +1179,7 @@ public class EntityRideableRocket extends CompatEntity implements StationDock, I
         return getRocket().getLaunchMass();
     }
 
-    /**
-     * 1.7 {@code TileEntityOrbitalStation.updateEntity}'s fuel check on the docked pod.
-     */
+    /** 1.7 {@code TileEntityOrbitalStation.updateEntity}'s fuel check on the docked pod. */
     @Override
     public void fuelled(boolean hasFuel) {
         RocketState state = getState();
@@ -1312,9 +1242,7 @@ public class EntityRideableRocket extends CompatEntity implements StationDock, I
 
     // ---------------------------------------------------------------------------------------- look overlay (client)
 
-    /**
-     * 1.7 {@code printHook}: the rocket's state, destination and what to do next.
-     */
+    /** 1.7 {@code printHook}: the rocket's state, destination and what to do next. */
     @Override
     public com.hbm.interfaces.ILookOverlay.@Nullable Data getLookOverlay(Player player) {
         RocketState state = getState();
@@ -1331,12 +1259,9 @@ public class EntityRideableRocket extends CompatEntity implements StationDock, I
             OrbitalStation station = OrbitalStation.clientStation;
             double progress = station.getUnscaledProgress(0);
 
-            text.add(net.minecraft.ChatFormatting.AQUA + net.minecraft.network.chat.Component.translatable(
-                    "station.travelling").getString() + ": "
-                    + net.minecraft.ChatFormatting.RESET + net.minecraft.network.chat.Component.translatable(
-                    "body." + station.target.name).getString());
-            text.add(net.minecraft.ChatFormatting.AQUA + net.minecraft.network.chat.Component.translatable(
-                    "station.progress").getString() + ": "
+            text.add(net.minecraft.ChatFormatting.AQUA + net.minecraft.network.chat.Component.translatable("station.travelling").getString() + ": "
+                    + net.minecraft.ChatFormatting.RESET + net.minecraft.network.chat.Component.translatable("body." + station.target.name).getString());
+            text.add(net.minecraft.ChatFormatting.AQUA + net.minecraft.network.chat.Component.translatable("station.progress").getString() + ": "
                     + net.minecraft.ChatFormatting.RESET + Math.round(progress * 100) + "%");
 
             return new com.hbm.interfaces.ILookOverlay.Data("Rocket", 0xffff00, 0x404000, text);
@@ -1367,8 +1292,7 @@ public class EntityRideableRocket extends CompatEntity implements StationDock, I
             if (to.inOrbit()) {
                 text.add("Destination: ORBITAL STATION");
             } else if (to.body() != null) {
-                text.add("Destination: " + net.minecraft.network.chat.Component.translatable("body." + to.body().name)
-                                                                               .getString());
+                text.add("Destination: " + net.minecraft.network.chat.Component.translatable("body." + to.body().name).getString());
             } else {
                 text.add("Destination: NO DRIVE INSTALLED");
             }
@@ -1417,9 +1341,7 @@ public class EntityRideableRocket extends CompatEntity implements StationDock, I
         return !(params.smartMode && getDeltaMovement().y >= 0);
     }
 
-    /**
-     * The server of a level, for code that runs on both sides.
-     */
+    /** The server of a level, for code that runs on both sides. */
     record MinecraftServerAccess(net.minecraft.server.MinecraftServer server) {
         static @Nullable MinecraftServerAccess of(Level level) {
             if (level.isClientSide() || level.getServer() == null) return null;

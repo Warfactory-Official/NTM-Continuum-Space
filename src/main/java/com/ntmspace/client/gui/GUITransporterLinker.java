@@ -8,11 +8,9 @@ import dev.golem.core.gui.CompatScreen;
 import dev.golem.core.gui.GuiDraw;
 import dev.golem.core.gui.MouseInput;
 import dev.golem.core.net.GolemNetwork;
-
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
-
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphicsExtractor;
 import net.minecraft.client.gui.components.EditBox;
@@ -35,8 +33,7 @@ import org.jspecify.annotations.Nullable;
  */
 public final class GUITransporterLinker extends CompatScreen {
 
-    private static final Identifier TEXTURE = dev.golem.core.Ids.of(NtmSpace.MOD_ID,
-            "textures/gui/tool/gui_transport_linker.png");
+    private static final Identifier TEXTURE = dev.golem.core.Ids.of(NtmSpace.MOD_ID, "textures/gui/tool/gui_transport_linker.png");
 
     private final int xSize = 218;
     private final int ySize = 201;
@@ -56,24 +53,7 @@ public final class GUITransporterLinker extends CompatScreen {
     private final Player player;
     private boolean dragging;
 
-    public int guiLeft() {
-        return guiLeft;
-    }
-
-    public int guiTop() {
-        return guiTop;
-    }
-
-    public int imageWidth() {
-        return xSize;
-    }
-
-    public int imageHeight() {
-        return ySize;
-    }
-
-    public GUITransporterLinker(Player player, List<TransporterInfo> transporters,
-                                TransporterInfo linkFromTransporter) {
+    public GUITransporterLinker(Player player, List<TransporterInfo> transporters, TransporterInfo linkFromTransporter) {
         super(Component.empty());
         this.player = player;
         this.linkFromTransporter = linkFromTransporter;
@@ -114,8 +94,7 @@ public final class GUITransporterLinker extends CompatScreen {
         GuiDraw.blit(graphics, TEXTURE, guiLeft, guiTop, 0F, 0F, xSize - hideScroll, ySize, 256, 256);
 
         // Draw search box
-        if (search.isFocused())
-            GuiDraw.blit(graphics, TEXTURE, guiLeft + 55, guiTop + 41, 0F, ySize, 107, 18, 256, 256);
+        if (search.isFocused()) GuiDraw.blit(graphics, TEXTURE, guiLeft + 55, guiTop + 41, 0F, ySize, 107, 18, 256, 256);
 
         // Draw current transporter
         int x = guiLeft + 37;
@@ -213,9 +192,7 @@ public final class GUITransporterLinker extends CompatScreen {
         return false;
     }
 
-    /**
-     * 1.7 {@code mouseClickMove}: the scrollbar follows a drag inside its track.
-     */
+    /** 1.7 {@code mouseClickMove}: the scrollbar follows a drag inside its track. */
     private void mouseClickMove(int mouseX, int mouseY) {
         if (isInAABB(mouseX, mouseY, guiLeft + 198, guiTop + 64, 22, 137)) {
             index = Mth.floor((mouseY - (guiTop + 68)) / 114.0F * (float) (visibleTransporters.size() - 5));
@@ -253,7 +230,7 @@ public final class GUITransporterLinker extends CompatScreen {
 
         CompoundTag data = new CompoundTag();
         data.putString("dimension", to.dimension);
-        data.putIntArray("linkedTo", new int[]{to.x, to.y, to.z});
+        data.putIntArray("linkedTo", new int[] {to.x, to.y, to.z});
         send(from, data);
     }
 
@@ -285,13 +262,10 @@ public final class GUITransporterLinker extends CompatScreen {
         return x <= mouseX && x + width > mouseX && y <= mouseY && y + height > mouseY;
     }
 
-    /**
-     * Opens the screen (the linker's client-side use).
-     */
+    /** Opens the screen (the linker's client-side use). */
     public static void open(TransporterInfo from) {
         Minecraft minecraft = Minecraft.getInstance();
         if (minecraft.player == null) return;
-        minecraft.setScreen(
-                new GUITransporterLinker(minecraft.player, ItemTransporterLinker.currentTransporters, from));
+        minecraft.setScreen(new GUITransporterLinker(minecraft.player, ItemTransporterLinker.currentTransporters, from));
     }
 }

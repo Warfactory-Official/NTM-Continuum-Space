@@ -14,11 +14,9 @@ import dev.golem.core.net.GolemNetwork;
 import dev.golem.core.net.GolemPayload;
 import dev.golem.core.platform.Lifecycle;
 import dev.golem.core.world.CompatSavedData;
-
 import java.util.HashMap;
 import java.util.Map;
 import java.util.UUID;
-
 import net.minecraft.commands.CommandSourceStack;
 import net.minecraft.commands.Commands;
 import net.minecraft.network.chat.Component;
@@ -51,22 +49,15 @@ public final class DustStorm extends CompatSavedData<DustStorm> {
 
     static final String ID = NtmSpace.MOD_ID + ":dust_storm";
 
-    /**
-     * {@code dustStormTimer}: ticks until the weather changes.
-     */
+    /** {@code dustStormTimer}: ticks until the weather changes. */
     public int timer = 0;
-    /**
-     * {@code dustStormIntensity}: 0 = clear, 0.25 .. 1 = a storm.
-     */
+    /** {@code dustStormIntensity}: 0 = clear, 0.25 .. 1 = a storm. */
     public float intensity = 1;
 
-    /**
-     * The strength last delivered to the client, before its visual easing.
-     */
+    /** The strength last delivered to the client, before its visual easing. */
     public static float clientIntensity;
 
-    public DustStorm() {
-    }
+    public DustStorm() {}
 
     private DustStorm(int timer, float intensity) {
         this.timer = timer;
@@ -86,18 +77,14 @@ public final class DustStorm extends CompatSavedData<DustStorm> {
         clientIntensity = intensity;
     }
 
-    /**
-     * Delivers the current strength when a player arrives in Duna's level.
-     */
+    /** Delivers the current strength when a player arrives in Duna's level. */
     public static void sync(ServerPlayer player, ServerLevel duna) {
         if (duna.dimension().equals(SpaceDimensions.DUNA)) {
             GolemNetwork.sendToPlayer(player, CODEC_PAYLOAD, new Payload(get(duna).intensity));
         }
     }
 
-    /**
-     * The 1.7 server half of {@code updateWeather}, one tick; {@code rand} is the level's random.
-     */
+    /** The 1.7 server half of {@code updateWeather}, one tick; {@code rand} is the level's random. */
     public void tick(RandomSource rand) {
         if (timer <= 0) {
             if (intensity >= 0.05F) {
@@ -125,9 +112,7 @@ public final class DustStorm extends CompatSavedData<DustStorm> {
     // ---------------------------------------------------------------------------------------------------------------
     // ticking and sync
 
-    /**
-     * The strength sent to a client (1.7 {@code serialize}: the server's {@code dustStormIntensity}).
-     */
+    /** The strength sent to a client (1.7 {@code serialize}: the server's {@code dustStormIntensity}). */
     public record Payload(float intensity) implements GolemPayload {
         @Override
         public Identifier id() {
@@ -135,8 +120,7 @@ public final class DustStorm extends CompatSavedData<DustStorm> {
         }
     }
 
-    public static final GolemCodec<Payload> CODEC_PAYLOAD = GolemCodec.of(Payload.class,
-            Ids.of(NtmSpace.MOD_ID, "dust_storm"),
+    public static final GolemCodec<Payload> CODEC_PAYLOAD = GolemCodec.of(Payload.class, Ids.of(NtmSpace.MOD_ID, "dust_storm"),
             (payload, buf) -> buf.writeFloat(payload.intensity()), buf -> new Payload(buf.readFloat()));
 
     private static final Map<UUID, Float> SENT = new HashMap<>();
@@ -169,9 +153,7 @@ public final class DustStorm extends CompatSavedData<DustStorm> {
         });
     }
 
-    /**
-     * WorldProviderDuna.resetRainAndThunder: a slept-through night starts a fresh clear interval.
-     */
+    /** WorldProviderDuna.resetRainAndThunder: a slept-through night starts a fresh clear interval. */
     public static void sleptThrough(ServerLevel level) {
         if (!level.dimension().equals(SpaceDimensions.DUNA)) return;
         var storm = get(level);
@@ -185,21 +167,14 @@ public final class DustStorm extends CompatSavedData<DustStorm> {
 
     private static void registerCommand(CommandDispatcher<CommandSourceStack> dispatcher) {
         dispatcher.register(Commands.literal(NtmSpace.MOD_ID)
-                                    .requires(dev.golem.core.command.Permissions.gamemasters())
-                                    .then(Commands.literal("duststorm")
-                                                  .executes(context -> report(context.getSource()))
-                                                  .then(Commands.argument("strength", FloatArgumentType.floatArg(0, 1))
-                                                                .executes(context -> set(context.getSource(),
-                                                                        FloatArgumentType.getFloat(context, "strength"),
-                                                                        12000))
-                                                                .then(Commands.argument("ticks",
-                                                                                      IntegerArgumentType.integer(1))
-                                                                              .executes(context -> set(
-                                                                                      context.getSource(),
-                                                                                      FloatArgumentType.getFloat(
-                                                                                              context, "strength"),
-                                                                                      IntegerArgumentType.getInteger(
-                                                                                              context, "ticks")))))));
+                .requires(dev.golem.core.command.Permissions.gamemasters())
+                .then(Commands.literal("duststorm")
+                        .executes(context -> report(context.getSource()))
+                        .then(Commands.argument("strength", FloatArgumentType.floatArg(0, 1))
+                                .executes(context -> set(context.getSource(), FloatArgumentType.getFloat(context, "strength"), 12000))
+                                .then(Commands.argument("ticks", IntegerArgumentType.integer(1))
+                                        .executes(context -> set(context.getSource(), FloatArgumentType.getFloat(context, "strength"),
+                                                IntegerArgumentType.getInteger(context, "ticks")))))));
     }
 
     private static int set(CommandSourceStack source, float strength, int ticks) {

@@ -2,12 +2,10 @@ package com.ntmspace.satellite;
 
 import com.hbm.items.machine.ItemSatellite;
 import dev.golem.core.registry.Substitutions;
-
 import java.util.Locale;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
-
 import net.minecraft.world.item.Item;
 import com.hbm.api.environment.Environment;
 import com.hbm.creativetabs.HbmTab;
@@ -33,10 +31,8 @@ import dev.golem.core.data.GolemComponent;
 import dev.golem.core.registry.DeferredRegister;
 import dev.golem.core.registry.Registrar;
 import dev.golem.core.registry.RegistryObject;
-
 import java.util.LinkedHashMap;
 import java.util.Map;
-
 import net.minecraft.ChatFormatting;
 import net.minecraft.commands.CommandSourceStack;
 import net.minecraft.commands.Commands;
@@ -77,65 +73,51 @@ public final class SpaceSatellites {
     public static final DeferredRegister.Items ITEMS = DeferredRegister.createItems(NtmSpace.MOD_ID);
     private static final Registrar REG = Registrar.of(ITEMS);
 
-    /**
-     * 1.7 {@code sat_dyson_relay} ({@code ItemSatellite(32_000)}), on the missile tab.
-     */
+    /** 1.7 {@code sat_dyson_relay} ({@code ItemSatellite(32_000)}), on the missile tab. */
     public static final RegistryObject<ItemSatChip> SAT_DYSON_RELAY =
-            REG.<ItemSatChip>item("sat_dyson_relay", ItemDysonRelay::new,
-                       p -> orbitProperties(p.stacksTo(1), "ntmspace:dyson_relay"))
-               .transform(Presets.sprite("ntmspace:items/sat_dyson_relay")).tab(HbmTab.MISSILES);
-    /**
-     * 1.7 {@code sat_war} ({@code ItemSatellite(128_000)}, Gerald's sprite), on no tab.
-     */
+            REG.<ItemSatChip>item("sat_dyson_relay", ItemDysonRelay::new, p -> orbitProperties(p.stacksTo(1), "ntmspace:dyson_relay"))
+                    .transform(Presets.sprite("ntmspace:items/sat_dyson_relay")).tab(HbmTab.MISSILES);
+    /** 1.7 {@code sat_war} ({@code ItemSatellite(128_000)}, Gerald's sprite), on no tab. */
     public static final RegistryObject<ItemSatChip> SAT_WAR =
-            REG.item("sat_war", ItemSatChip::new, p -> orbitProperties(p.stacksTo(1), "ntmspace:railgun"))
-               .transform(Presets.sprite("hbm:items/sat_gerald"));
+            REG.item("sat_war", ItemSatChip::new, p -> orbitProperties(p.stacksTo(1), "ntmspace:railgun")).transform(Presets.sprite("hbm:items/sat_gerald"));
 
-    /**
-     * A satellite item's orbit settings ({@code ntmspace:sat_orbit}).
-     */
+    /** A satellite item's orbit settings ({@code ntmspace:sat_orbit}). */
     public static final GolemComponent<SatelliteOrbit> ORBIT =
             GolemComponent.of(NtmSpace.MOD_ID, "sat_orbit", () -> SatelliteOrbit.CODEC);
 
     public static SatelliteType DYSON_RELAY;
     public static SatelliteType RAILGUN;
 
-    /**
-     * 1.7 {@code XSatelliteRegistry.registerSatellite} colours, by satellite type name.
-     */
+    /** 1.7 {@code XSatelliteRegistry.registerSatellite} colours, by satellite type name. */
     private static final Map<String, float[]> COLORS = new LinkedHashMap<>();
 
     static {
-        COLORS.put("mapper", new float[]{0.538F, 1.0F, 0.523F});
-        COLORS.put("scanner", new float[]{0.544F, 0.680F, 1.0F});
-        COLORS.put("radar", new float[]{0.134F, 1.0F, 0.134F});
-        COLORS.put("laser", new float[]{0.221F, 0.663F, 1.0F});
-        COLORS.put("resonator", new float[]{1.0F, 0.646F, 0.181F});
-        COLORS.put("relay", new float[]{1.0F, 0.15F, 0.15F});
-        COLORS.put("miner", new float[]{0.46F, 0.56F, 0.68F});
-        COLORS.put("lunar_miner", new float[]{0.42F, 0.54F, 0.82F});
-        COLORS.put("ntmspace:dyson_relay", new float[]{1.0F, 0.9F, 0.8F});
-        COLORS.put("horizons", new float[]{0.0F, 0.0F, 0.0F});
-        COLORS.put("ntmspace:railgun", new float[]{0.0F, 0.0F, 0.0F});
-        COLORS.put("precision_laser", new float[]{0.221F, 1.0F, 0.663F});
-        COLORS.put("detector", new float[]{0.1F, 0.2F, 0.3F});
-        COLORS.put("ray_scan", new float[]{0.1F, 0.2F, 0.3F});
+        COLORS.put("mapper", new float[] {0.538F, 1.0F, 0.523F});
+        COLORS.put("scanner", new float[] {0.544F, 0.680F, 1.0F});
+        COLORS.put("radar", new float[] {0.134F, 1.0F, 0.134F});
+        COLORS.put("laser", new float[] {0.221F, 0.663F, 1.0F});
+        COLORS.put("resonator", new float[] {1.0F, 0.646F, 0.181F});
+        COLORS.put("relay", new float[] {1.0F, 0.15F, 0.15F});
+        COLORS.put("miner", new float[] {0.46F, 0.56F, 0.68F});
+        COLORS.put("lunar_miner", new float[] {0.42F, 0.54F, 0.82F});
+        COLORS.put("ntmspace:dyson_relay", new float[] {1.0F, 0.9F, 0.8F});
+        COLORS.put("horizons", new float[] {0.0F, 0.0F, 0.0F});
+        COLORS.put("ntmspace:railgun", new float[] {0.0F, 0.0F, 0.0F});
+        COLORS.put("precision_laser", new float[] {0.221F, 1.0F, 0.663F});
+        COLORS.put("detector", new float[] {0.1F, 0.2F, 0.3F});
+        COLORS.put("ray_scan", new float[] {0.1F, 0.2F, 0.3F});
     }
 
     private static boolean installed;
 
-    private SpaceSatellites() {
-    }
+    private SpaceSatellites() {}
 
     public static int launchMass(ItemStack stack) {
         if (stack.is(SAT_DYSON_RELAY.get())) return 32_000;
         if (stack.is(SAT_WAR.get())) return 128_000;
         return RocketParts.get(stack).mass();
     }
-
-    /**
-     * Item defaults are applied while the owning mod constructs each original item class.
-     */
+    /** Item defaults are applied while the owning mod constructs each original item class. */
     public static void substitute() {
         for (var type : ItemSatellite.EnumSatType.values()) {
             var name = switch (type) {
@@ -171,14 +153,11 @@ public final class SpaceSatellites {
         return ORBIT.appliedTo(properties, SatelliteOrbit.defaults(COLORS.get(name)));
     }
 
-    /**
-     * At mod construction.
-     */
+    /** At mod construction. */
     public static synchronized void init() {
         if (installed) return;
         installed = true;
-        DYSON_RELAY = SatelliteType.register("ntmspace:dyson_relay", SatelliteDysonRelay::new,
-                SatelliteDysonRelay.CODEC, null);
+        DYSON_RELAY = SatelliteType.register("ntmspace:dyson_relay", SatelliteDysonRelay::new, SatelliteDysonRelay.CODEC, null);
         RAILGUN = SatelliteType.register("ntmspace:railgun", SatelliteRailgun::new, SatelliteRailgun.CODEC, null);
 
         Environment.SATELLITES.register(new Environment.Satellites() {
@@ -233,9 +212,7 @@ public final class SpaceSatellites {
         return null;
     }
 
-    /**
-     * 1.7 {@code getTargetDimensionId(Class)}: relay to Duna, lunar miner to the Mun, asteroid miner to Dres.
-     */
+    /** 1.7 {@code getTargetDimensionId(Class)}: relay to Duna, lunar miner to the Mun, asteroid miner to Dres. */
     public static @Nullable String targetBody(@Nullable SatelliteType type) {
         if (type == null) return null;
         if (type == SatelliteType.RELAY) return "duna";
@@ -244,24 +221,18 @@ public final class SpaceSatellites {
         return null;
     }
 
-    /**
-     * Whether Space registered this satellite kind's orbit settings and sky colour.
-     */
+    /** Whether Space registered this satellite kind's orbit settings and sky colour. */
     public static boolean isSpace(SatelliteType type) {
         return COLORS.containsKey(type.name());
     }
 
-    /**
-     * 1.7 {@code XSatelliteRegistry.getRegisteredColor}: a satellite type's colour (white for one hbm-space lacked).
-     */
+    /** 1.7 {@code XSatelliteRegistry.getRegisteredColor}: a satellite type's colour (white for one hbm-space lacked). */
     public static float[] color(@Nullable SatelliteType type) {
         float[] color = type == null ? null : COLORS.get(type.name());
-        return color == null ? new float[]{1F, 1F, 1F} : color.clone();
+        return color == null ? new float[] {1F, 1F, 1F} : color.clone();
     }
 
-    /**
-     * 1.7 {@code SatelliteBase.getItemData}: a satellite item's settings, the defaults where it has none.
-     */
+    /** 1.7 {@code SatelliteBase.getItemData}: a satellite item's settings, the defaults where it has none. */
     public static SatelliteOrbit orbit(ItemStack stack) {
         return orbit(stack, XSatelliteRegistry.typeFor(stack));
     }
@@ -270,16 +241,12 @@ public final class SpaceSatellites {
         return ORBIT.get(stack).orElseGet(() -> SatelliteOrbit.defaults(color(type)));
     }
 
-    /**
-     * The orbit settings of a satellite in orbit (1.7 {@code SatelliteBase} fields).
-     */
+    /** The orbit settings of a satellite in orbit (1.7 {@code SatelliteBase} fields). */
     public static SatelliteOrbit orbit(Satellite sat) {
         return SatelliteOrbit.read(sat.extra, color(sat.type()));
     }
 
-    /**
-     * 1.7 {@code SatelliteBase.copyItemData}, which the linker ran when both chips were satellite items.
-     */
+    /** 1.7 {@code SatelliteBase.copyItemData}, which the linker ran when both chips were satellite items. */
     public static boolean copyItemData(ItemStack source, ItemStack copy) {
         if (XSatelliteRegistry.typeFor(source) == null || XSatelliteRegistry.typeFor(copy) == null) return false;
         SatelliteOrbit settings = orbit(source);
@@ -288,23 +255,18 @@ public final class SpaceSatellites {
         return true;
     }
 
-    /**
-     * hbm-space {@code CommandSatellites orbit [frequency]}: launch the held satellite on another frequency.
-     */
+    /** hbm-space {@code CommandSatellites orbit [frequency]}: launch the held satellite on another frequency. */
     private static void registerCommand(CommandDispatcher<CommandSourceStack> dispatcher) {
         dispatcher.register(Commands.literal("ntmsatellites")
-                                    .requires(dev.golem.core.command.Permissions.level(4))
-                                    .then(Commands.literal("orbit")
-                                                  .then(Commands.argument("frequency", IntegerArgumentType.integer())
-                                                                .executes(ctx -> orbit(ctx.getSource(),
-                                                                        IntegerArgumentType.getInteger(ctx,
-                                                                                "frequency"))))));
+                .requires(dev.golem.core.command.Permissions.level(4))
+                .then(Commands.literal("orbit")
+                        .then(Commands.argument("frequency", IntegerArgumentType.integer())
+                                .executes(ctx -> orbit(ctx.getSource(), IntegerArgumentType.getInteger(ctx, "frequency"))))));
     }
 
     private static int orbit(CommandSourceStack source, int freq) {
         if (!(source.getEntity() instanceof ServerPlayer player)) {
-            source.sendFailure(
-                    Component.translatable("commands.satellite.should_be_run_as_player").withStyle(ChatFormatting.RED));
+            source.sendFailure(Component.translatable("commands.satellite.should_be_run_as_player").withStyle(ChatFormatting.RED));
             return 0;
         }
         ItemStack held = player.getMainHandItem();
@@ -314,7 +276,7 @@ public final class SpaceSatellites {
             Satellite.orbit(source.getLevel(), held, freq, position.x, position.y, position.z);
             held.shrink(1);
             source.sendSuccess(() -> Component.translatable("commands.satellite.satellite_orbited")
-                                              .withStyle(ChatFormatting.GREEN), false);
+                    .withStyle(ChatFormatting.GREEN), false);
             return 1;
         }
         source.sendFailure(Component.translatable("commands.satellite.not_a_satellite").withStyle(ChatFormatting.RED));

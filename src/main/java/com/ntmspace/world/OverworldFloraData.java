@@ -3,18 +3,13 @@ package com.ntmspace.world;
 import com.google.gson.JsonObject;
 import dev.golem.core.dejson.BiomeModifiers;
 import dev.golem.core.dejson.Features;
-import dev.golem.core.dejson.Tags;
-
 import java.util.List;
 
-/**
- * Space HbmWorldGen: plains-only wild fruit, and eight six-block zinc veins at y 5..36 in Kerbin stone.
- */
+/** Space HbmWorldGen: plains-only wild fruit, and eight six-block zinc veins at y 5..36 in Kerbin stone. */
 public final class OverworldFloraData {
     static {
         var namespace = "ntmspace";
-        Features.biomeTag(namespace, "has_feature/wild_fruit",
-                new String[]{"minecraft:plains", "minecraft:sunflower_plains"});
+        Features.biomeTag(namespace, "has_feature/wild_fruit", new String[] {"minecraft:plains", "minecraft:sunflower_plains"});
         for (var flower : List.of("strawberry", "mint")) {
             var id = namespace + ":" + flower;
             Features.configured(namespace, flower, id, null);
@@ -24,8 +19,7 @@ public final class OverworldFloraData {
                 List.of("ntmspace:strawberry", "ntmspace:mint"), BiomeModifiers.VEGETAL_DECORATION);
 
         Features.configured(namespace, "ore_zinc", "hbm:legacy_ore",
-                Features.ore(Features.blockMatch("minecraft:stone"),
-                        Features.state("ntmspace:ore_zinc", "body", "kerbin"), 6));
+                Features.ore(Features.blockMatch("minecraft:stone"), Features.state("ntmspace:ore_zinc", "body", "kerbin"), 6));
         var gate = new JsonObject();
         gate.addProperty("type", "hbm:config");
         gate.addProperty("key", "2.D00_overworldOres");
@@ -36,14 +30,8 @@ public final class OverworldFloraData {
                 BiomeModifiers.UNDERGROUND_ORES);
     }
 
-    /**
-     * Pack overrides are generated separately from HBM's live declarations of the same paths.
-     */
+    /** Pack overrides are generated separately from HBM's live declarations of the same paths. */
     public static void declare() {
-        Tags.of("worldgen/biome", "hbm", "has_structure/meteor_dungeon").register().addProperty("replace", true);
-        var impact = new JsonObject();
-        impact.addProperty("recovery_chance", 4);
-        Features.configured("hbm", "impact_aftermath", "hbm:impact_aftermath", impact);
         var count = new JsonObject();
         count.addProperty("type", "minecraft:count");
         count.addProperty("count", 0);
@@ -52,9 +40,6 @@ public final class OverworldFloraData {
         }
     }
 
-    private OverworldFloraData() {
-    }
-
-    public static void init() {
-    }
+    private OverworldFloraData() {}
+    public static void init() {}
 }

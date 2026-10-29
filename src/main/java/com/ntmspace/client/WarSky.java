@@ -14,12 +14,10 @@ import com.ntmspace.world.SpaceSkies;
 import dev.golem.core.Ids;
 import dev.golem.core.render.Sky;
 import dev.golem.core.render.Skyboxes;
-
 import java.util.ArrayList;
 import java.util.List;
 import java.util.ListIterator;
 import java.util.Random;
-
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.multiplayer.ClientLevel;
 import net.minecraft.util.Mth;
@@ -51,7 +49,7 @@ import org.joml.Quaternionf;
  *       beams show only after {@code /ntmwar railgun <freq> fire}. The railguns come from the general satellite sky
  *       cache ({@link com.ntmspace.satellite.SatelliteSky}).</li>
  * </ul>
- * <p>
+ *
  * The rest is drawn after the sky (Golem {@link Skyboxes#afterSky}); none of it is depth-tested in 1.7's sky either. The model is
  * drawn opaque and unlit with depth off, so its own faces are not depth-sorted (1.7 cleared and used the depth buffer).
  */
@@ -70,9 +68,7 @@ public final class WarSky implements Skyboxes.Skybox {
 
     // ------------------------------------------------------------------------------------------------ the flash
 
-    /**
-     * {@code WorldProviderCelestial.getSkyColor}'s war term: {@code (100 - flash) * 0.5} per running impact.
-     */
+    /** {@code WorldProviderCelestial.getSkyColor}'s war term: {@code (100 - flash) * 0.5} per running impact. */
     public static float skyFlash(Level level) {
         float add = 0;
         CBT_War war = CelestialTraits.getTrait(level, CBT_War.class);
@@ -83,23 +79,17 @@ public final class WarSky implements Skyboxes.Skybox {
         return add;
     }
 
-    /**
-     * {@code WorldProviderCelestial.getSunBrightness}'s "brightness inside of the atmosphere": {@code 100 - flash} each.
-     */
+    /** {@code WorldProviderCelestial.getSunBrightness}'s "brightness inside of the atmosphere": {@code 100 - flash} each. */
     public static float insideBrightness(Level level) {
         return SkyMath.insideBrightness(CelestialTraits.getTrait(level, CBT_War.class));
     }
 
     // ------------------------------------------------------------------------------------------------ meteors
 
-    /**
-     * hbm-space {@code WorldProviderCelestial.MeteorType}.
-     */
-    public enum MeteorType {STANDARD, FRAGMENT, SMOKE}
+    /** hbm-space {@code WorldProviderCelestial.MeteorType}. */
+    public enum MeteorType { STANDARD, FRAGMENT, SMOKE }
 
-    /**
-     * hbm-space {@code WorldProviderCelestial.Meteor}.
-     */
+    /** hbm-space {@code WorldProviderCelestial.Meteor}. */
     public static final class Meteor {
         public double posX, posY, posZ;
         public double prevPosX, prevPosY, prevPosZ;
@@ -112,8 +102,7 @@ public final class WarSky implements Skyboxes.Skybox {
             this(posX, posY, posZ, MeteorType.STANDARD, -31.2, -20.8, 20);
         }
 
-        public Meteor(double posX, double posY, double posZ, MeteorType type, double motionX, double motionY,
-                      double motionZ) {
+        public Meteor(double posX, double posY, double posZ, MeteorType type, double motionX, double motionY, double motionZ) {
             this.posX = posX;
             this.posY = posY;
             this.posZ = posZ;
@@ -136,34 +125,26 @@ public final class WarSky implements Skyboxes.Skybox {
             this.posY += this.motionY;
             this.posZ += this.motionZ;
             if (this.type != MeteorType.SMOKE && this.type != MeteorType.FRAGMENT) {
-                return new Meteor((this.posX + rand.nextInt(16)) - 8, (this.posY + rand.nextInt(16)),
-                        (this.posZ + rand.nextInt(16)) - 8,
+                return new Meteor((this.posX + rand.nextInt(16)) - 8, (this.posY + rand.nextInt(16)), (this.posZ + rand.nextInt(16)) - 8,
                         MeteorType.SMOKE, 0, 0, 0);
             }
             return null;
         }
     }
 
-    /**
-     * 1.7 {@code WorldProviderCelestial.meteors}: one list on the client, whatever the body.
-     */
+    /** 1.7 {@code WorldProviderCelestial.meteors}: one list on the client, whatever the body. */
     public static final List<Meteor> METEORS = new ArrayList<>();
     private static final Random RAND = new Random();
 
-    /**
-     * 1.7 {@code Meteor.addMeteor}: a meteor up to 8,000 blocks off the player, at y 2017.
-     */
+    /** 1.7 {@code Meteor.addMeteor}: a meteor up to 8,000 blocks off the player, at y 2017. */
     public static void addMeteor() {
         Entity player = Minecraft.getInstance().player;
         if (player == null) return;
         Random rand = RAND;
-        METEORS.add(new Meteor(player.getX() + rand.nextInt(16000) - 8000, 2017,
-                player.getZ() + rand.nextInt(16000) - 8000));
+        METEORS.add(new Meteor(player.getX() + rand.nextInt(16000) - 8000, 2017, player.getZ() + rand.nextInt(16000) - 8000));
     }
 
-    /**
-     * 1.7 {@code updateWeather} on the client, in the player's celestial level: every meteor moves, smoke is left.
-     */
+    /** 1.7 {@code updateWeather} on the client, in the player's celestial level: every meteor moves, smoke is left. */
     static void tickMeteors(ClientLevel level) {
         if (SpaceSkies.body(level) == null) return;
         ListIterator<Meteor> iterator = METEORS.listIterator();
@@ -206,9 +187,7 @@ public final class WarSky implements Skyboxes.Skybox {
         pose.popPose();
     }
 
-    /**
-     * 1.7 {@code SatelliteRailgun.render} (beams left out, see the class comment).
-     */
+    /** 1.7 {@code SatelliteRailgun.render} (beams left out, see the class comment). */
     private static void railgun(Sky sky, long id, float interp) {
         PoseStack pose = sky.pose();
         pose.pushPose();
@@ -248,9 +227,7 @@ public final class WarSky implements Skyboxes.Skybox {
         pose.popPose();
     }
 
-    /**
-     * BeamPronter's colour for every railgun beam ({@code 0x202060}, outer and inner).
-     */
+    /** BeamPronter's colour for every railgun beam ({@code 0x202060}, outer and inner). */
     private static final float BEAM_R = 0x20 / 255F, BEAM_G = 0x20 / 255F, BEAM_B = 0x60 / 255F;
 
     /**
@@ -286,14 +263,10 @@ public final class WarSky implements Skyboxes.Skybox {
             if (i > 0) {
                 for (int j = 1; j <= layers; j++) {
                     double w = radius * j;
-                    quad(quads, lastX + w, lastY, lastZ + w, lastX + w, lastY, lastZ - w, pX + w, pY, pZ - w, pX + w,
-                            pY, pZ + w);
-                    quad(quads, lastX - w, lastY, lastZ + w, lastX - w, lastY, lastZ - w, pX - w, pY, pZ - w, pX - w,
-                            pY, pZ + w);
-                    quad(quads, lastX + w, lastY, lastZ + w, lastX - w, lastY, lastZ + w, pX - w, pY, pZ + w, pX + w,
-                            pY, pZ + w);
-                    quad(quads, lastX + w, lastY, lastZ - w, lastX - w, lastY, lastZ - w, pX - w, pY, pZ - w, pX + w,
-                            pY, pZ - w);
+                    quad(quads, lastX + w, lastY, lastZ + w, lastX + w, lastY, lastZ - w, pX + w, pY, pZ - w, pX + w, pY, pZ + w);
+                    quad(quads, lastX - w, lastY, lastZ + w, lastX - w, lastY, lastZ - w, pX - w, pY, pZ - w, pX - w, pY, pZ + w);
+                    quad(quads, lastX + w, lastY, lastZ + w, lastX - w, lastY, lastZ + w, pX - w, pY, pZ + w, pX + w, pY, pZ + w);
+                    quad(quads, lastX + w, lastY, lastZ - w, lastX - w, lastY, lastZ - w, pX - w, pY, pZ - w, pX + w, pY, pZ - w);
                 }
             }
             lastX = pX;
@@ -313,9 +286,7 @@ public final class WarSky implements Skyboxes.Skybox {
 
     private static float[] railgunQuads;
 
-    /**
-     * Forge's authored face order and half-texel UV inset, retained by the sky submission.
-     */
+    /** Forge's authored face order and half-texel UV inset, retained by the sky submission. */
     private static float[] railgunQuads() {
         if (railgunQuads != null) return railgunQuads;
         railgunQuads = WavefrontObj.load(Ids.of(NtmSpace.MOD_ID, "models/sat/railgun_main.obj")).texturedQuads(0.0005F);
@@ -324,9 +295,7 @@ public final class WarSky implements Skyboxes.Skybox {
 
     private static float[] planeQuads;
 
-    /**
-     * The authored two-triangle plane, including its face order and Forge UV inset.
-     */
+    /** The authored two-triangle plane, including its face order and Forge UV inset. */
     private static void plane(Sky sky, Sky.Texture texture, Sky.Blend blend, float alpha) {
         if (planeQuads == null)
             planeQuads = WavefrontObj.load(Ids.of(NtmSpace.MOD_ID, "models/plane.obj")).texturedQuads(0.0005F);
@@ -352,8 +321,7 @@ public final class WarSky implements Skyboxes.Skybox {
 
             ThatmoSky.model(sky);
             pose.pushPose();
-            pose.translate(projectile.getTranslateX() + 70, projectile.getTranslateY(),
-                    projectile.getTranslateZ() + 50);
+            pose.translate(projectile.getTranslateX() + 70, projectile.getTranslateY(), projectile.getTranslateZ() + 50);
             pose.scale(thing, thing, thing);
             pose.mulPose(first);
             pose.mulPose(second);
@@ -361,8 +329,7 @@ public final class WarSky implements Skyboxes.Skybox {
             pose.popPose();
 
             pose.pushPose();
-            pose.translate(projectile.getTranslateX() + 70, projectile.getTranslateY(),
-                    projectile.getTranslateZ() + 50);
+            pose.translate(projectile.getTranslateX() + 70, projectile.getTranslateY(), projectile.getTranslateZ() + 50);
             pose.scale(thing * 0.4F, thing * 0.4F, thing * 0.4F);
             pose.mulPose(first);
             pose.mulPose(second);
@@ -412,17 +379,14 @@ public final class WarSky implements Skyboxes.Skybox {
             } else {
                 // renderGlow(1, 1, 1, rain): with x = y = 1 its brightness is always 1 (1.7)
                 double near = 0.51d * (Math.min(40000f, Math.max(0d, 1 - 35000d)) / 40000d);
-                float entry = (float) (near * (1d - rainStrength) + (1d - (Math.min(200d,
-                        Math.max(0d, 1 - 2017d)) / 200f)));
+                float entry = (float) (near * (1d - rainStrength) + (1d - (Math.min(200d, Math.max(0d, 1 - 2017d)) / 200f)));
                 billboard(sky, FLARE, entry, entry, entry, entry);
             }
             pose.popPose();
         }
     }
 
-    /**
-     * {@code renderSmoke}/{@code renderGlow}'s quad: (-0.5, -0.25) to (0.5, 0.75), u mirrored.
-     */
+    /** {@code renderSmoke}/{@code renderGlow}'s quad: (-0.5, -0.25) to (0.5, 0.75), u mirrored. */
     private static void billboard(Sky sky, Sky.Texture texture, float r, float g, float b, float a) {
         float f4 = 1.0F, f5 = 0.5F, f6 = 0.25F;
         sky.texturedQuads(texture, Sky.Blend.ADDITIVE, r, g, b, a,

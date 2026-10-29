@@ -15,8 +15,7 @@ public final class MachineItemDeclarations {
     private static final String NS = "ntmspace";
     private static boolean declared;
 
-    private MachineItemDeclarations() {
-    }
+    private MachineItemDeclarations() {}
 
     public static void declare() {
         if (declared) return;
@@ -29,6 +28,13 @@ public final class MachineItemDeclarations {
         // RenderMilkReformer: inv translate(0, -3, 0) scale(3.5); common scale(0.5), renderAll
         machine("machine_milk_reformer", "machines/milker.obj", "machines/milker.png", 3.5, -3.0);
 
+        // HBM's items draw these through ItemModels aliases: RenderElectrolyser's hull and the two damaged wrecks
+        Dejson.item(NS, "machine_electrolyser")
+                .definition(MachineObjModel.of("ntmspace:models/machines/electrolyser_space.obj",
+                                "ntmspace:textures/models/machines/electrolyser.png")
+                        .scale(0.5).ty(0.0).yaw(0.0).guiScale(2.5).rawLegacyTransform().noCull()
+                        .itemTranslate(0.0, 0.0, 0.0).itemPreTranslate(0.0, 0.0, 0.0).guiTranslate(-1.0, -1.0, 0.0))
+                .oversizedInGui().register();
         thermal("machine_chungus",
                 turbine("hbm:models/machines/chungus.obj", "hbm:textures/models/machines/chungus.png"),
                 turbine("ntmspace:models/machines/chungus_destroyed.obj",
@@ -39,16 +45,13 @@ public final class MachineItemDeclarations {
                         "ntmspace:textures/models/machines/condenser_damaged.png", 180).noCull());
     }
 
-    /**
-     * A machine item drawn whole: {@code renderCommon} scale 0.5, {@code renderInventory} translate y and scale.
-     */
+    /** A machine item drawn whole: {@code renderCommon} scale 0.5, {@code renderInventory} translate y and scale. */
     public static void machine(String id, String obj, String texture, double guiScale, double guiY) {
         Dejson.item(NS, id)
-              .definition(MachineObjModel.of("ntmspace:models/" + obj, "ntmspace:textures/models/" + texture)
-                                         .scale(0.5).ty(0.0).yaw(0.0).guiScale(guiScale).rawLegacyTransform()
-                                         .itemTranslate(0.0, 0.0, 0.0).itemPreTranslate(0.0, 0.0, 0.0)
-                                         .guiTranslate(0.0, guiY, 0.0))
-              .oversizedInGui().register();
+                .definition(MachineObjModel.of("ntmspace:models/" + obj, "ntmspace:textures/models/" + texture)
+                        .scale(0.5).ty(0.0).yaw(0.0).guiScale(guiScale).rawLegacyTransform()
+                        .itemTranslate(0.0, 0.0, 0.0).itemPreTranslate(0.0, 0.0, 0.0).guiTranslate(0.0, guiY, 0.0))
+                .oversizedInGui().register();
     }
 
     private static MachineObjModel turbine(String obj, String texture) {
@@ -64,7 +67,7 @@ public final class MachineItemDeclarations {
 
     private static void thermal(String id, MachineObjModel normal, MachineObjModel damaged) {
         var choice = ItemModels.select("minecraft:block_state").when("true", damaged).fallback(normal);
-        Dejson.item("hbm", id).definition(() -> {
+        Dejson.item(NS, id).definition(() -> {
             var json = choice.toJson();
             json.addProperty("block_state_property", "damaged");
             return json;

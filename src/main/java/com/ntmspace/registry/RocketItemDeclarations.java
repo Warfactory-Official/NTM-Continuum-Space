@@ -30,8 +30,7 @@ public final class RocketItemDeclarations {
     private static final String NS = "ntmspace";
     private static boolean declared;
 
-    private RocketItemDeclarations() {
-    }
+    private RocketItemDeclarations() {}
 
     public static void declare() {
         if (declared) return;
@@ -47,29 +46,21 @@ public final class RocketItemDeclarations {
         }
 
         Dejson.item(NS, "machine_rocket_assembly")
-              .definition(MachineObjModel.of("ntmspace:models/machines/rocket_assembly.obj",
-                                                 "ntmspace:textures/models/machines/rocket_assembly.png")
-                                         .scale(0.55).ty(0.0).yaw(0.0).guiScale(2.0).rawLegacyTransform().noCull()
-                                         .itemTranslate(0.0, 0.0, 0.0).itemPreTranslate(0.0, 0.0, 0.0)
-                                         .guiTranslate(0.0, -1.0, 0.0).parts("Base"))
-              .oversizedInGui().register();
+                .definition(MachineObjModel.of("ntmspace:models/machines/rocket_assembly.obj", "ntmspace:textures/models/machines/rocket_assembly.png")
+                        .scale(0.55).ty(0.0).yaw(0.0).guiScale(2.0).rawLegacyTransform().noCull()
+                        .itemTranslate(0.0, 0.0, 0.0).itemPreTranslate(0.0, 0.0, 0.0).guiTranslate(0.0, -1.0, 0.0).parts("Base"))
+                .oversizedInGui().register();
 
         Dejson.item(NS, "launch_pad_rocket")
-              .definition(MachineObjModel.of("ntmspace:models/machines/rocket_pad.obj",
-                                                 "ntmspace:textures/models/machines/rocket_pad.png")
-                                         .scale(0.55).ty(0.0).yaw(0.0).guiScale(1.25).rawLegacyTransform().noCull()
-                                         .itemTranslate(0.0, 0.0, 0.0).itemPreTranslate(0.0, 0.0, 0.0)
-                                         .guiTranslate(0.0, -2.0, 0.0).parts("Base")
-                                         .passes(MachineObjModel.pass(
-                                                                        "ntmspace:textures/models/machines/rocket_pad_support.png")
-                                                                .parts("Tower_Base", "Tower_Segment", "Tower_Cap",
-                                                                        "Tower_Segment_Small")))
-              .oversizedInGui().register();
+                .definition(MachineObjModel.of("ntmspace:models/machines/rocket_pad.obj", "ntmspace:textures/models/machines/rocket_pad.png")
+                        .scale(0.55).ty(0.0).yaw(0.0).guiScale(1.25).rawLegacyTransform().noCull()
+                        .itemTranslate(0.0, 0.0, 0.0).itemPreTranslate(0.0, 0.0, 0.0).guiTranslate(0.0, -2.0, 0.0).parts("Base")
+                        .passes(MachineObjModel.pass("ntmspace:textures/models/machines/rocket_pad_support.png")
+                                .parts("Tower_Base", "Tower_Segment", "Tower_Cap", "Tower_Segment_Small")))
+                .oversizedInGui().register();
     }
 
-    /**
-     * One part's {@code hbm:machine_obj} model on the missile frame (HBM {@code CustomMissileDeclarations.partModel}).
-     */
+    /** One part's {@code hbm:machine_obj} model on the missile frame (HBM {@code CustomMissileDeclarations.partModel}). */
     static JsonObject partModel(RocketPart part) {
         float height = part.guiHeight() == 0 ? 4F : (float) part.guiHeight();
         float s = 10F / height;

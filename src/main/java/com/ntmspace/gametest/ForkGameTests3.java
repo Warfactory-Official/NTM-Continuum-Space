@@ -19,10 +19,8 @@ import dev.golem.core.Ids;
 import dev.golem.core.gametest.GameTestHelpers;
 import dev.golem.core.gametest.GameTests;
 import dev.golem.core.world.ItemStacks;
-
 import java.util.ArrayList;
 import java.util.List;
-
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.core.registries.BuiltInRegistries;
@@ -59,11 +57,9 @@ public final class ForkGameTests3 {
     public static final GameTests.Function DAMAGED_ITEM =
             TESTS.function("fork_damaged_machine_item", 20, 8, () -> ForkGameTests3::damagedItem);
 
-    private ForkGameTests3() {
-    }
+    private ForkGameTests3() {}
 
-    public static void init() {
-    }
+    public static void init() {}
 
     private static void finish(GameTestHelper helper, List<String> errors) {
         if (!errors.isEmpty()) {
@@ -83,11 +79,9 @@ public final class ForkGameTests3 {
 
     private static void settings(GameTestHelper helper) {
         List<String> errors = new ArrayList<>();
-        if (!BlockMultiblockCore.wallPlacement || !BlockMultiblockCore.walkOutAfterPlacing)
-            errors.add("wall placement is off");
+        if (!BlockMultiblockCore.wallPlacement || !BlockMultiblockCore.walkOutAfterPlacing) errors.add("wall placement is off");
         if (TileEntityCranePartitioner.inputCount != 96 || TileEntityCranePartitioner.outputCount != 8) {
-            errors.add(
-                    "partitioner " + TileEntityCranePartitioner.inputCount + "+" + TileEntityCranePartitioner.outputCount + ", hbm-space 96+8");
+            errors.add("partitioner " + TileEntityCranePartitioner.inputCount + "+" + TileEntityCranePartitioner.outputCount + ", hbm-space 96+8");
         }
         if (!TileEntityPneumoTube.anyGas) errors.add("compressors take air only");
         if (!MachineElectrolyser.sidePorts) errors.add("electrolyser side ports off");
@@ -97,16 +91,13 @@ public final class ForkGameTests3 {
         if (!com.hbm.items.tool.ItemDosimeter.probabilisticClicks) errors.add("dosimeter click gate off");
         if (!com.hbm.items.tool.ItemGeigerCounter.probabilisticClicks) errors.add("handheld geiger click gate off");
         if (com.hbm.blocks.generic.BlockGasBase.ashGlassesParticleChance != 9) {
-            errors.add(
-                    "ash-glasses cloud chance " + com.hbm.blocks.generic.BlockGasBase.ashGlassesParticleChance + ", hbm-space 1 in 9");
+            errors.add("ash-glasses cloud chance " + com.hbm.blocks.generic.BlockGasBase.ashGlassesParticleChance + ", hbm-space 1 in 9");
         }
         // hbm-space's dosimeter at 0.2 RAD/s: 1 - 0.2 * 0.5 of the click ticks are silent (plain 1.7: half)
         net.minecraft.util.RandomSource dosimeterRand = net.minecraft.util.RandomSource.create(4815162342L);
         int silent = 0;
-        for (int i = 0; i < 100_000; i++)
-            if (com.hbm.items.tool.ItemDosimeter.click(0.2F, dosimeterRand, dosimeterRand) == 0) silent++;
-        if (silent < 88_000 || silent > 92_000)
-            errors.add("dosimeter at 0.2 RAD/s silent on " + silent + " of 100000 click ticks, hbm-space ~90000");
+        for (int i = 0; i < 100_000; i++) if (com.hbm.items.tool.ItemDosimeter.click(0.2F, dosimeterRand, dosimeterRand) == 0) silent++;
+        if (silent < 88_000 || silent > 92_000) errors.add("dosimeter at 0.2 RAD/s silent on " + silent + " of 100000 click ticks, hbm-space ~90000");
         if (!MachineFluidContainerIO.fillArmorMods) errors.add("armor modules are not refilled");
         var stone = com.hbm.handler.ability.IToolAreaAbility.RECURSION_STONE.get();
         if (!stone.test(Blocks.STONE.defaultBlockState()) || !stone.test(Blocks.COBBLESTONE.defaultBlockState())) {
@@ -115,15 +106,13 @@ public final class ForkGameTests3 {
         if (stone.test(Blocks.DIRT.defaultBlockState())) errors.add("the vein miner stops at dirt");
         // hbm-space's immunity: only the ocelot (and the cat) lost it
         var level = helper.getLevel();
-        if (ContaminationUtil.isRadImmune(
-                new net.minecraft.world.entity.animal.feline.Ocelot(EntityType.OCELOT, level))) {
+        if (ContaminationUtil.isRadImmune(new net.minecraft.world.entity.animal.feline.Ocelot(EntityType.OCELOT, level))) {
             errors.add("the ocelot is still immune");
         }
         if (ContaminationUtil.isRadImmune(new net.minecraft.world.entity.animal.feline.Cat(EntityType.CAT, level))) {
             errors.add("the cat is still immune");
         }
-        if (!ContaminationUtil.isRadImmune(
-                new net.minecraft.world.entity.monster.zombie.Zombie(EntityType.ZOMBIE, level))) {
+        if (!ContaminationUtil.isRadImmune(new net.minecraft.world.entity.monster.zombie.Zombie(EntityType.ZOMBIE, level))) {
             errors.add("the zombie lost its immunity");
         }
         if (!"Coilgun, Leadburster, Congo Lake models, and the 737".equals(BobbleType.PEEP.contribution)
@@ -133,10 +122,8 @@ public final class ForkGameTests3 {
         }
         // a Mellow figure shreds to hbm-space's scrap
         ItemStack peep = com.hbm.inventory.recipes.DecoCrateMachineRecipes.bobbleScrap(new ItemStack(
-                BuiltInRegistries.ITEM.getOptional(Ids.of("hbm", "bobblehead_peep"))
-                                      .orElse(net.minecraft.world.item.Items.AIR)));
-        if (peep != null && !BuiltInRegistries.ITEM.getKey(peep.getItem()).getPath()
-                                                   .equals("scrap_plastic_cpu_clock")) {
+                BuiltInRegistries.ITEM.getOptional(Ids.of("hbm", "bobblehead_peep")).orElse(net.minecraft.world.item.Items.AIR)));
+        if (peep != null && !BuiltInRegistries.ITEM.getKey(peep.getItem()).getPath().equals("scrap_plastic_cpu_clock")) {
             errors.add("Peep shreds to " + peep);
         }
         finish(helper, errors);
@@ -144,9 +131,7 @@ public final class ForkGameTests3 {
 
     // ------------------------------------------------------------------------------------------------ placement
 
-    /**
-     * hbm-space {@code BlockDummyable.onBlockPlacedBy}: the chemical plant ({2, 0, 1, 1, 1, 1}, offset 1) on a wall and a ceiling.
-     */
+    /** hbm-space {@code BlockDummyable.onBlockPlacedBy}: the chemical plant ({2, 0, 1, 1, 1, 1}, offset 1) on a wall and a ceiling. */
     private static void wallPlacement(GameTestHelper helper) {
         List<String> errors = new ArrayList<>();
         var level = helper.getLevel();
@@ -217,8 +202,7 @@ public final class ForkGameTests3 {
         }
         BlockPos electrolyserPos = helper.absolutePos(new BlockPos(6, 2, 6));
         level.setBlock(electrolyserPos, electrolyser.defaultBlockState(), 3);
-        if (!(level.getBlockEntity(
-                electrolyserPos) instanceof com.hbm.tileentity.machine.TileEntityMachineElectrolyser te)
+        if (!(level.getBlockEntity(electrolyserPos) instanceof com.hbm.tileentity.machine.TileEntityMachineElectrolyser te)
                 || te.getConPos().length != 18) {
             errors.add("the electrolyser does not have 1.7's sixteen connection points and hbm-space's two side cells");
         }
@@ -229,8 +213,7 @@ public final class ForkGameTests3 {
                 || cap.getMaxPower() != 100_000_000_000_000_000L) {
             errors.add("capacitor_complex block entity: " + level.getBlockEntity(capPos));
         }
-        var tooltip = ForkBaseChanges.CAPACITOR_COMPLEX.get().tooltip(
-                new ItemStack(ForkBaseChanges.CAPACITOR_COMPLEX_ITEM.get()),
+        var tooltip = ForkBaseChanges.CAPACITOR_COMPLEX.get().tooltip(new ItemStack(ForkBaseChanges.CAPACITOR_COMPLEX_ITEM.get()),
                 List.of(net.minecraft.network.chat.Component.literal(ForkBaseChanges.COMPLEX_LORE.get(0))));
         if (tooltip.isEmpty() || !tooltip.get(0).getString().startsWith("Stores up to")
                 || !tooltip.get(5).getString().startsWith("TaCdSa236-7")) {
@@ -251,15 +234,11 @@ public final class ForkGameTests3 {
 
     // ------------------------------------------------------------------------------------------------ armor modules
 
-    /**
-     * hbm-space {@code FluidLoaderFillableItem.fill}: a chestplate in a tank's unload slot fills its oxygen tank module.
-     */
+    /** hbm-space {@code FluidLoaderFillableItem.fill}: a chestplate in a tank's unload slot fills its oxygen tank module. */
     private static void armorMods(GameTestHelper helper) {
         List<String> errors = new ArrayList<>();
-        ItemStack plate = new ItemStack(BuiltInRegistries.ITEM.getOptional(Ids.of("hbm", "hazmat_plate"))
-                                                              .orElse(net.minecraft.world.item.Items.AIR));
-        ItemStack oxy = new ItemStack(BuiltInRegistries.ITEM.getOptional(Ids.of("ntmspace", "oxy_plss"))
-                                                            .orElse(net.minecraft.world.item.Items.AIR));
+        ItemStack plate = new ItemStack(BuiltInRegistries.ITEM.getOptional(Ids.of("hbm", "hazmat_plate")).orElse(net.minecraft.world.item.Items.AIR));
+        ItemStack oxy = new ItemStack(BuiltInRegistries.ITEM.getOptional(Ids.of("ntmspace", "oxy_plss")).orElse(net.minecraft.world.item.Items.AIR));
         ArmorModHandler.applyMod(plate, oxy);
         FluidTankNTM tank = new FluidTankNTM(Fluids.OXYGEN, 16_000);
         tank.setFill(10_000);
@@ -278,9 +257,7 @@ public final class ForkGameTests3 {
 
     // ------------------------------------------------------------------------------------------------ damaged item
 
-    /**
-     * 1.7 {@code IPersistentNBT}: a damaged condenser drops as a damaged item, which places a damaged condenser.
-     */
+    /** 1.7 {@code IPersistentNBT}: a damaged condenser drops as a damaged item, which places a damaged condenser. */
     private static void damagedItem(GameTestHelper helper) {
         List<String> errors = new ArrayList<>();
         var level = helper.getLevel();
@@ -293,13 +270,11 @@ public final class ForkGameTests3 {
             return;
         }
         List<ItemStack> intact = Block.getDrops(level.getBlockState(core), level, core, level.getBlockEntity(core));
-        if (intact.stream().anyMatch(s -> ItemStacks.carriedBoolean(s, "damaged")))
-            errors.add("an intact condenser dropped damaged");
+        if (intact.stream().anyMatch(s -> ItemStacks.carriedBoolean(s, "damaged"))) errors.add("an intact condenser dropped damaged");
         machine.setDamaged(true);
         List<ItemStack> drops = Block.getDrops(level.getBlockState(core), level, core, level.getBlockEntity(core));
         ItemStack damaged = drops.stream().filter(s -> s.is(condenser.asItem())).findFirst().orElse(ItemStack.EMPTY);
-        if (damaged.isEmpty() || !DamagedMachines.carriedDamage(damaged))
-            errors.add("a damaged condenser dropped " + drops);
+        if (damaged.isEmpty() || !DamagedMachines.carriedDamage(damaged)) errors.add("a damaged condenser dropped " + drops);
         BlockPos other = helper.absolutePos(new BlockPos(4, 2, 10));
         level.setBlock(other, condenser.defaultBlockState(), 3);
         if (level.getBlockEntity(other) instanceof DamagedMachines.Damageable placed) {

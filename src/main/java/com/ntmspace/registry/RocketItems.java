@@ -25,11 +25,9 @@ import dev.golem.core.registry.DeferredRegister;
 import dev.golem.core.registry.Registrar;
 import dev.golem.core.registry.RegistryObject;
 import dev.golem.core.world.ItemModels;
-
 import java.util.ArrayList;
 import java.util.List;
 import java.util.function.UnaryOperator;
-
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
 
@@ -48,56 +46,37 @@ public final class RocketItems {
     public static final DeferredRegister.Items ITEMS = DeferredRegister.createItems(NtmSpace.MOD_ID);
     private static final Registrar REG = Registrar.of(ITEMS);
 
-    /**
-     * {@code rocket_custom}'s design (1.7 NBT: capsule, stages, freq), by part id.
-     */
+    /** {@code rocket_custom}'s design (1.7 NBT: capsule, stages, freq), by part id. */
     public static final GolemComponent<RocketStruct.Design> ROCKET =
             GolemComponent.of(NtmSpace.MOD_ID, "rocket", () -> RocketStruct.Design.CODEC);
-    /**
-     * 1.7 {@code hasFuel}: the rocket came off a pad or station fully fuelled.
-     */
+    /** 1.7 {@code hasFuel}: the rocket came off a pad or station fully fuelled. */
     public static final GolemComponent<Boolean> ROCKET_FUELLED =
             GolemComponent.of(NtmSpace.MOD_ID, "rocket_fuelled", () -> com.mojang.serialization.Codec.BOOL);
-    /**
-     * A navigation drive's coordinates and flags.
-     */
-    public static final GolemComponent<DriveData> DRIVE = GolemComponent.of(NtmSpace.MOD_ID, "drive",
-            () -> DriveData.CODEC);
+    /** A navigation drive's coordinates and flags. */
+    public static final GolemComponent<DriveData> DRIVE = GolemComponent.of(NtmSpace.MOD_ID, "drive", () -> DriveData.CODEC);
 
     // ---------------------------------------------------------------------------------------- parts
 
-    public static final RegistryObject<ItemCustomMissilePart> MP_THRUSTER_20_METHALOX = part("mp_thruster_20_methalox",
-            64,
+    public static final RegistryObject<ItemCustomMissilePart> MP_THRUSTER_20_METHALOX = part("mp_thruster_20_methalox", 64,
             p -> p.makeThruster(RocketFuels.METHALOX, 1F, 100F, PartSize.SIZE_20).setHealth(30F));
-    public static final RegistryObject<ItemCustomMissilePart> MP_THRUSTER_20_METHALOX_DUAL = part(
-            "mp_thruster_20_methalox_dual", 64,
+    public static final RegistryObject<ItemCustomMissilePart> MP_THRUSTER_20_METHALOX_DUAL = part("mp_thruster_20_methalox_dual", 64,
             p -> p.makeThruster(RocketFuels.METHALOX, 1F, 100F, PartSize.SIZE_20).setHealth(30F));
-    public static final RegistryObject<ItemCustomMissilePart> MP_THRUSTER_20_METHALOX_TRIPLE = part(
-            "mp_thruster_20_methalox_triple", 64,
+    public static final RegistryObject<ItemCustomMissilePart> MP_THRUSTER_20_METHALOX_TRIPLE = part("mp_thruster_20_methalox_triple", 64,
             p -> p.makeThruster(RocketFuels.METHALOX, 1F, 100F, PartSize.SIZE_20).setHealth(30F));
-    public static final RegistryObject<ItemCustomMissilePart> MP_THRUSTER_20_HYDROGEN = part("mp_thruster_20_hydrogen",
-            64,
+    public static final RegistryObject<ItemCustomMissilePart> MP_THRUSTER_20_HYDROGEN = part("mp_thruster_20_hydrogen", 64,
             p -> p.makeThruster(FuelType.HYDROGEN, 1F, 100F, PartSize.SIZE_20).setHealth(30F));
-    public static final RegistryObject<ItemCustomMissilePart> MP_THRUSTER_20_HYDROGEN_DUAL = part(
-            "mp_thruster_20_hydrogen_dual", 64,
+    public static final RegistryObject<ItemCustomMissilePart> MP_THRUSTER_20_HYDROGEN_DUAL = part("mp_thruster_20_hydrogen_dual", 64,
             p -> p.makeThruster(FuelType.HYDROGEN, 1F, 100F, PartSize.SIZE_20).setHealth(30F));
-    public static final RegistryObject<ItemCustomMissilePart> MP_THRUSTER_20_HYDROGEN_TRIPLE = part(
-            "mp_thruster_20_hydrogen_triple", 64,
+    public static final RegistryObject<ItemCustomMissilePart> MP_THRUSTER_20_HYDROGEN_TRIPLE = part("mp_thruster_20_hydrogen_triple", 64,
             p -> p.makeThruster(FuelType.HYDROGEN, 1F, 100F, PartSize.SIZE_20).setHealth(30F));
-    public static final RegistryObject<ItemCustomMissilePart> MP_THRUSTER_20_HYDRAZINE = part(
-            "mp_thruster_20_hydrazine", 64,
+    public static final RegistryObject<ItemCustomMissilePart> MP_THRUSTER_20_HYDRAZINE = part("mp_thruster_20_hydrazine", 64,
             p -> p.makeThruster(RocketFuels.HYDRAZINE, 1F, 100F, PartSize.SIZE_20).setHealth(35F));
-    public static final RegistryObject<ItemCustomMissilePart> MP_THRUSTER_10_HYDRAZINE = part(
-            "mp_thruster_10_hydrazine", 64,
+    public static final RegistryObject<ItemCustomMissilePart> MP_THRUSTER_10_HYDRAZINE = part("mp_thruster_10_hydrazine", 64,
             p -> p.makeThruster(RocketFuels.HYDRAZINE, 1F, 1.5F, PartSize.SIZE_10).setHealth(15F));
-    public static final RegistryObject<ItemCustomMissilePart> MP_FUSELAGE_10_HYDRAZINE = part(
-            "mp_fuselage_10_hydrazine", 64,
+    public static final RegistryObject<ItemCustomMissilePart> MP_FUSELAGE_10_HYDRAZINE = part("mp_fuselage_10_hydrazine", 64,
             p -> p.makeFuselage(RocketFuels.HYDRAZINE, 2000F, PartSize.SIZE_10, PartSize.SIZE_10).setHealth(25F));
-    /**
-     * 1.7 field {@code rp_fuselage_20_12_hydrazine}.
-     */
-    public static final RegistryObject<ItemCustomMissilePart> MP_FUSELAGE_20_HYDRAZINE = part(
-            "mp_fuselage_20_hydrazine", 64,
+    /** 1.7 field {@code rp_fuselage_20_12_hydrazine}. */
+    public static final RegistryObject<ItemCustomMissilePart> MP_FUSELAGE_20_HYDRAZINE = part("mp_fuselage_20_hydrazine", 64,
             p -> p.makeFuselage(RocketFuels.HYDRAZINE, 12500F, PartSize.SIZE_20, PartSize.SIZE_20).setHealth(25F));
     public static final RegistryObject<ItemCustomMissilePart> RP_F_20_12 = part("rp_f_20_12", 64,
             p -> p.makeFuselage(RocketFuels.ANY, 64_000F, PartSize.SIZE_20, PartSize.SIZE_20));
@@ -118,27 +97,18 @@ public final class RocketItems {
 
     // ---------------------------------------------------------------------------------------- rocket and drives
 
-    /**
-     * 1.7: stack size 1, no creative tab, the {@code missile_custom} sprite.
-     */
-    public static final RegistryObject<ItemCustomRocket> ROCKET_CUSTOM = REG.item("rocket_custom",
-                                                                                    ItemCustomRocket::new, p -> p.stacksTo(1))
-                                                                            .transform(Presets.sprite(
-                                                                                    "hbm:items/missile_custom"));
+    /** 1.7: stack size 1, no creative tab, the {@code missile_custom} sprite. */
+    public static final RegistryObject<ItemCustomRocket> ROCKET_CUSTOM = REG.item("rocket_custom", ItemCustomRocket::new, p -> p.stacksTo(1))
+            .transform(Presets.sprite("hbm:items/missile_custom"));
 
-    /**
-     * 1.7 {@code hard_drive}: an empty drive (sprite {@code votv_e}), parts tab.
-     */
+    /** 1.7 {@code hard_drive}: an empty drive (sprite {@code votv_e}), parts tab. */
     public static final RegistryObject<Item> HARD_DRIVE = REG.simpleItem("hard_drive", p -> p)
-                                                             .transform(Presets.sprite("ntmspace:items/votv_e"))
-                                                             .tab(HbmTab.MATERIALS);
+            .transform(Presets.sprite("ntmspace:items/votv_e")).tab(HbmTab.MATERIALS);
 
-    /**
-     * 1.7 {@code hard_drive_full}, one item per destination: the drive and the body's overlay, stack size 1, control tab.
-     */
+    /** 1.7 {@code hard_drive_full}, one item per destination: the drive and the body's overlay, stack size 1, control tab. */
     public static final ItemFamily<DriveBody, ItemVOTVdrive> DRIVES = ItemFamily.of(DriveBody.class, body ->
             REG.item("hard_drive_full_" + body.key(), p -> new ItemVOTVdrive(p, body), p -> p.stacksTo(1))
-               .transform(Presets.sprite("ntmspace:items/votv_f", "ntmspace:items/votv." + body.key())));
+                    .transform(Presets.sprite("ntmspace:items/votv_f", "ntmspace:items/votv." + body.key())));
 
     static {
         // 1.7 getSubItems: processed drives with the placeholder coordinates
@@ -149,8 +119,7 @@ public final class RocketItems {
         });
     }
 
-    private RocketItems() {
-    }
+    private RocketItems() {}
 
     public static Item drive(DriveBody body) {
         return DRIVES.get(body);
@@ -160,8 +129,7 @@ public final class RocketItems {
      * A part: HBM's builder, then its assembly row (height, OBJ, skin) from {@link RocketParts} so HBM's missile renderer
      * draws it; missile tab.
      */
-    private static Registrar.Handle<ItemCustomMissilePart> part(String id, int stack,
-                                                                UnaryOperator<ItemCustomMissilePart> builder) {
+    private static Registrar.Handle<ItemCustomMissilePart> part(String id, int stack, UnaryOperator<ItemCustomMissilePart> builder) {
         return REG.item(id, props -> {
             ItemCustomMissilePart part = builder.apply(new ItemCustomMissilePart(props));
             RocketPart row = RocketParts.get(NtmSpace.MOD_ID + ":" + id);
@@ -185,8 +153,7 @@ public final class RocketItems {
         // 1.7's copy() used a fresh uncapped constructor; only base warheads, fins and chips kept their explicit cap.
         ModCustomMissileItems.PART_PROPERTIES.register((id, properties) -> switch (id) {
             case "mp_warhead_15_nuclear_shark", "mp_warhead_15_nuclear_mimi" -> properties.stacksTo(64);
-            default ->
-                    id.startsWith("mp_fuselage") || id.startsWith("mp_thruster") ? properties.stacksTo(64) : properties;
+            default -> id.startsWith("mp_fuselage") || id.startsWith("mp_thruster") ? properties.stacksTo(64) : properties;
         });
     }
 }

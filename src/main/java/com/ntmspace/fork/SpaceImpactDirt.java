@@ -9,9 +9,7 @@ import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.state.BlockState;
 
-/**
- * Space's BlockDirt keeps scorched soil beside grass and moves it beneath newly regrown grass.
- */
+/** Space's BlockDirt keeps scorched soil beside grass and moves it beneath newly regrown grass. */
 public final class SpaceImpactDirt extends BlockImpactDirt {
     public SpaceImpactDirt(Properties properties) {
         super(properties);

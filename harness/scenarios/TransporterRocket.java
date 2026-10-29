@@ -22,9 +22,7 @@ import dev.golem.harness.api.*;
 public final class TransporterRocket implements Scenario {
 
     private static final int Y = 100, L = Y + 1;
-    /**
-     * Click targets: the blocks the pads are placed on.
-     */
+    /** Click targets: the blocks the pads are placed on. */
     private static final int AX = 0, BX = 12, Z = 0;
 
     @Override
@@ -53,8 +51,7 @@ public final class TransporterRocket implements Scenario {
 
         int[] a = place(c, AX);
         int[] b = place(c, BX);
-        System.out.println(
-                "[transporter] " + c.node() + " cores " + a[0] + "," + a[1] + "," + a[2] + " / " + b[0] + "," + b[1] + "," + b[2]);
+        System.out.println("[transporter] " + c.node() + " cores " + a[0] + "," + a[1] + "," + a[2] + " / " + b[0] + "," + b[1] + "," + b[2]);
 
         // the pad's screen
         c.cmd("clear @s");
@@ -95,7 +92,7 @@ public final class TransporterRocket implements Scenario {
         Fixtures.giveOnly(c, "ntmspace:transporter_linker", 1);
         c.hotbar(1);
         c.markLog();
-        for (int[] pad : new int[][]{a, b}) {
+        for (int[] pad : new int[][] {a, b}) {
             c.teleport(pad[0] + 0.5, L, pad[2] + 3.5);
             c.lookAt(pad[0] + 0.5, pad[1] + 0.5, pad[2] + 0.5);
             c.waitTicks(3);
@@ -150,9 +147,7 @@ public final class TransporterRocket implements Scenario {
         Expect.logCleanSinceMark(c, "(?i)(exception|error).*(ntmspace|golem|transporter)");
     }
 
-    /**
-     * Places a pad by hand on block (x, Y, Z), the player looking west; returns its core (the block entity).
-     */
+    /** Places a pad by hand on block (x, Y, Z), the player looking west; returns its core (the block entity). */
     private static int[] place(Client c, int x) {
         Fixtures.placeOnTop(c, "ntmspace:transporter_rocket", x, Y, Z);
         c.waitTicks(5);
@@ -160,15 +155,14 @@ public final class TransporterRocket implements Scenario {
         int[][] candidates = {{x - 1, L, Z}, {x, L, Z}, {x + 1, L, Z}};
         for (int[] core : candidates) {
             JsonObject be = c.blockEntity(core[0], core[1], core[2]);
-            if (be != null && be.has("nbt") && !be.get("nbt").isJsonNull() && be.get("nbt").getAsString()
-                                                                                .contains("t9")) return core;
+            if (be != null && be.has("nbt") && !be.get("nbt").isJsonNull() && be.get("nbt").getAsString().contains("t9")) return core;
         }
         throw new IllegalStateException("no transporter core near " + x + "," + L + "," + Z + ": " + c.block(x, L, Z));
     }
 
     private static String nbt(Client c, int[] pos) {
         JsonObject be = c.blockEntity(pos[0], pos[1], pos[2]);
-        return be.get("nbt").getAsString().replaceAll("\\s+", "");
+        return be.has("nbt") && !be.get("nbt").isJsonNull() ? be.get("nbt").getAsString().replaceAll("\\s+", "") : "";
     }
 
     private static void waitThreshold(Client c, int[] pos, int threshold) {

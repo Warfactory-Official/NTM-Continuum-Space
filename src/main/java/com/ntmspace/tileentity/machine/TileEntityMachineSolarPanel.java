@@ -65,8 +65,7 @@ public class TileEntityMachineSolarPanel extends TileEntityLoadedBase implements
     private PortDef[] cachedPorts;
 
     public PortDef[] getPorts() {
-        if (cachedPorts == null)
-            cachedPorts = TilePortShapes.around(worldPosition.getX(), worldPosition.getY(), worldPosition.getZ());
+        if (cachedPorts == null) cachedPorts = TilePortShapes.around(worldPosition.getX(), worldPosition.getY(), worldPosition.getZ());
         return cachedPorts;
     }
 
@@ -74,27 +73,14 @@ public class TileEntityMachineSolarPanel extends TileEntityLoadedBase implements
         return pos.getY() >= SkyColumns.lowestSourceY(level.getChunkAt(pos), pos.getX(), pos.getZ());
     }
 
-    /**
-     * 1.7 {@code getOutput}: balanced around 100 HE/t on Earth (sun 4, sun power 1).
-     */
+    /** 1.7 {@code getOutput}: balanced around 100 HE/t on Earth (sun 4, sun power 1). */
     public long getOutput(int sun, float sunPower) {
         return Mth.ceil(sun * 25 * sunPower);
     }
 
-    @Override
-    public long getPower() {
-        return power;
-    }
-
-    @Override
-    public void setPower(long power) {
-        this.power = power;
-    }
-
-    @Override
-    public long getMaxPower() {
-        return maxpwr;
-    }
+    @Override public long getPower() { return power; }
+    @Override public void setPower(long power) { this.power = power; }
+    @Override public long getMaxPower() { return maxpwr; }
 
     @Override
     public int getPowerConnectionMask() {

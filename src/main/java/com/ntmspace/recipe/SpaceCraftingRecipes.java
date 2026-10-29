@@ -33,8 +33,7 @@ public final class SpaceCraftingRecipes {
 
     private static boolean declared;
 
-    private SpaceCraftingRecipes() {
-    }
+    private SpaceCraftingRecipes() {}
 
     public static void declare() {
         if (declared) {
@@ -54,9 +53,7 @@ public final class SpaceCraftingRecipes {
 
     // ------------------------------------------------------------------------------------------------ MineralRecipes
 
-    /**
-     * hbm-space {@code MineralRecipes}: the new 1-to-9 pairs, billets, billet mixes and depleted-pellet recycling.
-     */
+    /** hbm-space {@code MineralRecipes}: the new 1-to-9 pairs, billets, billet mixes and depleted-pellet recycling. */
     private static void mineralRecipes() {
         String[][] pairs = {
                 {"powder_gallium", "powder_gallium_tiny"}, {"ingot_nickel", "nugget_nickel"},
@@ -78,7 +75,7 @@ public final class SpaceCraftingRecipes {
         shaped(NS, "crafting/block_nickel", ns("block_nickel"), rows("###", "###", "###"), "#", ns("ingot_nickel"));
         shaped(NS, "crafting/ingot_nickel_from_block_nickel", ns("ingot_nickel"), 9, rows("#"),
                 "#", ns("block_nickel"));
-        for (String g : new String[]{"greater", "lesser"}) {
+        for (String g : new String[] {"greater", "lesser"}) {
             add1To9Pair(ns("ingot_australium_" + g), "hbm:nugget_australium_" + g, "ingot_australium_" + g,
                     "nugget_australium_" + g);
         }
@@ -87,7 +84,7 @@ public final class SpaceCraftingRecipes {
         // ItemWasteShort.WasteClass entries
         String[][] waste = {{"7", "americium241"}, {"9", "berkelium247"}, {"10", "curium244"}, {"11", "curium245"}};
         for (String[] w : waste) {
-            for (String kind : new String[]{"nuclear_waste_short", "nuclear_waste_short_depleted"}) {
+            for (String kind : new String[] {"nuclear_waste_short", "nuclear_waste_short_depleted"}) {
                 shapeless(NS, "crafting/" + kind + "_to_" + kind + "_tiny_" + w[0],
                         ns(kind + "_tiny_" + w[1]), 9, ns(kind + "_" + w[1]));
                 shaped(NS, "crafting/" + kind + "_tiny_to_" + kind + "_" + w[0], ns(kind + "_" + w[1]),
@@ -96,7 +93,7 @@ public final class SpaceCraftingRecipes {
         }
 
         addBillet(ns("billet_gaas"), ns("ingot_gaas"), ns("nugget_gaas"), "billet_gaas", null);
-        for (String iso : new String[]{"bk247", "cf251", "cf252", "es253", "cm242", "cm243", "cm244", "cm245",
+        for (String iso : new String[] {"bk247", "cf251", "cf252", "es253", "cm242", "cm243", "cm244", "cm245",
                 "cm246", "cm247"}) {
             // addBillet(..., ISO.all(MaterialShapes.NUGGET)): the ore-name rows; the tag holds the item too
             addBillet(ns("billet_" + iso), ns("ingot_" + iso), ns("nugget_" + iso), "billet_" + iso,
@@ -106,7 +103,7 @@ public final class SpaceCraftingRecipes {
         addBillet(ns("billet_cm_fuel"), ns("ingot_cm_fuel"), ns("nugget_cm_fuel"), "billet_cm_fuel", null);
         addBillet(ns("billet_menthol"), ns("ingot_menthol"), ns("nugget_menthol"), "billet_menthol", null);
         // addBillet(billet_australium_greater/lesser, ingot_..., nugget_...): HBM has the nugget rows
-        for (String g : new String[]{"greater", "lesser"}) {
+        for (String g : new String[] {"greater", "lesser"}) {
             addBilletToIngot("hbm:billet_australium_" + g, ns("ingot_australium_" + g), "billet_australium_" + g);
         }
         addBilletToIngot(ns("billet_red_copper"), "hbm:ingot_red_copper", "billet_red_copper");
@@ -136,7 +133,7 @@ public final class SpaceCraftingRecipes {
                 ns("pellet_rtg_depleted_americium"));
 
         // RTG pellets: berkelium/cf251/cf252 new; lead/gold switch IRON.plate to NI.plate (replacements)
-        for (String[] p : new String[][]{{"pellet_rtg_berkelium", "billet_bk247"}, {"pellet_rtg_cf251", "billet_cf251"},
+        for (String[] p : new String[][] {{"pellet_rtg_berkelium", "billet_bk247"}, {"pellet_rtg_cf251", "billet_cf251"},
                 {"pellet_rtg_cf252", "billet_cf252"}}) {
             shapeless(NS, "crafting/" + p[0], ns(p[0]), ns(p[1]), ns(p[1]), ns(p[1]), "#c:plates/nickel");
         }
@@ -150,9 +147,7 @@ public final class SpaceCraftingRecipes {
         shaped(NS, "bf_log", ns("bf_log"), rows("###", "###", "###"), "#", ns("woodemium_briquette"));
     }
 
-    /**
-     * 1.7 {@code add1To9Pair(one, nine)}: one to nine ({@code "#"}) and nine to one.
-     */
+    /** 1.7 {@code add1To9Pair(one, nine)}: one to nine ({@code "#"}) and nine to one. */
     private static void add1To9Pair(String one, String nine, String nameOne, String nameNine) {
         shaped(NS, "crafting/" + nameNine + "_from_" + nameOne, nine, 9, rows("#"), "#", one);
         shaped(NS, "crafting/" + nameOne + "_from_" + nameNine, one, rows("###", "###", "###"), "#", nine);
@@ -169,9 +164,7 @@ public final class SpaceCraftingRecipes {
         addBilletToIngot(billet, ingot, name);
     }
 
-    /**
-     * 1.7 {@code addBilletToIngot}: three billets to two ingots, and two ingots to three billets.
-     */
+    /** 1.7 {@code addBilletToIngot}: three billets to two ingots, and two ingots to three billets. */
     private static void addBilletToIngot(String billet, String ingot, String name) {
         String ingotName = ingot.substring(ingot.indexOf(':') + 1);
         shapeless(NS, "crafting/" + ingotName + "_from_" + name, ingot, 2, billet, billet, billet);
@@ -180,9 +173,7 @@ public final class SpaceCraftingRecipes {
 
     // ------------------------------------------------------------------------------------------------ PowderRecipes
 
-    /**
-     * hbm-space {@code PowderRecipes}.
-     */
+    /** hbm-space {@code PowderRecipes}. */
     private static void powderRecipes() {
         // ball_dynamite: Blocks.sand to KEY_SAND (widened; HBM's row with the chemistry set kept as is)
         componentShapeless(NS, "crafting/ball_dynamite", stack("hbm:ball_dynamite", 2),
@@ -206,9 +197,7 @@ public final class SpaceCraftingRecipes {
 
     // -------------------------------------------------------------------------------------------- ConsumableRecipes
 
-    /**
-     * hbm-space {@code ConsumableRecipes}.
-     */
+    /** hbm-space {@code ConsumableRecipes}. */
     private static void consumableRecipes() {
         shapeless(NS, "crafting/flesh_burger", ns("flesh_burger"), "minecraft:bread", ns("grilled_flesh"));
         // quesadilla: cheese to KEY_CHEESE (widened)
@@ -226,9 +215,7 @@ public final class SpaceCraftingRecipes {
 
     // ------------------------------------------------------------------------------------------------- ArmorRecipes
 
-    /**
-     * hbm-space {@code ArmorRecipes}.
-     */
+    /** hbm-space {@code ArmorRecipes}. */
     private static void armorRecipes() {
         shaped(NS, "oxy_plss", ns("oxy_plss"), rows("AA", "TC", "RR"),
                 "A", "#c:plates/aluminium", "T", "hbm:tank_steel", "C", "hbm:circuit_basic", "R", "#c:ingots/rubber");
@@ -239,9 +226,7 @@ public final class SpaceCraftingRecipes {
 
     // -------------------------------------------------------------------------------------------------- ToolRecipes
 
-    /**
-     * hbm-space {@code ToolRecipes}.
-     */
+    /** hbm-space {@code ToolRecipes}. */
     private static void toolRecipes() {
         shaped(NS, "transporter_linker", ns("transporter_linker"), rows("S", "C", "P"),
                 "S", "hbm:crt_display", "C", "hbm:circuit_basic", "P", "#c:plates/aluminium");
@@ -252,9 +237,7 @@ public final class SpaceCraftingRecipes {
 
     // --------------------------------------------------------------------------------------------------- RodRecipes
 
-    /**
-     * hbm-space {@code RodRecipes}: the new RBMK rods and Watz pellets.
-     */
+    /** hbm-space {@code RodRecipes}: the new RBMK rods and Watz pellets. */
     private static void rodRecipes() {
         addRBMKRod("#c:billets/bk247", ns("rbmk_fuel_bk247"));
         addRBMKRod(ns("billet_cm_fuel"), ns("rbmk_fuel_lecm"));
@@ -272,17 +255,13 @@ public final class SpaceCraftingRecipes {
         addPellet("#c:ingots/es253", "es253");
     }
 
-    /**
-     * Fill an RBMK rod with 8 billets.
-     */
+    /** Fill an RBMK rod with 8 billets. */
     private static void addRBMKRod(String billet, String out) {
         shapeless(NS, "crafting/" + out.substring(out.indexOf(':') + 1), out, "hbm:rbmk_fuel_empty",
                 billet, billet, billet, billet, billet, billet, billet, billet);
     }
 
-    /**
-     * Watz pellet crafting ({@code EnumWatzType} is one item per type here).
-     */
+    /** Watz pellet crafting ({@code EnumWatzType} is one item per type here). */
     private static void addPellet(String ingot, String type) {
         shaped(NS, "crafting/watz_pellet_" + type, ns("watz_pellet_" + type), rows(" I ", "IGI", " I "),
                 "I", ingot, "G", "#c:ingots/graphite");
@@ -290,9 +269,7 @@ public final class SpaceCraftingRecipes {
 
     // ---------------------------------------------------------------------------------------------- CraftingManager
 
-    /**
-     * hbm-space {@code main/CraftingManager}.
-     */
+    /** hbm-space {@code main/CraftingManager}. */
     private static void craftingManager() {
         // stick_vinyl / stick_pvc / planks / paper (CraftingManager:208-221)
         shaped(NS, "stick_vinyl", ns("stick_vinyl"), 3, rows("L", "L"), "L", ns("vinyl_planks"));
@@ -302,7 +279,7 @@ public final class SpaceCraftingRecipes {
         shaped(NS, "paper_from_vinyl_planks", "minecraft:paper", 3, rows("LL"), "L", ns("vinyl_planks"));
 
         shaped(NS, "crafting/stonebrick", "minecraft:stone_bricks", 4, rows("SS", "SS"), "S", "#c:stones");
-        for (String wire : new String[]{"aluminium", "copper"}) {
+        for (String wire : new String[] {"aluminium", "copper"}) {
             shaped(NS, "crafting/circuit_capacitor_lanthanium_" + wire, ns("circuit_capacitor_lanthanium"),
                     rows("I", "N", "W"),
                     "I", "hbm:plate_polymer", "N", "#c:nuggets/lanthanium", "W", "#c:wires/" + wire);
@@ -375,9 +352,7 @@ public final class SpaceCraftingRecipes {
 
     // --------------------------------------------------------------------------------------------- SmeltingRecipes
 
-    /**
-     * hbm-space {@code SmeltingRecipes}.
-     */
+    /** hbm-space {@code SmeltingRecipes}. */
     private static void smeltingRecipes() {
         // ores: each ingredient is the tag of that ore's block and its planet variants
         oreSmelt("ore_quartz", "minecraft:quartz", 0.2);
@@ -404,7 +379,7 @@ public final class SpaceCraftingRecipes {
                 "hbm:ingot_aluminium", 10.0, 16);
 
         smelt(NS, "smelting/bread_from_flour", ns("flour"), "minecraft:bread", 1.0);
-        for (String block : new String[]{"duna_sands", "eve_silt", "laythe_silt"}) {
+        for (String block : new String[] {"duna_sands", "eve_silt", "laythe_silt"}) {
             smelt(NS, "smelting/glass_from_" + block, ns(block), "minecraft:glass", 0.1);
         }
         smelt(NS, "smelting/glass_from_moon_turf", "hbm:moon_turf", "minecraft:glass", 0.1);
@@ -414,7 +389,7 @@ public final class SpaceCraftingRecipes {
         smelt(NS, "smelting/stone_from_eve_rock", ns("eve_rock"), "minecraft:stone", 0.1);
         smelt(NS, "smelting/moho_stone_from_moho_regolith", ns("moho_regolith"), ns("moho_stone"), 0.1);
         smelt(NS, "smelting/stone_from_moon_rock", ns("moon_rock"), "minecraft:stone", 0.1);
-        for (String p : new String[]{"nickel", "zinc", "gallium"}) {
+        for (String p : new String[] {"nickel", "zinc", "gallium"}) {
             smelt(NS, "smelting/ingot_" + p + "_from_powder", ns("powder_" + p), ns("ingot_" + p), 1.0);
         }
         smelt(NS, "smelting/ingot_rubber_from_powder_rubber", ns("powder_rubber"), "hbm:ingot_rubber", 1.0);

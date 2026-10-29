@@ -16,13 +16,11 @@ import com.ntmspace.registry.StationBlocks;
 import com.ntmspace.world.SolarSystem;
 import dev.golem.core.data.DataIn;
 import dev.golem.core.data.DataOut;
-
 import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.Deque;
 import java.util.List;
 import java.util.stream.IntStream;
-
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.network.RegistryFriendlyByteBuf;
@@ -59,9 +57,7 @@ public class TileEntityOrbitalStation extends TileEntityMachineBase implements I
     public boolean hasRider = false;
     public boolean needsFuel = false;
     public boolean hasFuel = false;
-    /**
-     * The names of the stored items, for the look overlay (1.7 synced item ids).
-     */
+    /** The names of the stored items, for the look overlay (1.7 synced item ids). */
     public List<String> storedNames = new ArrayList<>();
 
     public float rot;
@@ -69,7 +65,7 @@ public class TileEntityOrbitalStation extends TileEntityMachineBase implements I
 
     public TileEntityOrbitalStation(BlockPos pos, BlockState state) {
         super(StationBlocks.ORBITAL_STATION_BE.get(), pos, state, 16);
-        tanks = new FluidTankNTM[]{new FluidTankNTM(SpaceFluids.HYDRAZINE, 16_000)};
+        tanks = new FluidTankNTM[] {new FluidTankNTM(SpaceFluids.HYDRAZINE, 16_000)};
     }
 
     @Override
@@ -109,8 +105,7 @@ public class TileEntityOrbitalStation extends TileEntityMachineBase implements I
             // Drain tanks only upon successful undocking, just in case the pod gets stashed before the player can launch (in multi-player stations)
             if (!docked.entity().isRemoved() && docked.isReusable()) {
                 boolean toOrbit = docked.targetInOrbit();
-                for (FluidTankNTM tank : te.tanks)
-                    tank.changeTankSize(Math.max(0, tank.getFill() - te.getFillRequirement(toOrbit)));
+                for (FluidTankNTM tank : te.tanks) tank.changeTankSize(Math.max(0, tank.getFill() - te.getFillRequirement(toOrbit)));
             }
             te.undockRocket();
             docked = null;
@@ -146,9 +141,7 @@ public class TileEntityOrbitalStation extends TileEntityMachineBase implements I
         }
     }
 
-    /**
-     * 1.7 {@code invalidate}: a removed port leaves its station and drops its craft.
-     */
+    /** 1.7 {@code invalidate}: a removed port leaves its station and drops its craft. */
     @Override
     public void preRemoveSideEffects(BlockPos pos, BlockState state) {
         super.preRemoveSideEffects(pos, state);
@@ -177,9 +170,7 @@ public class TileEntityOrbitalStation extends TileEntityMachineBase implements I
         docked = null;
     }
 
-    /**
-     * 1.7 {@code despawnRocket}: the craft's items go into the first free slots (nav drive first), the craft goes.
-     */
+    /** 1.7 {@code despawnRocket}: the craft's items go into the first free slots (nav drive first), the craft goes. */
     public void despawnRocket() {
         if (docked == null) return;
         Deque<ItemStack> itemsToStuff = new ArrayDeque<>(docked.stow());
@@ -239,13 +230,10 @@ public class TileEntityOrbitalStation extends TileEntityMachineBase implements I
         int isp = fuelTrait != null ? fuelTrait.getISP() : 300;
 
         SolarSystem.Body body = station != null ? station.orbiting : SolarSystem.body("kerbin");
-        return SolarSystem.getCostBetween(body, body, mass, thrust, isp, false, true, Orbit.pressureOf(body),
-                Orbit.pressureOf(body));
+        return SolarSystem.getCostBetween(body, body, mass, thrust, isp, false, true, Orbit.pressureOf(body), Orbit.pressureOf(body));
     }
 
-    /**
-     * Whether {@code stack} is a craft a free port would dock ({@link StationDock#CRAFT_ITEMS}).
-     */
+    /** Whether {@code stack} is a craft a free port would dock ({@link StationDock#CRAFT_ITEMS}). */
     public static boolean isCraftItem(ItemStack stack) {
         return StationDock.CRAFT_ITEMS.invoker().test(stack);
     }
@@ -295,8 +283,7 @@ public class TileEntityOrbitalStation extends TileEntityMachineBase implements I
         int count = buf.readVarInt();
         for (int i = 0; i < count; i++) {
             String id = buf.readUtf();
-            names.add(new ItemStack(BuiltInRegistries.ITEM.getValue(dev.golem.core.Ids.parse(id))).getHoverName()
-                                                                                                  .getString());
+            names.add(new ItemStack(BuiltInRegistries.ITEM.getValue(dev.golem.core.Ids.parse(id))).getHoverName().getString());
         }
         storedNames = names;
 
@@ -317,9 +304,7 @@ public class TileEntityOrbitalStation extends TileEntityMachineBase implements I
         tanks[0].setTankType(SpaceFluids.HYDRAZINE);
     }
 
-    /**
-     * 1.7 {@code getRenderBoundingBox} (the renderer draws off-screen, so only Forge 1.20.1 asks).
-     */
+    /** 1.7 {@code getRenderBoundingBox} (the renderer draws off-screen, so only Forge 1.20.1 asks). */
     public AABB renderBounds() {
         BlockPos p = getBlockPos();
         return new AABB(p.getX() - 2, p.getY() - 2, p.getZ() - 2, p.getX() + 3, p.getY() + 2, p.getZ() + 3);
@@ -341,26 +326,19 @@ public class TileEntityOrbitalStation extends TileEntityMachineBase implements I
         if (remaining != amount) setChanged();
         return remaining;
     }
-
-    /**
-     * The immediate face query follows the dock state; network storage remains subscription-gated above.
-     */
+    /** The immediate face query follows the dock state; network storage remains subscription-gated above. */
     @Override
     public boolean exposesFluidContact(@Nullable FluidType type,
                                        ForgeDirection dir, boolean receiving) {
         return needsFuel && IFluidStandardReceiverMK2.super.exposesFluidContact(type, dir, receiving);
     }
 
-    /**
-     * The station this port belongs to, once it ticked (server), or the synced one (client core).
-     */
+    /** The station this port belongs to, once it ticked (server), or the synced one (client core). */
     public @Nullable OrbitalStation station() {
         return station;
     }
 
-    /**
-     * The fluid this port refuels with (GameTests).
-     */
+    /** The fluid this port refuels with (GameTests). */
     public FluidType fuel() {
         return tanks[0].getTankType();
     }

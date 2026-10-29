@@ -135,16 +135,8 @@ loom {
             vmArg("-Dfabric-api.gametest")
             vmArg("-Dgolem.gametest.datapackDimensions=true")
             vmArg("-Dfabric-api.gametest.report-file=${project.file("runs/gametest/report.xml").absolutePath}")
-            vmArg(
-                "-Dntmprobe.doubleSubstitution=${
-                    providers.gradleProperty("probe.doubleSubstitution").orElse("false").get()
-                }"
-            )
-            vmArg(
-                "-Dgolem.gametest.filter=${
-                    providers.gradleProperty("gametest.filter").orElse("(ntmspace|ntmprobe):.*").get()
-                }"
-            )
+            vmArg("-Dntmprobe.doubleSubstitution=${providers.gradleProperty("probe.doubleSubstitution").orElse("false").get()}")
+            vmArg("-Dgolem.gametest.filter=${providers.gradleProperty("gametest.filter").orElse("(ntmspace|ntmprobe):.*").get()}")
         }
     }
 }
@@ -171,10 +163,8 @@ val modProps = mapOf(
 tasks.processResources {
     inputs.properties(modProps)
     filesMatching(listOf("fabric.mod.json", "pack.mcmeta", "*.mixins.json")) { expand(modProps) }
-    exclude(
-        "META-INF/mods.toml", "META-INF/neoforge.mods.toml", "META-INF/accesstransformer.cfg",
-        "data/$modId/neoforge/**", "data/$modId/forge/**", "data/neoforge/**"
-    )
+    exclude("META-INF/mods.toml", "META-INF/neoforge.mods.toml", "META-INF/accesstransformer.cfg",
+        "data/$modId/neoforge/**", "data/$modId/forge/**", "data/neoforge/**")
 }
 
 tasks.named<ProcessResources>("processProbeResources") {
@@ -184,13 +174,7 @@ tasks.named<ProcessResources>("processProbeResources") {
 }
 
 tasks.jar {
-    from(
-        files(
-            rootProject.file("LICENSE"),
-            rootProject.file("LICENSE.LESSER"),
-            rootProject.file("CREDITS.txt")
-        )
-    ) { rename { "${it}_${prop("mod.id")}" } }
+    from(files(rootProject.file("LICENSE"), rootProject.file("LICENSE.LESSER"), rootProject.file("CREDITS.txt"))) { rename { "${it}_${prop("mod.id")}" } }
 }
 
 tasks.compileJava {
@@ -250,12 +234,7 @@ if (kubejsRun) dependencies {
         propOrNull("deps.kubejs_architectury")?.let { "dev.architectury:architectury-fabric:$it" },
     )) devRuntime(mod) { isTransitive = false }
 }
-for ((run, tasksOfRun) in listOf(
-    "client" to listOf("runClient"),
-    "harness" to listOf("runClient"),
-    "server" to listOf("runServer"),
-    "gametest" to listOf("runGametest")
-)) {
+for ((run, tasksOfRun) in listOf("client" to listOf("runClient"), "harness" to listOf("runClient"), "server" to listOf("runServer"), "gametest" to listOf("runGametest"))) {
     if (!kubejsRun) break
     val copy = tasks.register<Copy>("copyKubeJsScripts${run.replaceFirstChar { it.uppercase() }}") {
         description = "Copies harness/kubejs into the $run run's kubejs folder (-Pkubejs.run)."

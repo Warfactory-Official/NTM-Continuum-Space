@@ -5,9 +5,7 @@ import com.ntmspace.client.render.mob.SpaceMobModels;
 import com.ntmspace.registry.SpaceMobs;
 import dev.golem.core.client.ClientRegistrations;
 
-/**
- * Space RenderBatterySocket's angel body, turning above the socket with its charged corner arcs.
- */
+/** Space RenderBatterySocket's angel body, turning above the socket with its charged corner arcs. */
 public final class SocketAngelCentrepiece {
     private SocketAngelCentrepiece() {
     }

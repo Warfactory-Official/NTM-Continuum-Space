@@ -3,11 +3,13 @@ package com.ntmspace.fork;
 import com.hbm.saveddata.TomSaveData;
 import dev.golem.core.world.Spawns;
 
-/**
- * Space's extinction rule applies to every impacted level.
- */
+/** Space's extinction rule applies to every impacted level. */
 public final class SpaceImpactEffects {
-    static {
+
+    private SpaceImpactEffects() {
+    }
+
+    public static void init() {
         Spawns.onSpawnCheck((mob, level, reason) -> {
             if (!TomSaveData.impact(level)) return false;
             var water = switch (mob.getType().getCategory()) {
@@ -16,11 +18,5 @@ public final class SpaceImpactEffects {
             };
             return mob.getBbHeight() >= 0.85F || mob.getBbWidth() >= 0.85F && !water && !mob.isBaby();
         });
-    }
-
-    private SpaceImpactEffects() {
-    }
-
-    public static void init() {
     }
 }

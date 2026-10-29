@@ -2,7 +2,9 @@ package com.ntmspace.gametest;
 
 import com.ntmspace.config.SpaceConfig;
 import com.ntmspace.world.SpaceDimensions;
+import dev.golem.core.gametest.GameTestHelpers;
 import dev.golem.core.gametest.GameTests;
+import dev.golem.core.world.BlockPlaces;
 import net.minecraft.core.BlockPos;
 import net.minecraft.gametest.framework.GameTestHelper;
 import net.minecraft.server.level.ServerLevel;
@@ -22,13 +24,14 @@ public final class NativeNetherPortalGameTests {
     }
 
     private static void portalFlag(GameTestHelper helper) {
-        var level = helper.getLevel().getServer().getLevel(SpaceDimensions.MUN);
+        var level = helper.getLevel().getServer().getLevel(SpaceDimensions.LAYTHE);
         var top = Integer.MIN_VALUE;
         for (var x = 7; x <= 12; x++)
             for (var z = 7; z <= 9; z++) {
                 top = Math.max(top, level.getHeight(Heightmap.Types.WORLD_SURFACE, x, z));
             }
         var origin = new BlockPos(8, top + 2, 8);
+        var player = GameTestHelpers.mockServerPlayerInLevel(helper);
         var previous = SpaceConfig.allowNetherPortals;
         var saved = new BlockState[6 * 7 * 3];
         var cursor = new BlockPos.MutableBlockPos();
@@ -50,7 +53,8 @@ public final class NativeNetherPortalGameTests {
                 }
             var ignition = origin.offset(1, 1, 0);
             helper.assertTrue(level.setBlock(ignition, Blocks.FIRE.defaultBlockState(), Block.UPDATE_ALL),
-                    "The disabled Mun portal fixture did not place its ignition fire");
+                    "The disabled Laythe portal fixture did not place its ignition fire");
+            BlockPlaces.placed(player, level, ignition, Blocks.FIRE.defaultBlockState());
             interior(helper, level, origin, false);
 
             for (var x = 1; x <= 2; x++)
@@ -59,7 +63,11 @@ public final class NativeNetherPortalGameTests {
                 }
             SpaceConfig.allowNetherPortals = true;
             helper.assertTrue(level.setBlock(ignition, Blocks.FIRE.defaultBlockState(), Block.UPDATE_ALL),
-                    "The enabled Mun portal fixture did not place its ignition fire");
+                    "The enabled Laythe portal fixture did not place its ignition fire");
+            // 1.7 reacted only to fire a player placed
+            BlockPlaces.placed(null, level, ignition, Blocks.FIRE.defaultBlockState());
+            interior(helper, level, origin, false);
+            BlockPlaces.placed(player, level, ignition, Blocks.FIRE.defaultBlockState());
             interior(helper, level, origin, true);
         } finally {
             SpaceConfig.allowNetherPortals = false;
@@ -85,7 +93,7 @@ public final class NativeNetherPortalGameTests {
                 var pos = origin.offset(x, y, 0);
                 var state = level.getBlockState(pos);
                 helper.assertTrue(state.is(Blocks.NETHER_PORTAL) == portal,
-                        "Mun portal flag=" + portal + " left " + state + " at " + pos);
+                        "Laythe portal flag=" + portal + " left " + state + " at " + pos);
             }
     }
 

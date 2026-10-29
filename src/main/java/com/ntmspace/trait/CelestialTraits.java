@@ -10,14 +10,12 @@ import com.ntmspace.world.SolarSystem;
 import com.ntmspace.world.SpaceDimensions;
 import com.mojang.serialization.Codec;
 import com.mojang.serialization.MapCodec;
-
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
-
 import net.minecraft.resources.ResourceKey;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerLevel;
@@ -37,8 +35,7 @@ import org.jetbrains.annotations.Nullable;
  */
 public final class CelestialTraits {
 
-    private CelestialTraits() {
-    }
+    private CelestialTraits() {}
 
     // ---------------------------------------------------------------------------------------------------------------
     // Trait kinds, 1.7 order (CelestialBodyTrait's static block)
@@ -46,8 +43,7 @@ public final class CelestialTraits {
     public static final CelestialBodyTrait.Type<CBT_Atmosphere> ATMOSPHERE =
             CelestialBodyTrait.register("atmosphere", CBT_Atmosphere.class, CBT_Atmosphere::new, CBT_Atmosphere::codec);
     public static final CelestialBodyTrait.Type<CBT_Temperature> TEMPERATURE =
-            CelestialBodyTrait.register("temperature", CBT_Temperature.class, CBT_Temperature::new,
-                    CBT_Temperature::codec);
+            CelestialBodyTrait.register("temperature", CBT_Temperature.class, CBT_Temperature::new, CBT_Temperature::codec);
     public static final CelestialBodyTrait.Type<CBT_Bees> BEES =
             CelestialBodyTrait.register("bees", CBT_Bees.class, CBT_Bees::new, CBT_Bees::codec);
     public static final CelestialBodyTrait.Type<CBT_War> WAR =
@@ -59,12 +55,10 @@ public final class CelestialTraits {
     public static final CelestialBodyTrait.Type<CBT_Weather> WEATHER =
             CelestialBodyTrait.register("weather", CBT_Weather.class, CBT_Weather::new, CBT_Weather::codec);
     public static final CelestialBodyTrait.Type<CelestialBodyTrait.CBT_Battlefield> BATTLE =
-            CelestialBodyTrait.register("battle", CelestialBodyTrait.CBT_Battlefield.class,
-                    CelestialBodyTrait.CBT_Battlefield::new,
+            CelestialBodyTrait.register("battle", CelestialBodyTrait.CBT_Battlefield.class, CelestialBodyTrait.CBT_Battlefield::new,
                     () -> marker(CelestialBodyTrait.CBT_Battlefield::new));
     public static final CelestialBodyTrait.Type<CelestialBodyTrait.CBT_Compromised> INFECTED =
-            CelestialBodyTrait.register("infected", CelestialBodyTrait.CBT_Compromised.class,
-                    CelestialBodyTrait.CBT_Compromised::new,
+            CelestialBodyTrait.register("infected", CelestialBodyTrait.CBT_Compromised.class, CelestialBodyTrait.CBT_Compromised::new,
                     () -> marker(CelestialBodyTrait.CBT_Compromised::new));
     public static final CelestialBodyTrait.Type<CBT_Dyson> DYSON =
             CelestialBodyTrait.register("dyson", CBT_Dyson.class, CBT_Dyson::new, CBT_Dyson::codec);
@@ -79,21 +73,15 @@ public final class CelestialTraits {
         return MapCodec.unit(factory).codec();
     }
 
-    /**
-     * hbm-space's {@code AstronomyUtil.MB_PER_ATM}: millibuckets of gas per atmosphere of pressure.
-     */
+    /** hbm-space's {@code AstronomyUtil.MB_PER_ATM}: millibuckets of gas per atmosphere of pressure. */
     public static final double MB_PER_ATM = 1_000_000_000D * 1_000D;
 
     // ---------------------------------------------------------------------------------------------------------------
     // Bodies
 
-    /**
-     * The body every level that is no body falls back to (1.7: dimension 0).
-     */
+    /** The body every level that is no body falls back to (1.7: dimension 0). */
     public static final String KERBIN = "kerbin";
-    /**
-     * The star (1.7 {@code getStar}: the root of the tree).
-     */
+    /** The star (1.7 {@code getStar}: the root of the tree). */
     public static final String KERBOL = "kerbol";
 
     private static final Map<String, ResourceKey<Level>> LEVELS = new LinkedHashMap<>();
@@ -112,17 +100,13 @@ public final class CelestialTraits {
         // thatmo: no level of its own in hbm-space (its dimension resolves to Kerbin)
     }
 
-    /**
-     * The body {@code level} is (Kerbin for any level that is no body).
-     */
+    /** The body {@code level} is (Kerbin for any level that is no body). */
     public static String bodyOf(Level level) {
         CelestialBodies.Body body = CelestialBodies.of(level);
         return body == null ? KERBIN : body.name();
     }
 
-    /**
-     * The body a level id ({@code "ntmspace:duna"}) is.
-     */
+    /** The body a level id ({@code "ntmspace:duna"}) is. */
     public static String bodyOfLevelId(String levelId) {
         for (Map.Entry<String, ResourceKey<Level>> entry : LEVELS.entrySet()) {
             if (dev.golem.core.Ids.keyId(entry.getValue()).toString().equals(levelId)) return entry.getKey();
@@ -130,41 +114,31 @@ public final class CelestialTraits {
         return KERBIN;
     }
 
-    /**
-     * The level of {@code body} if it has one and it is loaded, else null.
-     */
+    /** The level of {@code body} if it has one and it is loaded, else null. */
     public static @Nullable ServerLevel levelOf(String body) {
         ResourceKey<Level> key = LEVELS.get(body);
         MinecraftServer server = CelestialTraits.server;
         return key == null || server == null ? null : server.getLevel(key);
     }
 
-    /**
-     * The level key of {@code body}, or null for a body without a level.
-     */
+    /** The level key of {@code body}, or null for a body without a level. */
     public static @Nullable ResourceKey<Level> levelKeyOf(String body) {
         return LEVELS.get(body);
     }
 
-    /**
-     * 1.7 {@code getStar}: the root of the body's tree.
-     */
+    /** 1.7 {@code getStar}: the root of the body's tree. */
     public static String starOf(Level level) {
         SolarSystem.Body body = SolarSystem.body(bodyOf(level));
         return body == null ? KERBOL : body.getStar().name;
     }
 
-    /**
-     * 1.7 {@code getPlanet}: the body itself for a planet, its planet for a moon.
-     */
+    /** 1.7 {@code getPlanet}: the body itself for a planet, its planet for a moon. */
     public static String planetOf(String body) {
         SolarSystem.Body b = SolarSystem.body(body);
         return b == null ? body : b.getPlanet().name;
     }
 
-    /**
-     * Every body of the solar system (1.7 {@code getAllBodies}).
-     */
+    /** Every body of the solar system (1.7 {@code getAllBodies}). */
     public static List<String> allBodies() {
         List<String> names = new ArrayList<>();
         collect(SolarSystem.KERBOL, names);
@@ -186,8 +160,7 @@ public final class CelestialTraits {
         if (map != null) return map;
         map = new HashMap<>();
         put(map, "moho", new CBT_Temperature(200));
-        put(map, "eve", new CBT_Atmosphere(SpaceFluids.EVEAIR, 5D), new CBT_Temperature(400),
-                new CBT_Water(Fluids.MERCURY));
+        put(map, "eve", new CBT_Atmosphere(SpaceFluids.EVEAIR, 5D), new CBT_Temperature(400), new CBT_Water(Fluids.MERCURY));
         put(map, "kerbin", new CBT_Atmosphere(SpaceFluids.EARTHAIR, 1D), new CBT_Water());
         put(map, "minmus", new CBT_Water(SpaceFluids.MILK));
         put(map, "duna", new CBT_Atmosphere(SpaceFluids.DUNAAIR, 0.1D));
@@ -207,16 +180,12 @@ public final class CelestialTraits {
         map.put(body, Collections.unmodifiableMap(set));
     }
 
-    /**
-     * 1.7 {@code hasDefaultTrait}.
-     */
+    /** 1.7 {@code hasDefaultTrait}. */
     public static boolean hasDefaultTrait(String body, Class<? extends CelestialBodyTrait> trait) {
         return defaults().getOrDefault(body, Map.of()).containsKey(trait);
     }
 
-    /**
-     * 1.7 {@code getDefaultTrait}: a copy of the body's default trait, or null.
-     */
+    /** 1.7 {@code getDefaultTrait}: a copy of the body's default trait, or null. */
     @SuppressWarnings("unchecked")
     public static <T extends CelestialBodyTrait> @Nullable T getDefaultTrait(String body, Class<T> trait) {
         CelestialBodyTrait value = defaults().getOrDefault(body, Map.of()).get(trait);
@@ -242,16 +211,12 @@ public final class CelestialTraits {
         data = null;
     }
 
-    /**
-     * The server whose solar system is current (null on a client without one).
-     */
+    /** The server whose solar system is current (null on a client without one). */
     public static @Nullable MinecraftServer server() {
         return server;
     }
 
-    /**
-     * Makes {@code level}'s server current if none is yet (a GameTest or a hook before the start notification).
-     */
+    /** Makes {@code level}'s server current if none is yet (a GameTest or a hook before the start notification). */
     public static void attach(Level level) {
         if (server == null && level instanceof ServerLevel serverLevel) server = serverLevel.getServer();
     }
@@ -266,16 +231,12 @@ public final class CelestialTraits {
         return current;
     }
 
-    /**
-     * Client: what the server synced (1.7 {@code updateClientTraits}).
-     */
+    /** Client: what the server synced (1.7 {@code updateClientTraits}). */
     public static void receive(Map<String, Map<Class<? extends CelestialBodyTrait>, CelestialBodyTrait>> traits) {
         client = traits == null ? Map.of() : traits;
     }
 
-    /**
-     * The saved trait overrides currently held by the client; defaults are not inserted into this store.
-     */
+    /** The saved trait overrides currently held by the client; defaults are not inserted into this store. */
     public static Map<String, Map<Class<? extends CelestialBodyTrait>, CelestialBodyTrait>> clientTraits() {
         return client;
     }
@@ -297,9 +258,7 @@ public final class CelestialTraits {
         return entries;
     }
 
-    /**
-     * Something changed: save it and sync it to the clients at the end of the tick.
-     */
+    /** Something changed: save it and sync it to the clients at the end of the tick. */
     public static void markChanged() {
         changed = true;
         SolarSystemSavedData current = data;
@@ -312,19 +271,14 @@ public final class CelestialTraits {
         return was;
     }
 
-    /**
-     * The saved traits of every body that has any (server).
-     */
+    /** The saved traits of every body that has any (server). */
     static Map<String, Map<Class<? extends CelestialBodyTrait>, CelestialBodyTrait>> savedTraits() {
         SolarSystemSavedData current = data();
         return current == null ? Map.of() : current.all();
     }
 
-    /**
-     * Don't modify traits returned from this (1.7 {@code getTraitsUnsafe}).
-     */
-    private static Map<Class<? extends CelestialBodyTrait>, CelestialBodyTrait> traitsUnsafe(String body,
-                                                                                             boolean clientSide) {
+    /** Don't modify traits returned from this (1.7 {@code getTraitsUnsafe}). */
+    private static Map<Class<? extends CelestialBodyTrait>, CelestialBodyTrait> traitsUnsafe(String body, boolean clientSide) {
         Map<Class<? extends CelestialBodyTrait>, CelestialBodyTrait> traits;
         if (clientSide) {
             traits = client.get(body);
@@ -348,17 +302,13 @@ public final class CelestialTraits {
         return (T) traitsUnsafe(body, clientSide).get(trait);
     }
 
-    /**
-     * 1.7 {@code CelestialBody.hasTrait(world, trait)}.
-     */
+    /** 1.7 {@code CelestialBody.hasTrait(world, trait)}. */
     public static boolean hasTrait(Level level, Class<? extends CelestialBodyTrait> trait) {
         attach(level);
         return hasTrait(bodyOf(level), trait, level.isClientSide());
     }
 
-    /**
-     * 1.7 {@code CelestialBody.getTrait(world, trait)}: the live trait; don't modify it, use {@link #modifyTraits}.
-     */
+    /** 1.7 {@code CelestialBody.getTrait(world, trait)}: the live trait; don't modify it, use {@link #modifyTraits}. */
     public static <T extends CelestialBodyTrait> @Nullable T getTrait(Level level, Class<T> trait) {
         attach(level);
         return getTrait(bodyOf(level), trait, level.isClientSide());
@@ -370,14 +320,12 @@ public final class CelestialTraits {
      */
     public static Map<Class<? extends CelestialBodyTrait>, CelestialBodyTrait> getTraits(String body) {
         SolarSystemSavedData current = data();
-        Map<Class<? extends CelestialBodyTrait>, CelestialBodyTrait> saved = current == null ? null : current.getTraits(
-                body);
+        Map<Class<? extends CelestialBodyTrait>, CelestialBodyTrait> saved = current == null ? null : current.getTraits(body);
         Map<Class<? extends CelestialBodyTrait>, CelestialBodyTrait> traits = new HashMap<>();
         if (saved != null) {
             traits.putAll(saved);
         } else {
-            for (CelestialBodyTrait trait : defaults().getOrDefault(body, Map.of()).values())
-                traits.put(trait.getClass(), trait.copy());
+            for (CelestialBodyTrait trait : defaults().getOrDefault(body, Map.of()).values()) traits.put(trait.getClass(), trait.copy());
         }
         return traits;
     }
@@ -421,18 +369,14 @@ public final class CelestialTraits {
         markChanged();
     }
 
-    /**
-     * "he has ceased to be": the body loses its atmosphere.
-     */
+    /** "he has ceased to be": the body loses its atmosphere. */
     public static void degas(String body) {
         Map<Class<? extends CelestialBodyTrait>, CelestialBodyTrait> currentTraits = getTraits(body);
         currentTraits.remove(CBT_Atmosphere.class);
         setTraits(body, currentTraits);
     }
 
-    /**
-     * 1.7 {@code consumeGas}: takes {@code amount} mB of {@code fluid} out of the body's air; false if it had none.
-     */
+    /** 1.7 {@code consumeGas}: takes {@code amount} mB of {@code fluid} out of the body's air; false if it had none. */
     public static boolean consumeGas(String body, FluidType fluid, double amount) {
         var currentTraits = getTraits(body);
         if (!currentTraits.containsKey(CBT_Atmosphere.class)) return false;
@@ -441,9 +385,7 @@ public final class CelestialTraits {
         return consumed;
     }
 
-    /**
-     * Takes gas from this exact trait map; detached body defaults stay detached.
-     */
+    /** Takes gas from this exact trait map; detached body defaults stay detached. */
     public static boolean consumeGas(Map<Class<? extends CelestialBodyTrait>, CelestialBodyTrait> currentTraits,
                                      FluidType fluid, double amount) {
         var atmosphere = (CBT_Atmosphere) currentTraits.get(CBT_Atmosphere.class);
@@ -466,18 +408,14 @@ public final class CelestialTraits {
         return didConsume;
     }
 
-    /**
-     * 1.7 {@code emitGas}: adds {@code amount} mB of {@code fluid} to the body's air (at most eight gases, the thinnest goes).
-     */
+    /** 1.7 {@code emitGas}: adds {@code amount} mB of {@code fluid} to the body's air (at most eight gases, the thinnest goes). */
     public static void emitGas(String body, FluidType fluid, double amount) {
         var currentTraits = getTraits(body);
         emitGas(currentTraits, fluid, amount);
         setTraits(body, currentTraits);
     }
 
-    /**
-     * Adds gas to this exact trait map, without publishing an unsaved body's defaults.
-     */
+    /** Adds gas to this exact trait map, without publishing an unsaved body's defaults. */
     public static void emitGas(Map<Class<? extends CelestialBodyTrait>, CelestialBodyTrait> currentTraits,
                                FluidType fluid, double amount) {
         var atmosphere = (CBT_Atmosphere) currentTraits.get(CBT_Atmosphere.class);
@@ -503,25 +441,19 @@ public final class CelestialTraits {
         }
     }
 
-    /**
-     * Adds gas to the body of this level through the same map mutation as detached chemistry.
-     */
+    /** Adds gas to the body of this level through the same map mutation as detached chemistry. */
     public static void emitGas(Level level, FluidType fluid, double amount) {
         attach(level);
         emitGas(bodyOf(level), fluid, amount);
     }
 
-    /**
-     * 1.7 {@code FT_Gaseous.release}: a gas vented into the air of {@code level}'s body (gases only).
-     */
+    /** 1.7 {@code FT_Gaseous.release}: a gas vented into the air of {@code level}'s body (gases only). */
     public static void release(Level level, FluidType type, double mB) {
         if (level.isClientSide() || !isGas(type)) return;
         emitGas(level, type, mB);
     }
 
-    /**
-     * 1.7 {@code FT_Gaseous.capture}: a gas taken out of the air of {@code level}'s body (gases only).
-     */
+    /** 1.7 {@code FT_Gaseous.capture}: a gas taken out of the air of {@code level}'s body (gases only). */
     public static void capture(Level level, FluidType type, double mB) {
         if (level.isClientSide() || !isGas(type)) return;
         attach(level);
@@ -533,9 +465,7 @@ public final class CelestialTraits {
                 || type.hasTrait(com.hbm.inventory.fluid.trait.FluidTraitSimple.FT_Gaseous_ART.class);
     }
 
-    /**
-     * 1.7 {@code CelestialBody.damage}: war damage to a body, shield first.
-     */
+    /** 1.7 {@code CelestialBody.damage}: war damage to a body, shield first. */
     public static void damage(int dmg, String body) {
         Map<Class<? extends CelestialBodyTrait>, CelestialBodyTrait> currentTraits = getTraits(body);
         CBT_War war = (CBT_War) currentTraits.get(CBT_War.class);
@@ -565,9 +495,7 @@ public final class CelestialTraits {
         if (updateChemistry(currentTraits)) setTraits(body, currentTraits);
     }
 
-    /**
-     * Runs one chemistry step on a supplied map, without changing which body owns or saves it.
-     */
+    /** Runs one chemistry step on a supplied map, without changing which body owns or saves it. */
     public static boolean updateChemistry(Map<Class<? extends CelestialBodyTrait>, CelestialBodyTrait> currentTraits) {
         boolean hasUpdated = false;
         var atmosphere = (CBT_Atmosphere) currentTraits.get(CBT_Atmosphere.class);
@@ -597,8 +525,7 @@ public final class CelestialTraits {
      * 1.7 {@code reactAtmosphere}: because the chemistry runs only once a second, a reaction runs 64 times at once, when
      * the air holds 64 times each input; the inputs are captured and the product released (gases only).
      */
-    public static boolean reactAtmosphere(Level level, String body,
-                                          com.ntmspace.recipe.AtmosphereRecipes.Reaction reaction) {
+    public static boolean reactAtmosphere(Level level, String body, com.ntmspace.recipe.AtmosphereRecipes.Reaction reaction) {
         var currentTraits = getTraits(body);
         boolean apply = !level.isClientSide();
         boolean reacted = reactAtmosphere(currentTraits, reaction, apply);
@@ -614,8 +541,7 @@ public final class CelestialTraits {
         for (com.hbm.inventory.fluid.FluidStack input : reaction.inputs()) {
             boolean hasInput = false;
             for (CBT_Atmosphere.FluidEntry entry : atmosphere.fluids) {
-                if (entry.fluid == input.type && entry.pressure * MB_PER_ATM >= (double) input.fill * scale)
-                    hasInput = true;
+                if (entry.fluid == input.type && entry.pressure * MB_PER_ATM >= (double) input.fill * scale) hasInput = true;
             }
             if (!hasInput) return false;
         }
@@ -623,14 +549,11 @@ public final class CelestialTraits {
         for (com.hbm.inventory.fluid.FluidStack input : reaction.inputs()) {
             if (isGas(input.type)) consumeGas(currentTraits, input.type, (double) input.fill * scale);
         }
-        if (isGas(reaction.output().type))
-            emitGas(currentTraits, reaction.output().type, (double) reaction.output().fill * scale);
+        if (isGas(reaction.output().type)) emitGas(currentTraits, reaction.output().type, (double) reaction.output().fill * scale);
         return true;
     }
 
-    /**
-     * 1.7 {@code updateSwarms}: once per tick, the star's Dyson swarms decay.
-     */
+    /** 1.7 {@code updateSwarms}: once per tick, the star's Dyson swarms decay. */
     public static void updateSwarms() {
         CBT_Dyson dyson = getTrait(KERBOL, CBT_Dyson.class, false);
         if (dyson == null) return;
@@ -638,9 +561,7 @@ public final class CelestialTraits {
         if (dyson.attenuate()) markChanged();
     }
 
-    /**
-     * Server tick (1.7 {@code ModEventHandler.onServerTick}, phase START): weather, every trait's update, swarms.
-     */
+    /** Server tick (1.7 {@code ModEventHandler.onServerTick}, phase START): weather, every trait's update, swarms. */
     static void serverTick(MinecraftServer tickServer) {
         if (server != tickServer) serverStarted(tickServer);
         if (!simulationRunsNormally()) return;
@@ -656,9 +577,7 @@ public final class CelestialTraits {
         updateSwarms();
     }
 
-    /**
-     * Invasion audiences follow players even while vanilla simulation is frozen. Runs on server END.
-     */
+    /** Invasion audiences follow players even while vanilla simulation is frozen. Runs on server END. */
     static void serverMaintenance(MinecraftServer tickServer) {
         for (var entry : savedTraits().entrySet()) {
             if (entry.getValue().get(CBT_Invasion.class) instanceof CBT_Invasion invasion) {
@@ -667,22 +586,15 @@ public final class CelestialTraits {
         }
     }
 
-    /**
-     * Frozen simulation keeps lifecycle callbacks running; celestial gameplay advances only with simulation.
-     */
+    /** Frozen simulation keeps lifecycle callbacks running; celestial gameplay advances only with simulation. */
     public static boolean simulationRunsNormally() {
         return Simulation.runsNormally(server);
     }
 
-    /**
-     * Client tick: 1.7 ran {@code update(true, body)} on the synced traits.
-     */
+    /** Client tick: 1.7 ran {@code update(true, body)} on the synced traits. */
     static void clientTick() {
         for (Map.Entry<String, Map<Class<? extends CelestialBodyTrait>, CelestialBodyTrait>> body : client.entrySet()) {
-            for (CelestialBodyTrait trait : new ArrayList<>(body.getValue().values())) {
-                // Invasion effects are owned by the viewed-world client tick, alongside its meteors and weather.
-                if (!(trait instanceof CBT_Invasion)) trait.update(true, body.getKey());
-            }
+            for (CelestialBodyTrait trait : new ArrayList<>(body.getValue().values())) trait.update(true, body.getKey());
         }
     }
 }

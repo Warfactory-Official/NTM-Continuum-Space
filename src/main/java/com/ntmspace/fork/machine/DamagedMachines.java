@@ -6,10 +6,8 @@ import com.hbm.interfaces.ILookOverlay;
 import com.hbm.inventory.RecipesCommon.AStack;
 import com.hbm.api.block.IToolable.ToolType;
 import com.hbm.util.InventoryUtil;
-
 import java.util.ArrayList;
 import java.util.List;
-
 import net.minecraft.ChatFormatting;
 import net.minecraft.network.chat.Component;
 import net.minecraft.core.BlockPos;
@@ -35,12 +33,9 @@ public final class DamagedMachines {
 
     public static final BooleanProperty DAMAGED = BooleanProperty.create("damaged");
 
-    private DamagedMachines() {
-    }
+    private DamagedMachines() {}
 
-    /**
-     * The block entity side: damaged state, the explosion that last hit it, and its repair.
-     */
+    /** The block entity side: damaged state, the explosion that last hit it, and its repair. */
     public interface Damageable extends IRepairable {
         boolean isDamaged();
 
@@ -52,27 +47,18 @@ public final class DamagedMachines {
 
         List<AStack> getRepairMaterials();
 
-        default void damage() {
-            setDamaged(true);
-        }
+        default void damage() { setDamaged(true); }
 
-        @Override
-        default void repair(Player player) {
-            setDamaged(false);
-        }
+        @Override default void repair(Player player) { setDamaged(false); }
 
-        @Override
-        default void tryExtinguish(Level level, BlockPos pos, EnumExtinguishType type) {
-        }
+        @Override default void tryExtinguish(Level level, BlockPos pos, EnumExtinguishType type) {}
     }
 
     public static boolean damaged(BlockEntity entity) {
         return entity.getBlockState().getValue(DAMAGED);
     }
 
-    /**
-     * Detached copies may have a level, but must never update the live entity at the same coordinates.
-     */
+    /** Detached copies may have a level, but must never update the live entity at the same coordinates. */
     public static void set(BlockEntity entity, boolean damaged) {
         if (damaged(entity) == damaged) return;
         var state = entity.getBlockState().setValue(DAMAGED, damaged);
@@ -82,9 +68,7 @@ public final class DamagedMachines {
         entity.setChanged();
     }
 
-    /**
-     * 1.7 {@code onBlockExploded}; true when {@code pos} belongs to a damageable machine (which then owns the hit).
-     */
+    /** 1.7 {@code onBlockExploded}; true when {@code pos} belongs to a damageable machine (which then owns the hit). */
     public static boolean hit(ServerLevel level, BlockPos pos, Object explosion) {
         BlockPos core = MultiblockSurface.coreOfAny(level, pos);
         if (core == null || !(level.getBlockEntity(core) instanceof Damageable machine)) return false;
@@ -98,9 +82,7 @@ public final class DamagedMachines {
         return true;
     }
 
-    /**
-     * 1.7 {@code IRepairable.tryRepairMultiblock}: true when the machine was repaired (or will be, on the server).
-     */
+    /** 1.7 {@code IRepairable.tryRepairMultiblock}: true when the machine was repaired (or will be, on the server). */
     public static boolean repair(Level level, BlockPos pos, Player player) {
         Damageable machine = damaged(level, pos);
         if (machine == null) return false;
@@ -115,7 +97,7 @@ public final class DamagedMachines {
         Damageable machine = damaged(level, pos);
         if (machine == null) return null;
         List<String> text = new ArrayList<>();
-        text.add(ChatFormatting.GOLD + Component.translatable("desc.repair.with").getString());
+        text.add(ChatFormatting.GOLD + Component.translatable("desc.hbm.repair.with").getString());
         if (ToolType.getType(player.getMainHandItem()) != ToolType.TORCH)
             text.add(Component.translatable("overlay.ntmspace.repair.tool").getString());
         for (AStack stack : machine.getRepairMaterials()) {
@@ -136,11 +118,9 @@ public final class DamagedMachines {
      */
     public static void markDrops(net.minecraft.world.level.block.Block block, List<ItemStack> drops,
                                  net.minecraft.world.level.storage.loot.LootParams.Builder params) {
-        BlockEntity be = params.getOptionalParameter(
-                net.minecraft.world.level.storage.loot.parameters.LootContextParams.BLOCK_ENTITY);
+        BlockEntity be = params.getOptionalParameter(net.minecraft.world.level.storage.loot.parameters.LootContextParams.BLOCK_ENTITY);
         if (be == null) {
-            BlockPos pos = BlockPos.containing(
-                    params.getParameter(net.minecraft.world.level.storage.loot.parameters.LootContextParams.ORIGIN));
+            BlockPos pos = BlockPos.containing(params.getParameter(net.minecraft.world.level.storage.loot.parameters.LootContextParams.ORIGIN));
             be = params.getLevel().getBlockEntity(pos);
         }
         if (!(be instanceof Damageable machine)) return;
@@ -153,9 +133,7 @@ public final class DamagedMachines {
         }
     }
 
-    /**
-     * 1.7 {@code readNBT} of the dropped item's data: {@code damaged}.
-     */
+    /** 1.7 {@code readNBT} of the dropped item's data: {@code damaged}. */
     public static void applyCarried(Damageable machine, net.minecraft.nbt.CompoundTag data) {
         if (dev.golem.core.data.Tags.getBooleanOr(data, "damaged", false)) machine.setDamaged(true);
     }
@@ -164,9 +142,7 @@ public final class DamagedMachines {
         return CarriedState.readItemFlag(stack, "damaged");
     }
 
-    /**
-     * The damaged machine {@code pos} belongs to, or null.
-     */
+    /** The damaged machine {@code pos} belongs to, or null. */
     public static @Nullable Damageable damaged(Level level, BlockPos pos) {
         BlockPos core = MultiblockSurface.coreOfAny(level, pos);
         if (core == null) return null;

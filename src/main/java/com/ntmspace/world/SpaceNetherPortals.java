@@ -2,41 +2,28 @@ package com.ntmspace.world;
 
 import com.ntmspace.config.SpaceConfig;
 import com.ntmspace.orbit.Orbit;
-import dev.golem.core.world.BlockChanges;
+import dev.golem.core.world.BlockPlaces;
 import dev.golem.core.world.Portals;
-import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
-import net.minecraft.server.level.ServerLevel;
+import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.BaseFireBlock;
-import net.minecraft.world.level.block.state.BlockState;
 
-/**
- * Space's fire-placement portal rule on celestial levels and in orbit.
- */
+/** hbm-space {@code ModEventHandler.onBlockPlaced}: fire a player places on a celestial level or in orbit lights a portal. */
 public final class SpaceNetherPortals {
-    static {
-        BlockChanges.onChange(new BlockChanges.Handler() {
-            @Override
-            public boolean observesChunk(ServerLevel level, int chunkX, int chunkZ) {
-                return SpaceConfig.allowNetherPortals;
-            }
-
-            @Override
-            public void onChange(ServerLevel level, BlockPos pos, BlockState before, BlockState after) {
-                if (!(after.getBlock() instanceof BaseFireBlock)) return;
-                if (level.dimension() == Level.OVERWORLD || level.dimension() == Level.NETHER || level.dimension() == Level.END)
-                    return;
-                if (CelestialBodies.of(level) != null || Orbit.inOrbit(level)) {
-                    Portals.tryCreate(level, pos, Direction.Axis.X);
-                }
-            }
-        });
-    }
 
     private SpaceNetherPortals() {
     }
 
     public static void init() {
+        BlockPlaces.onPlace((placer, level, pos, placed) -> {
+            if (!SpaceConfig.allowNetherPortals || !(placer instanceof Player)) return;
+            if (!(placed.getBlock() instanceof BaseFireBlock) || !(level.getBlockState(pos).getBlock() instanceof BaseFireBlock)) return;
+            if (level.dimension() == Level.OVERWORLD || level.dimension() == Level.NETHER || level.dimension() == Level.END)
+                return;
+            if (CelestialBodies.of(level) != null || Orbit.inOrbit(level)) {
+                Portals.tryCreate(level, pos, Direction.Axis.X);
+            }
+        });
     }
 }

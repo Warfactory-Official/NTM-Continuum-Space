@@ -7,19 +7,15 @@ import com.ntmspace.orbit.Orbit;
 import com.ntmspace.rocket.RocketFuels;
 import com.ntmspace.satellite.SpaceSatellites;
 import dev.golem.core.client.Tooltips;
-
 import java.util.List;
 import java.util.Locale;
-
 import net.minecraft.ChatFormatting;
 import net.minecraft.client.Minecraft;
 import net.minecraft.locale.Language;
 import net.minecraft.network.chat.Component;
 import net.minecraft.world.item.ItemStack;
 
-/**
- * The launchable satellite's warhead information, editable orbit and hand-deployment prompts.
- */
+/** The launchable satellite's warhead information, editable orbit and hand-deployment prompts. */
 public final class SatelliteTooltips {
     private SatelliteTooltips() {
     }

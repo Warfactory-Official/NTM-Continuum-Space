@@ -30,8 +30,7 @@ import net.minecraft.world.entity.player.Inventory;
  */
 public final class GUITransporterRocket extends CompatContainerScreen<ContainerTransporterRocket> {
 
-    private static final Identifier TEXTURE = dev.golem.core.Ids.of(NtmSpace.MOD_ID,
-            "textures/gui/machine/gui_transporter.png");
+    private static final Identifier TEXTURE = dev.golem.core.Ids.of(NtmSpace.MOD_ID, "textures/gui/machine/gui_transporter.png");
 
     private EditBox transporterName;
     private boolean dragging;
@@ -65,8 +64,7 @@ public final class GUITransporterRocket extends CompatContainerScreen<ContainerT
         GuiDraw.blit(graphics, TEXTURE, leftPos, topPos, 0F, 0F, imageWidth, imageHeight, 256, 256);
         if (transporter == null) return;
 
-        GuiDraw.blit(graphics, TEXTURE, leftPos + 100 + (int) (transporter.threshold * 6.78), topPos + 122, imageWidth,
-                0F, 4, 15, 256, 256);
+        GuiDraw.blit(graphics, TEXTURE, leftPos + 100 + (int) (transporter.threshold * 6.78), topPos + 122, imageWidth, 0F, 4, 15, 256, 256);
 
         int threshold = transporter.getThreshold();
         int width = font.width("x" + threshold);
@@ -84,8 +82,7 @@ public final class GUITransporterRocket extends CompatContainerScreen<ContainerT
     }
 
     @Override
-    protected void extractLabels(GuiGraphicsExtractor graphics, int mouseX, int mouseY) {
-    }
+    protected void extractLabels(GuiGraphicsExtractor graphics, int mouseX, int mouseY) {}
 
     @Override
     protected void extractOwnTooltip(GuiGraphicsExtractor graphics, int mouseX, int mouseY) {
@@ -136,9 +133,7 @@ public final class GUITransporterRocket extends CompatContainerScreen<ContainerT
         return false;
     }
 
-    /**
-     * 1.7 {@code mouseClickMove}: the slider follows a drag inside its box.
-     */
+    /** 1.7 {@code mouseClickMove}: the slider follows a drag inside its box. */
     private boolean mouseClickMove(int mouseX, int mouseY) {
         TileEntityTransporterRocket transporter = menu.transporter();
         if (transporter == null) return false;
@@ -149,8 +144,7 @@ public final class GUITransporterRocket extends CompatContainerScreen<ContainerT
 
             CompoundTag data = new CompoundTag();
             data.putDouble("threshold", slidPos);
-            GolemNetwork.sendToServer(ControlEventPayload.CODEC,
-                    new ControlEventPayload(transporter.getBlockPos(), data));
+            GolemNetwork.sendToServer(ControlEventPayload.CODEC, new ControlEventPayload(transporter.getBlockPos(), data));
             return true;
         }
         return false;

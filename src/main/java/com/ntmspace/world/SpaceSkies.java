@@ -6,9 +6,7 @@ import dev.golem.core.world.TimeOfDay;
 import com.hbm.handler.ImpactSky;
 import dev.golem.core.hook.Hook;
 import dev.golem.core.world.Skies;
-
 import java.util.List;
-
 import net.minecraft.core.BlockPos;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.util.Mth;
@@ -42,13 +40,10 @@ import net.minecraft.world.phys.Vec3;
  */
 public final class SpaceSkies {
 
-    /**
-     * The {@link Skies#MODIFIERS} / {@code Skyboxes} phase of NTM: Space's sky, ordered before the default phase.
-     */
+    /** The {@link Skies#MODIFIERS} / {@code Skyboxes} phase of NTM: Space's sky, ordered before the default phase. */
     public static final String PHASE = "ntmspace:celestial";
 
-    private SpaceSkies() {
-    }
+    private SpaceSkies() {}
 
     public static void init() {
         Skies.MODIFIERS.addPhaseOrdering(PHASE, Hook.DEFAULT_PHASE);
@@ -60,8 +55,7 @@ public final class SpaceSkies {
 
             @Override
             public float daylight(Level level, float daylight) {
-                if (isKerbin(level) || SolarSystem.timeMultiplier(level) == 1 || !TimeOfDay.isNative(level))
-                    return daylight;
+                if (isKerbin(level) || SolarSystem.timeMultiplier(level) == 1 || !TimeOfDay.isNative(level)) return daylight;
                 return SpaceSkies.daylight(level, 0.0F);
             }
 
@@ -69,8 +63,7 @@ public final class SpaceSkies {
             public float sunAngle(Level level, float angle) {
                 if (isKerbin(level) || SolarSystem.timeMultiplier(level) == 1) return angle;
                 // The Time Wand changes astronomy against raw clock ticks, including its immediate phase jump.
-                return SolarSystem.solarAngle(body(level), TimeOfDay.get(level), 0.0F,
-                        SolarSystem.timeMultiplier(level)) * 360.0F;
+                return SolarSystem.solarAngle(body(level), TimeOfDay.get(level), 0.0F, SolarSystem.timeMultiplier(level)) * 360.0F;
             }
 
             @Override
@@ -110,9 +103,7 @@ public final class SpaceSkies {
             }
 
             @Override
-            public boolean rawSkyLightFactor(Level level) {
-                return true;
-            }
+            public boolean rawSkyLightFactor(Level level) { return true; }
 
             @Override
             public float skyLightFactor(Level level, float factor) {
@@ -148,9 +139,7 @@ public final class SpaceSkies {
         return weather(level, partialTicks, f);
     }
 
-    /**
-     * 1.7's weather darkening: {@code f * (1 - rain * 5 / 16) * (1 - weightedThunder * 5 / 16)}, in doubles.
-     */
+    /** 1.7's weather darkening: {@code f * (1 - rain * 5 / 16) * (1 - weightedThunder * 5 / 16)}, in doubles. */
     private static float weather(Level level, float partialTicks, float f) {
         f = (float) ((double) f * (1.0D - (double) (level.getRainLevel(partialTicks) * 5.0F) / 16.0D));
         f = (float) ((double) f * (1.0D - (double) (level.getThunderLevel(partialTicks) * 5.0F) / 16.0D));
@@ -169,17 +158,14 @@ public final class SpaceSkies {
         return f * 0.8F + 0.2F;
     }
 
-    /**
-     * {@code WorldProviderCelestial.getStarBrightness}: vanilla's curve at the body's angle; by day only beyond Duna.
-     */
+    /** {@code WorldProviderCelestial.getStarBrightness}: vanilla's curve at the body's angle; by day only beyond Duna. */
     public static float starBrightness(Level level, float partialTicks) {
         float angle = angle(level, partialTicks);
         float f = 1.0F - (Mth.cos(angle * (float) Math.PI * 2.0F) * 2.0F + 0.25F);
         f = Mth.clamp(f, 0.0F, 1.0F);
         float star = f * f * 0.5F;
         SolarSystem.Body body = body(level);
-        float distanceFactor = Mth.clamp((body.getPlanet().semiMajorAxisKm - 20_000_000F) / (80_000_000F - 20_000_000F),
-                0F, 1F);
+        float distanceFactor = Mth.clamp((body.getPlanet().semiMajorAxisKm - 20_000_000F) / (80_000_000F - 20_000_000F), 0F, 1F);
         return Mth.clamp(star, distanceFactor, 1F);
     }
 
@@ -202,28 +188,21 @@ public final class SpaceSkies {
         return null;
     }
 
-    /**
-     * Whether {@code level} is Kerbin's own surface, the overworld (vanilla's time of day).
-     */
+    /** Whether {@code level} is Kerbin's own surface, the overworld (vanilla's time of day). */
     public static boolean isKerbin(Level level) {
         return level.dimension().equals(Level.OVERWORLD);
     }
 
-    /**
-     * The name of the {@link Atmospheres} body whose air {@code level} has ({@code kerbin} on Thatmo), or null.
-     */
+    /** The name of the {@link Atmospheres} body whose air {@code level} has ({@code kerbin} on Thatmo), or null. */
     public static String airBody(Level level) {
         CelestialBodies.Body body = CelestialBodies.of(level);
         return body == null ? null : body.name();
     }
 
-    /**
-     * The body's solar angle now: 0 at noon, 0.5 at midnight. Kerbin's is vanilla's (see the class comment).
-     */
+    /** The body's solar angle now: 0 at noon, 0.5 at midnight. Kerbin's is vanilla's (see the class comment). */
     public static float angle(Level level, float partialTicks) {
         if (isKerbin(level) || TimeOfDay.isNative(level)) return Skies.celestialAngle(level, BlockPos.ZERO);
-        return SolarSystem.solarAngle(body(level), TimeOfDay.get(level), partialTicks,
-                SolarSystem.timeMultiplier(level));
+        return SolarSystem.solarAngle(body(level), TimeOfDay.get(level), partialTicks, SolarSystem.timeMultiplier(level));
     }
 
     // ---------------------------------------------------------------------------------------- eclipses
@@ -253,19 +232,15 @@ public final class SpaceSkies {
         SolarSystem.Body body = body(level);
         if (body == null) return 0;
         float solarAngle = angle(level, 0.0F);
-        List<SolarSystem.AstroMetric> metrics = SolarSystem.calculateMetricsFromBody(orbitTick, body, solarAngle,
-                multiplier);
-        eclipseAmount = eclipseFactor(metrics, SolarSystem.calculateSunSize(body),
-                SolarSystem.MAX_APPARENT_SIZE_SURFACE);
+        List<SolarSystem.AstroMetric> metrics = SolarSystem.calculateMetricsFromBody(orbitTick, body, solarAngle, multiplier);
+        eclipseAmount = eclipseFactor(metrics, SolarSystem.calculateSunSize(body), SolarSystem.MAX_APPARENT_SIZE_SURFACE);
         eclipseLevel = level;
         eclipseTick = tick;
         eclipseTimeMultiplier = multiplier;
         return eclipseAmount;
     }
 
-    /**
-     * {@code WorldProviderCelestial.getEclipseFactor}.
-     */
+    /** {@code WorldProviderCelestial.getEclipseFactor}. */
     public static double eclipseFactor(List<SolarSystem.AstroMetric> metrics, double sunSize, double maxSize) {
         double factor = 0;
         double sunArc = arc(sunSize);
@@ -281,9 +256,7 @@ public final class SpaceSkies {
         return factor;
     }
 
-    /**
-     * {@code getArc}: apparent size to the 0..1 arc of the flat quads the sky draws.
-     */
+    /** {@code getArc}: apparent size to the 0..1 arc of the flat quads the sky draws. */
     private static double arc(double apparentSize) {
         return apparentSize * 0.0017D + Math.sqrt(apparentSize * 0.00003D);
     }

@@ -4,15 +4,10 @@ import com.google.gson.JsonObject;
 import com.hbm.items.ScrapsModels;
 import dev.golem.core.dejson.Data;
 import dev.golem.core.dejson.Dejson;
-
 import java.util.List;
-
-/**
- * Extends the host selector with the palettes of Space's actual material registrations.
- */
+/** Extends the host selector with the palettes of Space's actual material registrations. */
 public final class SpaceScrapsModels {
-    private SpaceScrapsModels() {
-    }
+    private SpaceScrapsModels() {}
 
     public static void declare() {
         SpaceOreMaterials.register();
@@ -23,7 +18,7 @@ public final class SpaceScrapsModels {
         json.add("model", ScrapsModels.definition("ntmspace").toJson());
         Data.declareAsset("assets/hbm/models/item/scraps.json",
                 ScrapsModels.FALLBACK_MODEL.models(ScrapsModels.FALLBACK_MODEL_ID)
-                                           .get(ScrapsModels.FALLBACK_MODEL_ID));
+                        .get(ScrapsModels.FALLBACK_MODEL_ID));
         Data.declareAsset("assets/hbm/items/scraps.json", json);
     }
 }

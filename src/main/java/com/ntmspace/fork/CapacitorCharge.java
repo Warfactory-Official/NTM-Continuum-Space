@@ -3,18 +3,14 @@ package com.ntmspace.fork;
 import com.mojang.serialization.Codec;
 import com.mojang.serialization.codecs.RecordCodecBuilder;
 
-/**
- * Stored HE and its ceiling travel together when a complex capacitor is carried.
- */
+/** Stored HE and its ceiling travel together when a complex capacitor is carried. */
 public record CapacitorCharge(long power, long maxPower) {
     public static final Codec<CapacitorCharge> CODEC = RecordCodecBuilder.create(instance -> instance.group(
             Codec.LONG.fieldOf("power").forGetter(CapacitorCharge::power),
             Codec.LONG.fieldOf("max_power").forGetter(CapacitorCharge::maxPower)
     ).apply(instance, CapacitorCharge::new));
 
-    /**
-     * Exact percent thresholds avoid overflowing power * 100 for custom ceilings.
-     */
+    /** Exact percent thresholds avoid overflowing power * 100 for custom ceilings. */
     public static int fillPercent(long power, long ceiling) {
         var hundreds = ceiling / 100;
         var remainder = ceiling % 100;

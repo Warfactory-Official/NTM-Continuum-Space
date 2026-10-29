@@ -11,9 +11,7 @@ import com.ntmspace.registry.RocketBlocks;
 import com.ntmspace.tileentity.rocket.TileEntityMachineRocketAssembly;
 import dev.golem.core.data.Tags;
 import dev.golem.core.world.ItemStacks;
-
 import java.util.List;
-
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.network.chat.Component;
@@ -47,20 +45,9 @@ public class MachineRocketAssembly extends BlockMultiblockMachine implements ILo
     }
 
     // funky behaviour, but the space checking is still done regularly
-    @Override
-    public int[] getDimensions() {
-        return new int[]{0, 2, 4, 4, 4, 4};
-    }
-
-    @Override
-    public int getOffset() {
-        return 4;
-    }
-
-    @Override
-    public int getHeightOffset() {
-        return 2;
-    }
+    @Override public int[] getDimensions() { return new int[] {0, 2, 4, 4, 4, 4}; }
+    @Override public int getOffset() { return 4; }
+    @Override public int getHeightOffset() { return 2; }
 
     private static final int[][] BOXES = {
             // Top
@@ -89,6 +76,11 @@ public class MachineRocketAssembly extends BlockMultiblockMachine implements ILo
         var data = ItemStacks.blockEntityData(stack, RocketBlocks.ROCKET_ASSEMBLY_BE.get());
         if (data != null) visitRaised(core, Tags.getIntOr(data, "spire", 0),
                 Tags.getIntArrayOr(data, "platforms", NO_PLATFORMS), visitor);
+    }
+
+    @Override
+    protected boolean checksPlacementCells() {
+        return true;
     }
 
     public static void visitRaised(BlockPos core, int spire, int[] platforms, CellVisitor visitor) {
@@ -172,22 +164,16 @@ public class MachineRocketAssembly extends BlockMultiblockMachine implements ILo
         TileEntityMachineRocketAssembly.visitDynamicCells(level, core, pos -> visitor.cell(pos, MASK_NONE));
     }
 
-    /**
-     * A platform or spire cell at {@code at}, owned by the VAB at {@code core}.
-     */
+    /** A platform or spire cell at {@code at}, owned by the VAB at {@code core}. */
     public void placeDynamicCell(Level level, BlockPos core, BlockPos at) {
         if (!(level instanceof ServerLevel server)) return;
         BlockPos pos = at.immutable();
         Direction facing = level.getBlockState(core).getValue(FACING);
-        withoutTeardown(
-                () -> level.setBlock(pos, defaultBlockState().setValue(FACING, facing).setValue(CELL, Boolean.TRUE),
-                        3));
+        withoutTeardown(() -> level.setBlock(pos, defaultBlockState().setValue(FACING, facing).setValue(CELL, Boolean.TRUE), 3));
         if (isCellOf(level.getBlockState(pos))) MultiblockCoreIndex.put(server, pos, core);
     }
 
-    /**
-     * Removes a platform or spire cell of the VAB at {@code core}; anything else is left alone.
-     */
+    /** Removes a platform or spire cell of the VAB at {@code core}; anything else is left alone. */
     public void removeDynamicCell(Level level, BlockPos core, BlockPos at) {
         if (!(level instanceof ServerLevel server)) return;
         BlockPos pos = at.immutable();
@@ -199,8 +185,7 @@ public class MachineRocketAssembly extends BlockMultiblockMachine implements ILo
     }
 
     @Override
-    protected InteractionResult useAtCore(BlockState state, Level level, BlockPos core, Player player,
-                                          BlockHitResult hit) {
+    protected InteractionResult useAtCore(BlockState state, Level level, BlockPos core, Player player, BlockHitResult hit) {
         if (Orbit.inOrbit(level)) return InteractionResult.TRY_WITH_EMPTY_HAND;
         return super.useAtCore(state, level, core, player, hit);
     }

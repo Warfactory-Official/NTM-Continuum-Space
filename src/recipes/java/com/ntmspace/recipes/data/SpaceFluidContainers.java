@@ -5,20 +5,14 @@ import com.hbm.api.data.FluidDataMaps.Container;
 import com.hbm.api.data.FluidDataMaps.Containers;
 import com.ntmspace.block.BlockBodyOre.Body;
 import dev.golem.core.data.DataMapSource;
-
 import java.util.Optional;
 
-/**
- * NTM: Space's fluid containers, as patches of HBM's maps.
- */
+/** NTM: Space's fluid containers, as patches of HBM's maps. */
 public final class SpaceFluidContainers {
 
-    private SpaceFluidContainers() {
-    }
+    private SpaceFluidContainers() {}
 
-    /**
-     * hbm-space {@code Fluids.init()}: {@code addContainers(new CD_Canister(c))} and {@code new CD_Gastank(bottle, label)}.
-     */
+    /** hbm-space {@code Fluids.init()}: {@code addContainers(new CD_Canister(c))} and {@code new CD_Gastank(bottle, label)}. */
     public static final class Colors extends DataMapSource<Containers> {
 
         public Colors() {
@@ -53,9 +47,7 @@ public final class SpaceFluidContainers {
         }
     }
 
-    /**
-     * hbm-space {@code FluidContainerRegistry.register()}: the fixed containers NTM: Space adds.
-     */
+    /** hbm-space {@code FluidContainerRegistry.register()}: the fixed containers NTM: Space adds. */
     public static final class Items extends DataMapSource<Container> {
 
         public Items() {

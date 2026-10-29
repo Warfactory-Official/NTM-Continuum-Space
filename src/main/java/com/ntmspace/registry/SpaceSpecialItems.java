@@ -261,8 +261,10 @@ public final class SpaceSpecialItems {
         if (declared) return;
         declared = true;
 
+        // HeavyBootsRenderLayer draws the boots. 26.1 passes a worn stack to layers only when it has an asset, and its
+        // armour layer draws feet from the humanoid layer, so a leggings-only asset draws nothing there.
         Equipment.of(NS, "heavy_boots")
-                .layer(Equipment.HUMANOID, NS + ":heavy_boots").register();
+                .layer(Equipment.HUMANOID_LEGGINGS, NS + ":heavy_boots").register();
 
         // RBMK pellets: 1.7 ItemRBMKPellet drew the pellet with the enrichment overlay e0..e4 and the xenon overlay
         // (meta 5..9); HBM's model_state property is that 1.7 metadata, spelled as HBM's own pellets

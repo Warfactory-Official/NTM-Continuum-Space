@@ -1,7 +1,6 @@
 package com.ntmspace.tileentity.rocket;
 
 import java.util.function.Consumer;
-
 import com.ntmspace.satellite.SpaceSatellites;
 
 import com.hbm.items.ISatChip;
@@ -17,10 +16,8 @@ import com.ntmspace.rocket.RocketStruct.RocketStage;
 import dev.golem.core.data.DataIn;
 import dev.golem.core.data.DataOut;
 import it.unimi.dsi.fastutil.longs.LongOpenHashSet;
-
 import java.util.ArrayList;
 import java.util.List;
-
 import net.minecraft.ChatFormatting;
 import net.minecraft.core.BlockPos;
 import net.minecraft.network.RegistryFriendlyByteBuf;
@@ -53,25 +50,11 @@ public class TileEntityMachineRocketAssembly extends TileEntityMachineBase imple
     public static final int SLOT_COUNT = SLOT_DRIVES + RocketStruct.MAX_STAGES * 2;
     public static final int STACK_LIMIT = 8;
 
-    public static int fuselage(int stage) {
-        return 1 + stage * 3;
-    }
-
-    public static int fins(int stage) {
-        return 2 + stage * 3;
-    }
-
-    public static int thruster(int stage) {
-        return 3 + stage * 3;
-    }
-
-    public static int driveFrom(int stage) {
-        return SLOT_DRIVES + stage * 2;
-    }
-
-    public static int driveTo(int stage) {
-        return driveFrom(stage) + 1;
-    }
+    public static int fuselage(int stage) { return 1 + stage * 3; }
+    public static int fins(int stage) { return 2 + stage * 3; }
+    public static int thruster(int stage) { return 3 + stage * 3; }
+    public static int driveFrom(int stage) { return SLOT_DRIVES + stage * 2; }
+    public static int driveTo(int stage) { return driveFrom(stage) + 1; }
 
     public RocketStruct rocket = new RocketStruct();
 
@@ -92,9 +75,7 @@ public class TileEntityMachineRocketAssembly extends TileEntityMachineBase imple
         return "container.machineRocketAssembly";
     }
 
-    /**
-     * The "from" and "to" drives of the stage the screen shows.
-     */
+    /** The "from" and "to" drives of the stage the screen shows. */
     public ItemStack fromDrive() {
         return getItem(driveFrom(currentStage));
     }
@@ -113,8 +94,8 @@ public class TileEntityMachineRocketAssembly extends TileEntityMachineBase imple
 
     public static void serverTick(Level level, BlockPos pos, BlockState state, TileEntityMachineRocketAssembly te) {
         // updates the orbital station information and syncs it to the client, if necessary
-        ItemVOTVdrive.getTarget(te.fromDrive(), level);
-        ItemVOTVdrive.getTarget(te.toDrive(), level);
+        ItemVOTVdrive.publishStation(te.fromDrive(), level);
+        ItemVOTVdrive.publishStation(te.toDrive(), level);
 
         te.rocket = te.buildRocket();
 
@@ -131,9 +112,7 @@ public class TileEntityMachineRocketAssembly extends TileEntityMachineBase imple
         te.networkPackNT();
     }
 
-    /**
-     * The rocket in the slots; an empty stage takes the one above it.
-     */
+    /** The rocket in the slots; an empty stage takes the one above it. */
     RocketStruct buildRocket() {
         RocketStruct rocket = new RocketStruct(getItem(0));
         if (!getItem(0).isEmpty() && getItem(0).getItem() instanceof ISatChip) {
@@ -142,8 +121,7 @@ public class TileEntityMachineRocketAssembly extends TileEntityMachineBase imple
         for (int i = 1; i < RocketStruct.MAX_STAGES * 3; i += 3) {
             if (getItem(i).isEmpty() && getItem(i + 1).isEmpty() && getItem(i + 2).isEmpty()) {
                 // Check for later stages and shift them up into empty stages
-                if (i + 3 < RocketStruct.MAX_STAGES * 3 && (!getItem(i + 3).isEmpty() || !getItem(
-                        i + 4).isEmpty() || !getItem(i + 5).isEmpty())) {
+                if (i + 3 < RocketStruct.MAX_STAGES * 3 && (!getItem(i + 3).isEmpty() || !getItem(i + 4).isEmpty() || !getItem(i + 5).isEmpty())) {
                     setItem(i, getItem(i + 3));
                     setItem(i + 1, getItem(i + 4));
                     setItem(i + 2, getItem(i + 5));
@@ -168,7 +146,7 @@ public class TileEntityMachineRocketAssembly extends TileEntityMachineBase imple
         var raised = new ArrayList<Integer>();
 
         // Check headroom
-        int maxHeight = level.getMaxY() - y;
+        int maxHeight = Integer.MAX_VALUE;
         for (int h = 1; y + h < level.getMaxY(); h++) {
             BlockState above = level.getBlockState(new BlockPos(x, y + h, z));
             if (!above.canBeReplaced() && above.getBlock() != block) {
@@ -179,8 +157,7 @@ public class TileEntityMachineRocketAssembly extends TileEntityMachineBase imple
 
         double checkHeight = rocket.getHeight();
         if (rocket.capsule != null) checkHeight -= rocket.capsule.height();
-        if (rocket.stages.size() > 0 && rocket.stages.get(0).thruster != null)
-            checkHeight -= rocket.stages.get(0).thruster.height();
+        if (rocket.stages.size() > 0 && rocket.stages.get(0).thruster != null) checkHeight -= rocket.stages.get(0).thruster.height();
 
         if (checkHeight < maxHeight) {
             // Create platforms to stand on
@@ -211,23 +188,18 @@ public class TileEntityMachineRocketAssembly extends TileEntityMachineBase imple
         setChanged();
     }
 
-    /**
-     * 1.7 {@code setBlock(..., machine_rocket_assembly, meta)} under {@code safeRem}: a cell of this VAB.
-     */
+
+    /** 1.7 {@code setBlock(..., machine_rocket_assembly, meta)} under {@code safeRem}: a cell of this VAB. */
     private void placeCell(Level level, MachineRocketAssembly block, BlockPos at) {
         block.placeDynamicCell(level, worldPosition, at);
     }
 
-    /**
-     * 1.7 {@code setBlockToAir} under {@code safeRem}.
-     */
+    /** 1.7 {@code setBlockToAir} under {@code safeRem}. */
     private void removeCell(Level level, MachineRocketAssembly block, BlockPos at) {
         block.removeDynamicCell(level, worldPosition, at);
     }
 
-    /**
-     * Every position a platform or spire may occupy, for the teardown.
-     */
+    /** Every position a platform or spire may occupy, for the teardown. */
     public static void visitDynamicCells(Level level, BlockPos core, Consumer<BlockPos> visitor) {
         BlockPos.MutableBlockPos pos = new BlockPos.MutableBlockPos();
         for (int h = 1; core.getY() + h < level.getMaxY(); h++) {
@@ -287,17 +259,13 @@ public class TileEntityMachineRocketAssembly extends TileEntityMachineBase imple
 
     // ---------------------------------------------------------------------------------------- inventory and sync
 
-    /**
-     * 1.7 {@code getInventoryStackLimit}.
-     */
+    /** 1.7 {@code getInventoryStackLimit}. */
     @Override
     public int getMaxStackSize() {
         return STACK_LIMIT;
     }
 
-    /**
-     * 1.7 {@code isBreaking}: the drive slots hold ghost copies, which are not dropped.
-     */
+    /** 1.7 {@code isBreaking}: the drive slots hold ghost copies, which are not dropped. */
     public boolean dropsSlot(int slot) {
         return slot < SLOT_DRIVES;
     }
@@ -337,7 +305,7 @@ public class TileEntityMachineRocketAssembly extends TileEntityMachineBase imple
     protected void loadData(DataIn input) {
         super.loadData(input);
         platforms = input.getIntArrayOr("platforms", new int[0]);
-        spire = input.getIntOr("spire", 0);
+        spire = input.getIntOr("spire", platforms.length == 0 ? 0 : platforms[platforms.length - 1]);
     }
 
     public void setCurrentStage(int stage) {
@@ -354,9 +322,7 @@ public class TileEntityMachineRocketAssembly extends TileEntityMachineBase imple
         return new ContainerMachineRocketAssembly(containerId, inventory, this);
     }
 
-    /**
-     * The payload a stack is, for the payload slot (1.7 {@code SlotCapsule}): a capsule or a satellite, not the pod.
-     */
+    /** The payload a stack is, for the payload slot (1.7 {@code SlotCapsule}): a capsule or a satellite, not the pod. */
     public static boolean isCapsule(ItemStack stack) {
         var part = RocketParts.get(stack);
         if (part == null || part.type() != com.hbm.items.weapon.ItemCustomMissilePart.PartType.WARHEAD) return false;

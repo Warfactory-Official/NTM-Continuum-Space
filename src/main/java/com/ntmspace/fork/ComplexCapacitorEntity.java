@@ -34,9 +34,7 @@ public class ComplexCapacitorEntity extends TileEntityLoadedBase implements IEne
         this.maxPower = state.getBlock() instanceof ComplexCapacitor capacitor ? capacitor.power : 0L;
     }
 
-    /**
-     * The side it was placed against, which is the input side.
-     */
+    /** The side it was placed against, which is the input side. */
     public ForgeDirection inputSide() {
         return ForgeDirection.getOrientation(getBlockState().getValue(ComplexCapacitor.FACING));
     }
@@ -55,8 +53,7 @@ public class ComplexCapacitorEntity extends TileEntityLoadedBase implements IEne
         boolean didStep = false;
         ForgeDirection last = null;
         while (level.getBlockState(target).getBlock() instanceof MachineCapacitorBus) {
-            ForgeDirection current = ForgeDirection.getOrientation(
-                    level.getBlockState(target).getValue(MachineCapacitorBus.FACING));
+            ForgeDirection current = ForgeDirection.getOrientation(level.getBlockState(target).getValue(MachineCapacitorBus.FACING));
             if (!didStep) last = current;
             didStep = true;
             if (last != current) {
@@ -81,11 +78,9 @@ public class ComplexCapacitorEntity extends TileEntityLoadedBase implements IEne
 
     private PortDef[] cachedPorts;
 
-    /**
-     * 1.7 subscribed on the input side only.
-     */
+    /** 1.7 subscribed on the input side only. */
     public PortDef[] getPorts() {
-        if (cachedPorts == null) cachedPorts = new PortDef[]{PortDef.make(worldPosition, inputSide())};
+        if (cachedPorts == null) cachedPorts = new PortDef[] {PortDef.make(worldPosition, inputSide())};
         return cachedPorts;
     }
 
@@ -127,40 +122,15 @@ public class ComplexCapacitorEntity extends TileEntityLoadedBase implements IEne
         setPower(power - taken);
     }
 
-    @Override
-    public long getPower() {
-        return power;
-    }
+    @Override public long getPower() { return power; }
+    @Override public long getMaxPower() { return maxPower; }
+    @Override public long getProviderSpeed() { return 0L; }
+    /** Maximum rate sent through the capacitor bus by {@link #serverTick}. */
+    public long getBusProviderSpeed() { return getMaxPower() / 300; }
 
-    @Override
-    public long getMaxPower() {
-        return maxPower;
-    }
-
-    @Override
-    public long getProviderSpeed() {
-        return 0L;
-    }
-
-    /**
-     * Maximum rate sent through the capacitor bus by {@link #serverTick}.
-     */
-    public long getBusProviderSpeed() {
-        return getMaxPower() / 300;
-    }
-
-    @Override
-    public long getReceiverSpeed() {
-        return this.getMaxPower() / 100;
-    }
-
-    @Override
-    public ConnectionPriority getPriority() {
-        return ConnectionPriority.LOW;
-    }
-
-    @Override
-    public void setPower(long power) {
+    @Override public long getReceiverSpeed() { return this.getMaxPower() / 100; }
+    @Override public ConnectionPriority getPriority() { return ConnectionPriority.LOW; }
+    @Override public void setPower(long power) {
         this.power = IBatteryItem.clampCharge(power, maxPower);
         setChanged();
         dataChanged();
@@ -185,9 +155,7 @@ public class ComplexCapacitorEntity extends TileEntityLoadedBase implements IEne
         setPower(input.getLongOr("power", 0L));
     }
 
-    /**
-     * Restores the actual carried ceiling before bounding its stored charge.
-     */
+    /** Restores the actual carried ceiling before bounding its stored charge. */
     public void restore(CapacitorCharge state) {
         setMaximum(state.maxPower());
         setPower(state.power());
@@ -206,8 +174,7 @@ public class ComplexCapacitorEntity extends TileEntityLoadedBase implements IEne
     @Override
     public String provideRORValue(String name) {
         if ((PREFIX_VALUE + "fill").equals(name)) return "" + this.power;
-        if ((PREFIX_VALUE + "fillpercent").equals(name))
-            return "" + (maxPower == 0 ? 0 : CapacitorCharge.fillPercent(power, maxPower));
+        if ((PREFIX_VALUE + "fillpercent").equals(name)) return "" + (maxPower == 0 ? 0 : CapacitorCharge.fillPercent(power, maxPower));
         return null;
     }
 }

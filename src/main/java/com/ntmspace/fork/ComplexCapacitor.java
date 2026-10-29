@@ -40,21 +40,13 @@ import java.util.List;
  */
 public class ComplexCapacitor extends CompatBlock implements TickingBlock, ILookOverlay, ICapabilityBlock {
 
-    /**
-     * 1.7's metadata: the side of the clicked neighbour, i.e. this block's input face.
-     */
+    /** 1.7's metadata: the side of the clicked neighbour, i.e. this block's input face. */
     public static final EnumProperty<Direction> FACING = BlockStateProperties.FACING;
 
     public final long power;
     private static final MachineCaps CAPS = MachineCaps.blockKeyed().powerIn().fe()
-                                                       .faces(ComplexCapacitorEntity.class,
-                                                               (owner, side) -> side == owner.inputSide()
-                                                                                             .toDirection());
-
-    @Override
-    public MachineCaps caps() {
-        return CAPS;
-    }
+            .faces(ComplexCapacitorEntity.class, (owner, side) -> side == owner.inputSide().toDirection());
+    @Override public MachineCaps caps() { return CAPS; }
 
     public ComplexCapacitor(Properties properties, long power) {
         super(properties);
@@ -98,8 +90,7 @@ public class ComplexCapacitor extends CompatBlock implements TickingBlock, ILook
     public ILookOverlay.Data getLookOverlay(Level level, BlockPos pos, Player player) {
         if (!(level.getBlockEntity(pos) instanceof ComplexCapacitorEntity battery)) return null;
         List<String> text = new ArrayList<>();
-        text.add(Library.getShortNumber(battery.getPower()) + " / " + Library.getShortNumber(
-                battery.getMaxPower()) + "HE");
+        text.add(Library.getShortNumber(battery.getPower()) + " / " + Library.getShortNumber(battery.getMaxPower()) + "HE");
         double percent = battery.getMaxPower() == 0 ? 0 : (double) battery.getPower() / (double) battery.getMaxPower();
         int charge = (int) Math.floor(percent * 10_000D);
         int color = ((int) (0xFF - 0xFF * percent)) << 16 | ((int) (0xFF * percent) << 8);
@@ -110,8 +101,7 @@ public class ComplexCapacitor extends CompatBlock implements TickingBlock, ILook
     }
 
     @Override
-    public void setPlacedBy(Level level, BlockPos pos, BlockState state, @Nullable LivingEntity placer,
-                            ItemStack stack) {
+    public void setPlacedBy(Level level, BlockPos pos, BlockState state, @Nullable LivingEntity placer, ItemStack stack) {
         super.setPlacedBy(level, pos, state, placer, stack);
         if (level.isClientSide()) return;
         if (level.getBlockEntity(pos) instanceof ComplexCapacitorEntity capacitor) {
@@ -125,8 +115,7 @@ public class ComplexCapacitor extends CompatBlock implements TickingBlock, ILook
         ItemStack stack = new ItemStack(this);
         // a player break removes the block entity before the drops roll, so the loot context carries it
         BlockEntity be = params.getOptionalParameter(LootContextParams.BLOCK_ENTITY);
-        if (be == null)
-            be = params.getLevel().getBlockEntity(BlockPos.containing(params.getParameter(LootContextParams.ORIGIN)));
+        if (be == null) be = params.getLevel().getBlockEntity(BlockPos.containing(params.getParameter(LootContextParams.ORIGIN)));
         if (be instanceof ComplexCapacitorEntity capacitor && (capacitor.getPower() > 0 || capacitor.getMaxPower() != power)) {
             ForkBaseChanges.CAPACITOR_STATE.set(stack,
                     new CapacitorCharge(capacitor.getPower(), capacitor.getMaxPower()));
@@ -134,9 +123,7 @@ public class ComplexCapacitor extends CompatBlock implements TickingBlock, ILook
         return List.of(stack);
     }
 
-    /**
-     * hbm-space's order: capacity, charge and discharge, the description, {@code extra}, then the stored charge.
-     */
+    /** hbm-space's order: capacity, charge and discharge, the description, {@code extra}, then the stored charge. */
     public List<Component> tooltip(ItemStack stack, List<Component> extra) {
         var carried = ForkBaseChanges.CAPACITOR_STATE.get(stack);
         var maximum = Math.min(carried.map(CapacitorCharge::maxPower).orElse(power), power);
@@ -151,7 +138,7 @@ public class ComplexCapacitor extends CompatBlock implements TickingBlock, ILook
         var stored = carried.map(state -> IBatteryItem.clampCharge(state.power(), maximum)).orElse(null);
         if (stored != null) {
             list.add(Component.literal(Library.getShortNumber(stored) + "/" + Library.getShortNumber(maximum) + "HE")
-                              .withStyle(ChatFormatting.YELLOW));
+                    .withStyle(ChatFormatting.YELLOW));
         }
         return list;
     }

@@ -10,15 +10,11 @@ import net.minecraft.client.particle.Particle;
 import net.minecraft.core.particles.SimpleParticleType;
 import net.minecraft.util.RandomSource;
 
-/**
- * hbm-space ParticleDuoDec/ParticleDuoDec2: world-lit note quads with a slow, jittering fall.
- */
+/** hbm-space ParticleDuoDec/ParticleDuoDec2: world-lit note quads with a slow, jittering fall. */
 public final class ParticleDuoDec extends CompatParticle {
-    private final boolean tune;
 
     private ParticleDuoDec(ClientLevel level, double x, double y, double z, boolean tune, RandomSource providerRandom) {
         super(level, x, y, z, Particles.sprite(Ids.of(NtmSpace.MOD_ID, tune ? "particlenote2" : "particlenote1")));
-        this.tune = tune;
         setLayer(ParticleLayer.TRANSLUCENT);
         var shade = 1F - providerRandom.nextFloat() * 0.2F;
         setColor(shade, shade, shade);
@@ -35,10 +31,6 @@ public final class ParticleDuoDec extends CompatParticle {
             zd += random.nextGaussian() * 0.002D;
             if (yd < -0.025D) yd = -0.025D;
         }
-    }
-
-    public boolean isTune() {
-        return tune;
     }
 
     public static final class Provider extends Particles.Provider<SimpleParticleType> {

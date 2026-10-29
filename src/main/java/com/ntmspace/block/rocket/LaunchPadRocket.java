@@ -18,10 +18,8 @@ import com.ntmspace.registry.RocketBlocks;
 import com.ntmspace.tileentity.rocket.TileEntityLaunchPadRocket;
 import dev.golem.core.data.Tags;
 import dev.golem.core.world.ItemStacks;
-
 import java.util.ArrayList;
 import java.util.List;
-
 import net.minecraft.ChatFormatting;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
@@ -86,7 +84,7 @@ public class LaunchPadRocket extends BlockMultiblockMachine implements ILookOver
     @Override
     protected BlockState cellStateFor(int localX, int localY, int localZ, Direction facing, int shapeId) {
         return super.cellStateFor(localX, localY, localZ, facing, shapeId)
-                    .setValue(LADDER, localZ == -5 && localX == (localY >= 3 ? 2 : 6));
+                .setValue(LADDER, localZ == -5 && localX == (localY >= 3 ? 2 : 6));
     }
 
     public @Nullable AABB climbBox(BlockState state) {
@@ -98,27 +96,18 @@ public class LaunchPadRocket extends BlockMultiblockMachine implements ILookOver
         return new TileEntityLaunchPadRocket(pos, state);
     }
 
-    @Override
-    public int[] getDimensions() {
-        return new int[]{2, 0, 7, 6, 6, 6};
-    }
-
-    @Override
-    public int getOffset() {
-        return 6;
-    }
+    @Override public int[] getDimensions() { return new int[] {2, 0, 7, 6, 6, 6}; }
+    @Override public int getOffset() { return 6; }
 
     @Override
     protected void visitCells(BlockPos core, Direction facing, CellVisitor visitor) {
         ForgeDirection dir = ForgeDirection.getOrientation(facing);
 
         // Main body
-        MultiblockHandlerXR.visitBox(core, new int[]{2, 0, 6, 6, 4, 4}, facing, visitor);
+        MultiblockHandlerXR.visitBox(core, new int[] {2, 0, 6, 6, 4, 4}, facing, visitor);
 
-        MultiblockHandlerXR.visitBox(core.offset(-dir.offsetX * 2, 0, -dir.offsetZ * 2), new int[]{2, 0, 4, 0, 6, 6},
-                facing, visitor);
-        MultiblockHandlerXR.visitBox(core.offset(dir.offsetX * 2, 0, dir.offsetZ * 2), new int[]{2, 0, 0, 4, 6, 6},
-                facing, visitor);
+        MultiblockHandlerXR.visitBox(core.offset(-dir.offsetX * 2, 0, -dir.offsetZ * 2), new int[] {2, 0, 4, 0, 6, 6}, facing, visitor);
+        MultiblockHandlerXR.visitBox(core.offset(dir.offsetX * 2, 0, dir.offsetZ * 2), new int[] {2, 0, 0, 4, 6, 6}, facing, visitor);
 
         // Inputs, open on their back face
         int mask = maskOf(MultiblockMaskTable.toLocal(facing.getOpposite(), facing));
@@ -139,6 +128,11 @@ public class LaunchPadRocket extends BlockMultiblockMachine implements ILookOver
         visitCells(core, facing, visitor);
         var data = ItemStacks.blockEntityData(stack, RocketBlocks.LAUNCH_PAD_ROCKET_BE.get());
         if (data != null) visitTower(core, facing, Tags.getIntOr(data, "tower", 0), visitor);
+    }
+
+    @Override
+    protected boolean checksPlacementCells() {
+        return true;
     }
 
     public static void visitTower(BlockPos core, Direction facing, int height, CellVisitor visitor) {
@@ -198,10 +192,7 @@ public class LaunchPadRocket extends BlockMultiblockMachine implements ILookOver
         var state = level.getBlockState(pos);
         return state.is(this) && state.getValue(LADDER);
     }
-
-    /**
-     * 1.7's 12 + 1 input cells (and the cells its {@code getConPos} reached from behind them).
-     */
+    /** 1.7's 12 + 1 input cells (and the cells its {@code getConPos} reached from behind them). */
     public static List<BlockPos> inputs(BlockPos core, Direction facing) {
         ForgeDirection dir = ForgeDirection.getOrientation(facing);
         ForgeDirection rot = dir.getRotation(ForgeDirection.UP);
@@ -245,9 +236,7 @@ public class LaunchPadRocket extends BlockMultiblockMachine implements ILookOver
         };
     }
 
-    /**
-     * A tower or platform cell at {@code at}, owned by the pad at {@code core}.
-     */
+    /** A tower or platform cell at {@code at}, owned by the pad at {@code core}. */
     public void placeDynamicCell(Level level, BlockPos core, BlockPos at) {
         if (!(level instanceof ServerLevel server)) return;
         BlockPos pos = at.immutable();
@@ -270,8 +259,7 @@ public class LaunchPadRocket extends BlockMultiblockMachine implements ILookOver
     }
 
     @Override
-    protected InteractionResult useAtCore(BlockState state, Level level, BlockPos core, Player player,
-                                          BlockHitResult hit) {
+    protected InteractionResult useAtCore(BlockState state, Level level, BlockPos core, Player player, BlockHitResult hit) {
         if (Orbit.inOrbit(level)) return InteractionResult.TRY_WITH_EMPTY_HAND;
         return super.useAtCore(state, level, core, player, hit);
     }
@@ -297,15 +285,13 @@ public class LaunchPadRocket extends BlockMultiblockMachine implements ILookOver
 
         for (FluidTankNTM tank : pad.tanks) {
             if (tank.getTankType() == Fluids.NONE) continue;
-            text.add(ChatFormatting.GREEN + "-> " + ChatFormatting.RESET + tank.getTankType()
-                                                                               .getDisplayNameString() + ": "
+            text.add(ChatFormatting.GREEN + "-> " + ChatFormatting.RESET + tank.getTankType().getDisplayNameString() + ": "
                     + tank.getFill() + "/" + tank.getMaxFill() + "mB");
         }
 
         if (pad.solidFuel.max > 0) {
             text.add(ChatFormatting.GREEN + "-> " + ChatFormatting.RESET
-                    + ModFuelItems.rocket_fuel.get().getName(ModFuelItems.rocket_fuel.get().getDefaultInstance())
-                                              .getString()
+                    + ModFuelItems.rocket_fuel.get().getName(ModFuelItems.rocket_fuel.get().getDefaultInstance()).getString()
                     + ": " + pad.solidFuel.level + "/" + pad.solidFuel.max + "kg");
         }
 

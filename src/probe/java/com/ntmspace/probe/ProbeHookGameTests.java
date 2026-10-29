@@ -7,8 +7,10 @@ import com.hbm.inventory.fluid.Fluids;
 import dev.golem.core.gametest.GameTests;
 import dev.golem.core.hook.Hook;
 import dev.golem.core.hook.Verdict;
+import dev.golem.core.world.Weathers;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
 import net.minecraft.core.BlockPos;
 import net.minecraft.gametest.framework.GameTestHelper;
 import net.minecraft.network.chat.Component;
@@ -74,7 +76,7 @@ public final class ProbeHookGameTests {
         rows.add(new Row("Environment.LIGHT_ON", Environment.LIGHT_ON, false));
         rows.add(new Row("Environment.NUCLEAR_BLAST", Environment.NUCLEAR_BLAST, false));
         rows.add(new Row("SkyOwnership.OWNERS", com.hbm.api.environment.SkyOwnership.OWNERS, false));
-        rows.add(new Row("Weathers.PROVIDERS", dev.golem.core.world.Weathers.PROVIDERS, false));
+        rows.add(new Row("Weathers.PROVIDERS", Weathers.PROVIDERS, false));
         rows.add(new Row("Skies.MODIFIERS", dev.golem.core.world.Skies.MODIFIERS, false));
         rows.add(new Row("ArmorUtil.HAZMAT", com.hbm.handler.ArmorUtil.HAZMAT, false));
         rows.add(new Row("HazardTransformerRadiationNBT.COMPONENT_RADIATION",
@@ -180,7 +182,7 @@ public final class ProbeHookGameTests {
             double spacePressure = firstNumber(space(Environment.PRESSURE).stream().map(l -> l.pressure(kerbin, at)).toList());
             Verdict spaceCompress = Verdict.first(space(Environment.COMPRESSION), l -> l.compress(kerbin, at, 0));
             var spaceWater = space(Environment.GROUNDWATER).stream().map(l -> l.groundwater(kerbin, at))
-                    .filter(java.util.Objects::nonNull).findFirst().orElse(null);
+                    .filter(Objects::nonNull).findFirst().orElse(null);
             double spaceGravity = firstNumber(space(Environment.GRAVITY).stream().map(l -> l.gravity(cow)).toList());
             double spaceSun = firstNumber(space(Environment.SUNLIGHT).stream().map(l -> l.sunlight(kerbin, at)).toList());
             expect(errors, spaceBreath == Verdict.ALLOW && spaceCompress == Verdict.ALLOW && !Double.isNaN(spacePressure)
@@ -272,16 +274,15 @@ public final class ProbeHookGameTests {
             expect(errors, !netherBefore && com.hbm.api.environment.SkyOwnership.claimed(nether)
                     && com.hbm.api.environment.SkyOwnership.claimed(kerbin) && !com.hbm.api.environment.SkyOwnership.claimed(end),
                     "SkyOwnership: both claims must hold, the end stays unclaimed");
-            // WEATHER: first non-null; NTM: Space's answer (if it gives one; it leaves Kerbin and the nether to vanilla
-            // unless one of its tests set a body weather) stands, the probe's provider after it answers otherwise
-            var probeWeather = new dev.golem.core.world.Weathers.State(0.7F, 0.3F);
+            // WEATHER: first non-null; an earlier answer (NTM: Space's, or a Space weather test's fixture running in the
+            // same batch) stands, the probe's provider after them answers otherwise
+            var probeWeather = new Weathers.State(0.7F, 0.3F);
             for (ServerLevel weatherLevel : List.of(kerbin, nether)) {
-                var spaceWeather = space(dev.golem.core.world.Weathers.PROVIDERS).stream().map(p -> p.weather(weatherLevel))
-                        .filter(java.util.Objects::nonNull).findFirst().orElse(null);
+                var earlier = Weathers.weather(weatherLevel);
                 ProbeMarks.level("weather", weatherLevel.dimension(), probeWeather);
-                var combined = dev.golem.core.world.Weathers.weather(weatherLevel);
-                expect(errors, java.util.Objects.equals(combined, spaceWeather != null ? spaceWeather : probeWeather),
-                        "Weathers in " + weatherLevel.dimension() + ": NTM: Space " + spaceWeather + ", combined " + combined);
+                var combined = Weathers.weather(weatherLevel);
+                expect(errors, Objects.equals(combined, earlier != null ? earlier : probeWeather),
+                        "Weathers in " + weatherLevel.dimension() + ": earlier " + earlier + ", combined " + combined);
             }
             // SKIES: the probe's modifier receives what the earlier phases made of the daylight (NTM: Space's celestial
             // phase is active on its other bodies; the harness checks that chain on the Mun) and halves it

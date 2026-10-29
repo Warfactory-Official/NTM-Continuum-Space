@@ -8,9 +8,7 @@ import net.minecraft.core.particles.ParticleType;
 import net.minecraft.core.particles.SimpleParticleType;
 import net.minecraft.core.registries.Registries;
 
-/**
- * The two note effects named by hbm-space's ParticleUtil.
- */
+/** The two note effects named by hbm-space's ParticleUtil. */
 public final class SpaceParticles {
     private static final DeferredRegister<ParticleType<?>> PARTICLES =
             DeferredRegister.create(Registries.PARTICLE_TYPE, NtmSpace.MOD_ID);

@@ -1,6 +1,5 @@
 # Authored JSON under Dejson-owned folders (exact paths, or a folder ending in a slash).
 assets/ntmspace/models/block/ore_overlay.json
-assets/hbm/items/machine_electrolyser.json
 data/ntmspace/dimension/
 data/ntmspace/dimension_type/
 data/ntmspace/worldgen/

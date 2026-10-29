@@ -56,14 +56,12 @@ import com.ntmspace.NtmSpace;
 import dev.golem.core.data.DataFiles;
 import dev.golem.core.gametest.GameTests;
 import dev.golem.core.world.RecipeTables;
-
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-
 import net.minecraft.core.HolderLookup;
 import net.minecraft.gametest.framework.GameTestHelper;
 import net.minecraft.server.MinecraftServer;
@@ -86,8 +84,7 @@ public final class RecipeChangeGameTests {
     public static final GameTests.Function REMOVALS = TESTS.function("recipe_change_removals_absent", 40,
             () -> RecipeChangeGameTests::removalsAbsent);
 
-    private RecipeChangeGameTests() {
-    }
+    private RecipeChangeGameTests() {}
 
     public static void init() {
         // sub-agent test classes (one line each)
@@ -100,9 +97,7 @@ public final class RecipeChangeGameTests {
         com.ntmspace.gametest.RecipeChangeReplacementGameTests.init();
     }
 
-    /**
-     * HBM's tables by folder name ({@code hbm:<name>}).
-     */
+    /** HBM's tables by folder name ({@code hbm:<name>}). */
     static Map<String, RecipeTables.Table<?>> tables() {
         Map<String, RecipeTables.Table<?>> t = new LinkedHashMap<>();
         t.put("ammo_press", AmmoPressRecipes.TABLE.table);
@@ -167,8 +162,7 @@ public final class RecipeChangeGameTests {
         Map<String, RecipeTables.Table<?>> tables = tables();
         List<String> errors = new ArrayList<>();
         int checked = 0;
-        for (Map.Entry<String, JsonElement> file : DataFiles.read(DataFiles.recipeFolder(), server.getResourceManager())
-                                                            .entrySet()) {
+        for (Map.Entry<String, JsonElement> file : DataFiles.read(DataFiles.recipeFolder(), server.getResourceManager()).entrySet()) {
             String id = file.getKey();
             if (!id.startsWith(NtmSpace.MOD_ID + ":")) continue;
             String path = id.substring(id.indexOf(':') + 1);
@@ -183,8 +177,7 @@ public final class RecipeChangeGameTests {
             if (problem != null) errors.add(problem);
         }
         if (checked == 0) errors.add("no addon recipe files found");
-        NtmSpace.LOG.info("recipe_change_addon_rows_load: {} addon table rows checked, {} wrong", checked,
-                errors.size());
+        NtmSpace.LOG.info("recipe_change_addon_rows_load: {} addon table rows checked, {} wrong", checked, errors.size());
         finish(helper, errors);
     }
 
@@ -223,11 +216,9 @@ public final class RecipeChangeGameTests {
     private static void removalsAbsent(GameTestHelper helper) {
         MinecraftServer server = helper.getLevel().getServer();
         Set<String> removed = new HashSet<>();
-        for (Map.Entry<String, JsonElement> file : DataFiles.read(RecipeTables.REMOVALS, server.getResourceManager())
-                                                            .entrySet()) {
+        for (Map.Entry<String, JsonElement> file : DataFiles.read(RecipeTables.REMOVALS, server.getResourceManager()).entrySet()) {
             if (!file.getKey().startsWith(NtmSpace.MOD_ID + ":") || !file.getValue().isJsonObject()) continue;
-            for (JsonElement id : file.getValue().getAsJsonObject().getAsJsonArray("recipes"))
-                removed.add(id.getAsString());
+            for (JsonElement id : file.getValue().getAsJsonObject().getAsJsonArray("recipes")) removed.add(id.getAsString());
         }
         List<String> errors = new ArrayList<>();
         if (removed.isEmpty()) errors.add("no removal lists found");
@@ -255,8 +246,7 @@ public final class RecipeChangeGameTests {
             helper.succeed();
             return;
         }
-        String message = errors.size() + " problem(s): " + String.join("; ",
-                errors.subList(0, Math.min(20, errors.size())));
+        String message = errors.size() + " problem(s): " + String.join("; ", errors.subList(0, Math.min(20, errors.size())));
         NtmSpace.LOG.error("GameTest failure: {}", message);
         helper.fail(message);
     }

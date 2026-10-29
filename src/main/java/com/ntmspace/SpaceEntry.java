@@ -64,7 +64,6 @@ public final class SpaceEntry implements ModEntry {
         ForeignFluids.registerMachines(NtmSpace.MOD_ID);
         ForeignItems.registerContents(NtmSpace.MOD_ID);
         SpaceConfig.load();
-        SpaceNetherPortals.init();
         SpacePedestalConditions.init();
         MachineDynConfig.register(TileEntityRadiator.CONFIG);
         SpaceFluidPropertyData.init();
@@ -138,6 +137,8 @@ public final class SpaceEntry implements ModEntry {
         V1ArmorEffects.init();
         com.ntmspace.breathing.OxygenSync.init();
         com.ntmspace.atmosphere.AtmosphereHandler.init();
+        // after the atmosphere: 1.7 lit no portal from fire it had already snuffed for want of oxygen
+        SpaceNetherPortals.init();
         com.ntmspace.world.SpaceEnvironment.init();
         com.ntmspace.world.SpaceSkies.init();
         // the bodies' weather on their levels, Duna's dust storms, satellites and stations in the sky

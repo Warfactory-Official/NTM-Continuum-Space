@@ -5,9 +5,7 @@ import com.hbm.inventory.recipes.PedestalRecipes.Row;
 import com.ntmspace.fork.SpacePedestalConditions;
 import dev.golem.core.world.RecipeSource;
 
-/**
- * Space PedestalRecipes requires NEW_MOON for the Dani ritual.
- */
+/** Space PedestalRecipes requires NEW_MOON for the Dani ritual. */
 public final class PedestalTable extends RecipeSource<Row> {
 
     public PedestalTable() {

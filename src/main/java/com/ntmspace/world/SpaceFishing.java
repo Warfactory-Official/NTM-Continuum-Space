@@ -35,9 +35,7 @@ public final class SpaceFishing {
         return category == FishingLoot.Category.FISH ? deadFish(random) : null;
     }
 
-    /**
-     * WorldProviderCelestial.getFish: weights 10/5/2/10/5/1/10, with ten ink sacs and a damaged rod.
-     */
+    /** WorldProviderCelestial.getFish: weights 10/5/2/10/5/1/10, with ten ink sacs and a damaged rod. */
     private static ItemStack deadFish(RandomSource random) {
         var roll = random.nextInt(43);
         if (roll < 10) return Ingredients.potionStack("minecraft:potion", "minecraft:water");

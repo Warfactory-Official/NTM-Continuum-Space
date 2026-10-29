@@ -19,9 +19,7 @@ import com.ntmspace.registry.StationBlocks;
 import com.ntmspace.world.SolarSystem;
 import dev.golem.core.data.DataIn;
 import dev.golem.core.data.DataOut;
-
 import java.util.List;
-
 import net.minecraft.ChatFormatting;
 import net.minecraft.core.BlockPos;
 import net.minecraft.network.RegistryFriendlyByteBuf;
@@ -55,7 +53,7 @@ public class TileEntityXenonThruster extends TileEntityMachineBase implements Pr
 
     public TileEntityXenonThruster(BlockPos pos, BlockState state) {
         super(StationBlocks.XENON_THRUSTER_BE.get(), pos, state, 0);
-        tanks = new FluidTankNTM[]{new FluidTankNTM(Fluids.XENON, 4_000)};
+        tanks = new FluidTankNTM[] {new FluidTankNTM(Fluids.XENON, 4_000)};
     }
 
     @Override
@@ -119,29 +117,23 @@ public class TileEntityXenonThruster extends TileEntityMachineBase implements Pr
         return cachedPorts;
     }
 
-    /**
-     * 1.7 {@code getConPos}: the three blocks behind the engine (relative to its facing).
-     */
+    /** 1.7 {@code getConPos}: the three blocks behind the engine (relative to its facing). */
     public DirPos[] getConPos() {
         return conPos(worldPosition, MachineCore.facing(getBlockState()));
     }
 
-    /**
-     * {@link #getConPos} for a core at {@code core} facing {@code dir}.
-     */
+    /** {@link #getConPos} for a core at {@code core} facing {@code dir}. */
     public static DirPos[] conPos(BlockPos core, ForgeDirection dir) {
         ForgeDirection rot = dir.getRotation(ForgeDirection.UP);
         int x = core.getX(), y = core.getY(), z = core.getZ();
-        return new DirPos[]{
+        return new DirPos[] {
                 new DirPos(x - dir.offsetX - rot.offsetX, y, z - dir.offsetZ - rot.offsetZ, dir),
                 new DirPos(x - dir.offsetX, y, z - dir.offsetZ, dir),
                 new DirPos(x - dir.offsetX + rot.offsetX, y, z - dir.offsetZ + rot.offsetZ, dir),
         };
     }
 
-    /**
-     * 1.7 {@code invalidate} and {@code onChunkUnload}.
-     */
+    /** 1.7 {@code invalidate} and {@code onChunkUnload}. */
     @Override
     public void setRemoved() {
         super.setRemoved();
@@ -189,9 +181,7 @@ public class TileEntityXenonThruster extends TileEntityMachineBase implements Pr
         return MachineCore.facing(getBlockState()) == ForgeDirection.WEST;
     }
 
-    /**
-     * 1.7 {@code getRenderBoundingBox} (the renderer draws off-screen, so only Forge 1.20.1 asks).
-     */
+    /** 1.7 {@code getRenderBoundingBox} (the renderer draws off-screen, so only Forge 1.20.1 asks). */
     public AABB renderBounds() {
         BlockPos p = worldPosition;
         return new AABB(p.getX() - 2, p.getY() - 1, p.getZ() - 2, p.getX() + 3, p.getY() + 2, p.getZ() + 3);

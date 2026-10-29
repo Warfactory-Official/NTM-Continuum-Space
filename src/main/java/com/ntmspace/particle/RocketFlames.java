@@ -2,9 +2,7 @@ package com.ntmspace.particle;
 
 import com.hbm.particle.RocketFlameColor;
 
-/**
- * The colors and packed brightness of ParticleRocketBF, Fusion, MUD, SCH and UP in Space 1.7.
- */
+/** The colors and packed brightness of ParticleRocketBF, Fusion, MUD, SCH and UP in Space 1.7. */
 public final class RocketFlames {
     public static final RocketFlameColor BALEFIRE = new RocketFlameColor(0F, 1F, 0F, false, false, false, 240);
     public static final RocketFlameColor FUSION = new RocketFlameColor(1F, 1F, 1F, false, false, true, 240);

@@ -1,14 +1,10 @@
 package com.ntmspace.rocket;
 
 import dev.golem.core.Ids;
-
 import java.util.Set;
-
 import net.minecraft.resources.Identifier;
 
-/**
- * Space 1.7 ResourceManager's HFRWavefrontObject part loads; the remaining parts use face normals.
- */
+/** Space 1.7 ResourceManager's HFRWavefrontObject part loads; the remaining parts use face normals. */
 public final class RocketPartNormals {
     private RocketPartNormals() {
     }

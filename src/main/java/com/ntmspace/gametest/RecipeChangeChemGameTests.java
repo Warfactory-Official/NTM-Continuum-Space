@@ -24,11 +24,9 @@ import com.hbm.inventory.recipes.loader.GenericRecipe;
 import com.hbm.inventory.recipes.loader.GenericRecipeCodec;
 import dev.golem.core.Ids;
 import dev.golem.core.gametest.GameTests;
-
 import java.util.ArrayList;
 import java.util.List;
 import java.util.function.Consumer;
-
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.gametest.framework.GameTestHelper;
 import net.minecraft.world.item.Item;
@@ -55,15 +53,12 @@ public final class RecipeChangeChemGameTests {
             () -> helper -> run(helper, RecipeChangeChemGameTests::centrifuge));
     public static final GameTests.Function FLUID_TABLES = TESTS.function("recipe_change_chem_fluid_tables", 40,
             () -> helper -> run(helper, RecipeChangeChemGameTests::fluidTables));
-    public static final GameTests.Function ITEM_FLUID_TABLES = TESTS.function("recipe_change_chem_item_fluid_tables",
-            40,
+    public static final GameTests.Function ITEM_FLUID_TABLES = TESTS.function("recipe_change_chem_item_fluid_tables", 40,
             () -> helper -> run(helper, RecipeChangeChemGameTests::itemFluidTables));
 
-    private RecipeChangeChemGameTests() {
-    }
+    private RecipeChangeChemGameTests() {}
 
-    public static void init() {
-    }
+    public static void init() {}
 
     // ------------------------------------------------------------------------------------------------ chemical plant
 
@@ -83,7 +78,7 @@ public final class RecipeChangeChemGameTests {
                 {"chem.bloodfuel", "", "ntmspace:ammoniax350,hbm:bloodx800", "", "ntmspace:bloodgasx1000", "250", "1000"},
                 {"chem.ammoniumnitrate", "", "ntmspace:ammoniax500,ntmspace:nitrogenx1000", "ntmspace:ammonium_nitratex4", "", "250", "1000"},
                 {"chem.nmass", "hbm:pellet_chargedx1,hbm:ingot_euphemiumx1", "hbm:schrabidicx650,hbm:iongelx800", "", "ntmspace:nmassx1000,hbm:wastegasx2000", "250", "10000"},
-                // SpaceChemicalPlantRecipes splits 1.7's four-cake batch for cake's single-item stack limit.
+                // ChemicalPlantTable quarters 1.7's four-cake batch: cake stacks to 1
                 {"chem.masscake", "minecraft:sugarx" + 8 / 4 + ",minecraft:eggx" + 4 / 4,
                         "ntmspace:cmilkx" + 4000 / 4 + ",ntmspace:creamx" + 1000 / 4,
                         "minecraft:cakex" + 4 / 4, "", String.valueOf(200 / 4), "100"},
@@ -107,14 +102,13 @@ public final class RecipeChangeChemGameTests {
                 errors.add(row[0] + " missing");
                 continue;
             }
-            String got = String.join(" | ", stacks(recipe.inputItem), fluids(recipe.inputFluid),
-                    items(recipe.outputItem),
+            String got = String.join(" | ", stacks(recipe.inputItem), fluids(recipe.inputFluid), items(recipe.outputItem),
                     fluids(recipe.outputFluid), String.valueOf(recipe.duration), String.valueOf(recipe.power));
             String want = String.join(" | ", row[1], row[2], row[3], row[4], row[5], row[6]);
             if (!got.equals(want)) errors.add(row[0] + ": " + got + " != " + want);
         }
         // the cryo-distillery provides these in hbm-space (removed by another family's file; checked here as a whole)
-        for (String gone : new String[]{"chem.oxygen", "chem.xenon", "chem.xenonoxy", "chem.birkeland"}) {
+        for (String gone : new String[] {"chem.oxygen", "chem.xenon", "chem.xenonoxy", "chem.birkeland"}) {
             if (table.getRecipe(gone) != null) errors.add(gone + " still present");
         }
     }
@@ -139,8 +133,7 @@ public final class RecipeChangeChemGameTests {
         mixRows(errors, "ntmspace:dicyanoacetylene", " | ntmspace:ammoniax300,hbm:unsaturatedsx500 | 750 | 50");
         mixRows(errors, "hbm:ethanol", " | ntmspace:chloroethanex250,hbm:redmudx300 | 450 | 30");
         mixRows(errors, "ntmspace:scutterblood", "ntmspace:scuttertailx1 | ntmspace:hclx300 | 550 | 50");
-        mixRows(errors, "ntmspace:conglomera",
-                "ntmspace:stone_resource_conglomeratex1 | ntmspace:aqueous_nickelx250 | 1000 | 70");
+        mixRows(errors, "ntmspace:conglomera", "ntmspace:stone_resource_conglomeratex1 | ntmspace:aqueous_nickelx250 | 1000 | 70");
         mixRows(errors, "ntmspace:aqueous_nickel", "#c:dusts/nickelx1 | ntmspace:brinex250 | 1000 | 80");
         mixRows(errors, "ntmspace:aqueous_copper", "hbm:chunk_ore_malachitex1 | ntmspace:brinex250 | 1000 | 80");
         mixRows(errors, "ntmspace:vinyl",
@@ -181,27 +174,23 @@ public final class RecipeChangeChemGameTests {
                 {"hbm:sulfuric_acid", "sulfuric", "500"}, {"hbm:solvent", "solvent", "500"},
                 {"ntmspace:hcl", "hydrochloric", "500"}, {"hbm:schrabidic", "schrabidic", "1000"}};
         for (String[] f : fragments) {
-            crys(errors, "ntmspace:mineral_dust", f[0], "ntmspace:mineral_fragment_" + f[1] + "x1",
-                    Integer.parseInt(f[2]), 300, 1);
+            crys(errors, "ntmspace:mineral_dust", f[0], "ntmspace:mineral_fragment_" + f[1] + "x1", Integer.parseInt(f[2]), 300, 1);
         }
-        for (String oil : new String[]{"hbm:woodoil", "hbm:fishoil", "hbm:lightoil"}) {
+        for (String oil : new String[] {"hbm:woodoil", "hbm:fishoil", "hbm:lightoil"}) {
             crys(errors, "hbm:powder_coal", oil, "hbm:chemical_dye_blackx4", 100, 20, 1);
             crys(errors, "ntmspace:powder_coke_coal", oil, "hbm:chemical_dye_blackx4", 100, 20, 1);
         }
         // the cobblestone row reads the tag now (1.7 KEY_COBBLESTONE)
-        CrystallizerRecipes.CrystallizerRecipe cobble = CrystallizerRecipes.getOutput(stack("minecraft:cobblestone"),
-                fluid("hbm:peroxide"));
+        CrystallizerRecipes.CrystallizerRecipe cobble = CrystallizerRecipes.getOutput(stack("minecraft:cobblestone"), fluid("hbm:peroxide"));
         if (cobble != null && !GenericRecipeCodec.describe(cobble.input).equals("#c:cobblestonesx1")) {
             errors.add("crystallizer cobblestone input " + GenericRecipeCodec.describe(cobble.input));
         }
     }
 
-    private static void crys(List<String> errors, String input, String acid, String output, int amount, int duration,
-                             int count) {
+    private static void crys(List<String> errors, String input, String acid, String output, int amount, int duration, int count) {
         CrystallizerRecipes.CrystallizerRecipe recipe = CrystallizerRecipes.getOutput(stack(input, 64), fluid(acid));
         String want = output + " " + amount + " " + duration + " " + count;
-        String got = recipe == null ? "none" : item(
-                recipe.output) + " " + recipe.acidAmount + " " + recipe.duration + " "
+        String got = recipe == null ? "none" : item(recipe.output) + " " + recipe.acidAmount + " " + recipe.duration + " "
                 + recipe.input.stacksize;
         if (!got.equals(want)) errors.add("crystallizer " + input + "+" + acid + ": " + got + " != " + want);
     }
@@ -209,34 +198,20 @@ public final class RecipeChangeChemGameTests {
     // ------------------------------------------------------------------------------------------------ centrifuge
 
     private static void centrifuge(List<String> errors) {
-        cent(errors, "ntmspace:ore_fire",
-                "minecraft:blaze_powderx2,hbm:powder_firex2,hbm:ingot_phosphorusx1,minecraft:gravelx1");
-        cent(errors, "ntmspace:mineral_fragment_peroxide",
-                "hbm:powder_niobiumx4,hbm:powder_cobaltx2,hbm:powder_zirconiumx1,hbm:powder_berylliumx1");
-        cent(errors, "ntmspace:mineral_fragment_nitric",
-                "ntmspace:powder_galliumx4,hbm:powder_berylliumx2,hbm:powder_niobiumx1,hbm:fragment_lanthaniumx1");
-        cent(errors, "ntmspace:mineral_fragment_sulfuric",
-                "hbm:powder_berylliumx4,hbm:powder_niobiumx2,ntmspace:powder_galliumx1,hbm:fragment_lanthaniumx1");
-        cent(errors, "ntmspace:mineral_fragment_solvent",
-                "hbm:powder_cobaltx4,ntmspace:powder_galliumx2,hbm:powder_niobiumx1,hbm:powder_coltanx1");
-        cent(errors, "ntmspace:mineral_fragment_hydrochloric",
-                "hbm:powder_zirconiumx4,hbm:powder_neodymiumx2,hbm:powder_niobiumx1,hbm:powder_cobaltx1");
-        cent(errors, "ntmspace:mineral_fragment_schrabidic",
-                "hbm:powder_co60x1,hbm:nugget_bismuthx1,hbm:powder_asbestosx6,hbm:nugget_technetiumx1");
-        cent(errors, "ntmspace:ferric_clay",
-                "minecraft:clay_ballx1,minecraft:clay_ballx1,hbm:powder_ironx1,hbm:powder_ironx1");
-        cent(errors, "ntmspace:ingot_magma",
-                "ntmspace:bedrock_ore_fragment_galliumx4,ntmspace:bedrock_ore_fragment_arsenicx2,hbm:powder_meteorite_tinyx2,hbm:dust_tinyx3");
-        cent(errors, "ntmspace:crystal_mineral",
-                "ntmspace:mineral_dustx2,hbm:powder_ironx2,hbm:powder_aluminiumx2,hbm:powder_lithium_tinyx1");
-        cent(errors, "ntmspace:crystal_nickel",
-                "ntmspace:powder_nickelx2,ntmspace:powder_nickelx2,hbm:powder_ironx2,hbm:powder_titaniumx1");
-        cent(errors, "ntmspace:crystal_niobium",
-                "hbm:powder_niobiumx2,hbm:powder_niobiumx2,hbm:powder_ironx2,ntmspace:nugget_hafniumx1");
-        cent(errors, "ntmspace:crystal_zinc",
-                "ntmspace:powder_zincx2,ntmspace:powder_zincx2,hbm:sulfurx2,hbm:powder_aluminiumx1");
-        cent(errors, "ntmspace:nickel_salts",
-                "hbm:powder_ironx2,ntmspace:powder_nickelx2,hbm:powder_sodiumx1,hbm:sulfurx1");
+        cent(errors, "ntmspace:ore_fire", "minecraft:blaze_powderx2,hbm:powder_firex2,hbm:ingot_phosphorusx1,minecraft:gravelx1");
+        cent(errors, "ntmspace:mineral_fragment_peroxide", "hbm:powder_niobiumx4,hbm:powder_cobaltx2,hbm:powder_zirconiumx1,hbm:powder_berylliumx1");
+        cent(errors, "ntmspace:mineral_fragment_nitric", "ntmspace:powder_galliumx4,hbm:powder_berylliumx2,hbm:powder_niobiumx1,hbm:fragment_lanthaniumx1");
+        cent(errors, "ntmspace:mineral_fragment_sulfuric", "hbm:powder_berylliumx4,hbm:powder_niobiumx2,ntmspace:powder_galliumx1,hbm:fragment_lanthaniumx1");
+        cent(errors, "ntmspace:mineral_fragment_solvent", "hbm:powder_cobaltx4,ntmspace:powder_galliumx2,hbm:powder_niobiumx1,hbm:powder_coltanx1");
+        cent(errors, "ntmspace:mineral_fragment_hydrochloric", "hbm:powder_zirconiumx4,hbm:powder_neodymiumx2,hbm:powder_niobiumx1,hbm:powder_cobaltx1");
+        cent(errors, "ntmspace:mineral_fragment_schrabidic", "hbm:powder_co60x1,hbm:nugget_bismuthx1,hbm:powder_asbestosx6,hbm:nugget_technetiumx1");
+        cent(errors, "ntmspace:ferric_clay", "minecraft:clay_ballx1,minecraft:clay_ballx1,hbm:powder_ironx1,hbm:powder_ironx1");
+        cent(errors, "ntmspace:ingot_magma", "ntmspace:bedrock_ore_fragment_galliumx4,ntmspace:bedrock_ore_fragment_arsenicx2,hbm:powder_meteorite_tinyx2,hbm:dust_tinyx3");
+        cent(errors, "ntmspace:crystal_mineral", "ntmspace:mineral_dustx2,hbm:powder_ironx2,hbm:powder_aluminiumx2,hbm:powder_lithium_tinyx1");
+        cent(errors, "ntmspace:crystal_nickel", "ntmspace:powder_nickelx2,ntmspace:powder_nickelx2,hbm:powder_ironx2,hbm:powder_titaniumx1");
+        cent(errors, "ntmspace:crystal_niobium", "hbm:powder_niobiumx2,hbm:powder_niobiumx2,hbm:powder_ironx2,ntmspace:nugget_hafniumx1");
+        cent(errors, "ntmspace:crystal_zinc", "ntmspace:powder_zincx2,ntmspace:powder_zincx2,hbm:sulfurx2,hbm:powder_aluminiumx1");
+        cent(errors, "ntmspace:nickel_salts", "hbm:powder_ironx2,ntmspace:powder_nickelx2,hbm:powder_sodiumx1,hbm:sulfurx1");
     }
 
     private static void cent(List<String> errors, String input, String want) {
@@ -250,19 +225,14 @@ public final class RecipeChangeChemGameTests {
     private static void fluidTables(List<String> errors) {
         // ElectrolyserFluidRecipes: input mB, out1, out2, duration, byproducts
         electro(errors, "ntmspace:brine", "400 hbm:hydrogenx200 hbm:oxygenx200 40 hbm:powder_sodiumx2");
-        electro(errors, "ntmspace:aqueous_nickel",
-                "300 - - 40 ntmspace:powder_nickelx2,hbm:powder_ironx2,hbm:sulfurx4");
+        electro(errors, "ntmspace:aqueous_nickel", "300 - - 40 ntmspace:powder_nickelx2,hbm:powder_ironx2,hbm:sulfurx4");
         electro(errors, "ntmspace:coppersulfate", "200 - hbm:oxygenx50 40 hbm:powder_copperx2,hbm:sulfurx2");
         electro(errors, "ntmspace:hcl", "1000 hbm:hydrogenx500 hbm:chlorinex500 40 ");
-        electro(errors, "ntmspace:lithcarbonate",
-                "1000 hbm:oxygenx12000 - 10 hbm:powder_lithiumx1,hbm:ingot_graphitex1");
+        electro(errors, "ntmspace:lithcarbonate", "1000 hbm:oxygenx12000 - 10 hbm:powder_lithiumx1,hbm:ingot_graphitex1");
 
-        frac(errors, "ntmspace:conglomera", FractionRecipes.getFractions(fluid("ntmspace:conglomera")),
-                "ntmspace:brinex25 ntmspace:aqueous_nickelx75");
-        frac(errors, "ntmspace:hgas", FractionRecipes.getFractions(fluid("ntmspace:hgas")),
-                "ntmspace:chloromethanex25 hbm:chlorinex85");
-        frac(errors, "ntmspace:halolight", FractionRecipes.getFractions(fluid("ntmspace:halolight")),
-                "hbm:phosgenex35 ntmspace:chloroethanex75");
+        frac(errors, "ntmspace:conglomera", FractionRecipes.getFractions(fluid("ntmspace:conglomera")), "ntmspace:brinex25 ntmspace:aqueous_nickelx75");
+        frac(errors, "ntmspace:hgas", FractionRecipes.getFractions(fluid("ntmspace:hgas")), "ntmspace:chloromethanex25 hbm:chlorinex85");
+        frac(errors, "ntmspace:halolight", FractionRecipes.getFractions(fluid("ntmspace:halolight")), "hbm:phosgenex35 ntmspace:chloroethanex75");
 
         crack(errors, "hbm:oil_ds", "hbm:crackoil_dsx80 hbm:petroleumx20");
         crack(errors, "hbm:diesel_reform", "hbm:kerosene_reformx40 hbm:petroleumx30");
@@ -270,8 +240,7 @@ public final class RecipeChangeChemGameTests {
         crack(errors, "ntmspace:chloroethane", "ntmspace:polythylenex50 hbm:chlorinex30");
         crack(errors, "ntmspace:elbowgrease", "hbm:mercuryx70 hbm:sourgasx50");
         crack(errors, "ntmspace:cbenz", "hbm:aromaticsx50 hbm:chlorinex30");
-        if (CrackingRecipes.getCracking(fluid("hbm:gas")) != null)
-            errors.add("cracking hbm:gas still present (commented out in hbm-space)");
+        if (CrackingRecipes.getCracking(fluid("hbm:gas")) != null) errors.add("cracking hbm:gas still present (commented out in hbm-space)");
 
         reform(errors, "ntmspace:halolight", "hbm:unsaturatedsx50,hbm:reformgasx35,ntmspace:hclx10");
         reform(errors, "ntmspace:hgas", "hbm:aromaticsx60,ntmspace:chloromethanex25,ntmspace:hclx10");
@@ -281,8 +250,7 @@ public final class RecipeChangeChemGameTests {
         hydro(errors, "ntmspace:chloroethane", "hbm:hydrogenx10@1 ntmspace:vinylx50,hbm:chlorinex20");
 
         RefineryRecipes.VacuumRecipe vacuum = RefineryRecipes.getVacuum(fluid("ntmspace:tcrude"));
-        String vac = vacuum == null ? "none" : fluids(
-                new FluidStack[]{vacuum.frac1(), vacuum.frac2(), vacuum.frac3(), vacuum.frac4()});
+        String vac = vacuum == null ? "none" : fluids(new FluidStack[] {vacuum.frac1(), vacuum.frac2(), vacuum.frac3(), vacuum.frac4()});
         if (!vac.equals("ntmspace:halolightx40,ntmspace:chloromethanex25,ntmspace:hclx20,ntmspace:hgasx15")) {
             errors.add("vacuum ntmspace:tcrude: " + vac);
         }
@@ -296,10 +264,8 @@ public final class RecipeChangeChemGameTests {
         solid(errors, "ntmspace:vinyl", "1000 hbm:ingot_pvcx1");
 
         // GasCentrifugeRecipes: MINSOL (500 consumed, 500 produced, -> MINSOLSEP; iron) and MINSOLSEP (500, 0; cleaned crystal)
-        GasCentrifugeRecipes.PseudoFluidType minsol = GasCentrifugeRecipes.FLUID_CONVERSIONS.get(
-                fluid("ntmspace:minsol"));
-        if (minsol == null || !minsol.getName()
-                                     .equals("MINSOL") || minsol.getFluidConsumed() != 500 || minsol.getFluidProduced() != 500
+        GasCentrifugeRecipes.PseudoFluidType minsol = GasCentrifugeRecipes.FLUID_CONVERSIONS.get(fluid("ntmspace:minsol"));
+        if (minsol == null || !minsol.getName().equals("MINSOL") || minsol.getFluidConsumed() != 500 || minsol.getFluidProduced() != 500
                 || !items(minsol.getOutput()).equals("hbm:powder_ironx1")) {
             errors.add("pseudo fluid MINSOL wrong: " + (minsol == null ? "none" : minsol.getName()));
         } else {
@@ -312,8 +278,7 @@ public final class RecipeChangeChemGameTests {
         }
         boolean shown = false;
         for (GasCentrifugeRecipes.GasCentrifugeRecipe row : GasCentrifugeRecipes.RECIPES) {
-            if (row.input.type == fluid(
-                    "ntmspace:minsol") && row.input.fill == 1000 && !row.highSpeed && row.centrifuges == 2
+            if (row.input.type == fluid("ntmspace:minsol") && row.input.fill == 1000 && !row.highSpeed && row.centrifuges == 2
                     && items(row.output).equals("hbm:powder_ironx1,ntmspace:crystal_cleanedx1")) shown = true;
         }
         if (!shown) errors.add("gas centrifuge display row for ntmspace:minsol missing");
@@ -324,8 +289,7 @@ public final class RecipeChangeChemGameTests {
             if (row.inputFluid != null && row.inputFluid.type == fluid("ntmspace:polythylene")) {
                 pyro = row.inputFluid.fill == 14000 && row.inputItem == null && row.outputFluid == null
                         && item(row.outputItem).equals("hbm:solid_fuelx1") && row.duration == 60;
-                if (!pyro)
-                    errors.add("pyrolysis polythylene: " + row.inputFluid.fill + " mB -> " + item(row.outputItem));
+                if (!pyro) errors.add("pyrolysis polythylene: " + row.inputFluid.fill + " mB -> " + item(row.outputItem));
             }
         }
         if (!pyro) errors.add("pyrolysis polythylene missing or wrong");
@@ -333,8 +297,7 @@ public final class RecipeChangeChemGameTests {
 
     private static void electro(List<String> errors, String input, String want) {
         ElectrolyserFluidRecipes.ElectrolysisRecipe r = ElectrolyserFluidRecipes.getRecipe(fluid(input));
-        String got = r == null ? "none" : r.amount + " " + one(r.output1) + " " + one(
-                r.output2) + " " + r.duration + " " + items(r.byproduct);
+        String got = r == null ? "none" : r.amount + " " + one(r.output1) + " " + one(r.output2) + " " + r.duration + " " + items(r.byproduct);
         if (!got.equals(want)) errors.add("electrolyser " + input + ": " + got + " != " + want);
     }
 
@@ -351,14 +314,13 @@ public final class RecipeChangeChemGameTests {
 
     private static void reform(List<String> errors, String input, String want) {
         ReformingRecipes.ReformingRecipe r = ReformingRecipes.getOutput(fluid(input));
-        String got = r == null ? "none" : fluids(new FluidStack[]{r.out1(), r.out2(), r.out3()});
+        String got = r == null ? "none" : fluids(new FluidStack[] {r.out1(), r.out2(), r.out3()});
         if (!got.equals(want)) errors.add("reforming " + input + ": " + got + " != " + want);
     }
 
     private static void hydro(List<String> errors, String input, String want) {
         HydrotreatingRecipes.HydrotreatingRecipe r = HydrotreatingRecipes.getOutput(fluid(input));
-        String got = r == null ? "none" : one(r.hydrogen()) + "@" + r.hydrogen().pressure + " " + fluids(
-                new FluidStack[]{r.out1(), r.out2()});
+        String got = r == null ? "none" : one(r.hydrogen()) + "@" + r.hydrogen().pressure + " " + fluids(new FluidStack[] {r.out1(), r.out2()});
         if (!got.equals(want)) errors.add("hydrotreating " + input + ": " + got + " != " + want);
     }
 
@@ -385,14 +347,13 @@ public final class RecipeChangeChemGameTests {
         liquefy(errors, "ntmspace:dry_ice", "hbm:carbondioxidex1000");
         liquefy(errors, "ntmspace:flesh", "hbm:bloodx100");
         liquefy(errors, "hbm:ingot_osmiridium", "hbm:ethanolx24000");
-        for (String id : new String[]{"minecraft:cobblestone", "minecraft:stone"}) {
+        for (String id : new String[] {"minecraft:cobblestone", "minecraft:stone"}) {
             Item item = BuiltInRegistries.ITEM.getOptional(Ids.parse(id)).orElseThrow();
-            if (LiquefactionRecipes.getItemRecipes().containsKey(item))
-                errors.add("liquefaction " + id + " is still an item row (1.7: ore-dict key)");
+            if (LiquefactionRecipes.getItemRecipes().containsKey(item)) errors.add("liquefaction " + id + " is still an item row (1.7: ore-dict key)");
         }
 
         // MachineRecipes.getAlloyFuels gains powder_coke (DiFurnace fuel 400, as coke)
-        for (String id : new String[]{"ntmspace:powder_coke_coal", "ntmspace:powder_coke_lignite", "ntmspace:powder_coke_petroleum"}) {
+        for (String id : new String[] {"ntmspace:powder_coke_coal", "ntmspace:powder_coke_lignite", "ntmspace:powder_coke_petroleum"}) {
             int power = DiFurnaceRecipes.getItemPower(stack(id));
             if (power != 400) errors.add("difurnace fuel " + id + " = " + power);
             boolean listed = false;
@@ -429,14 +390,11 @@ public final class RecipeChangeChemGameTests {
     }
 
     private static ItemStack stack(String id, int count) {
-        return new ItemStack(BuiltInRegistries.ITEM.getOptional(Ids.parse(id))
-                                                   .orElseThrow(() -> new IllegalStateException("no item " + id)),
-                count);
+        return new ItemStack(BuiltInRegistries.ITEM.getOptional(Ids.parse(id)).orElseThrow(() -> new IllegalStateException("no item " + id)), count);
     }
 
     private static String item(ItemStack stack) {
-        return stack == null || stack.isEmpty() ? "-" : BuiltInRegistries.ITEM.getKey(
-                stack.getItem()) + "x" + stack.getCount();
+        return stack == null || stack.isEmpty() ? "-" : BuiltInRegistries.ITEM.getKey(stack.getItem()) + "x" + stack.getCount();
     }
 
     private static String items(ItemStack[] stacks) {
@@ -457,8 +415,7 @@ public final class RecipeChangeChemGameTests {
 
     private static String fluids(FluidStack[] stacks) {
         List<String> out = new ArrayList<>();
-        if (stacks != null)
-            for (FluidStack stack : stacks) if (stack != null && stack.type != Fluids.NONE) out.add(one(stack));
+        if (stacks != null) for (FluidStack stack : stacks) if (stack != null && stack.type != Fluids.NONE) out.add(one(stack));
         return String.join(",", out);
     }
 }

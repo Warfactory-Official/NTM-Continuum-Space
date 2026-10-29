@@ -25,13 +25,11 @@ import com.ntmspace.world.populate.Populate17.Body;
 import com.ntmspace.world.populate.PrimerPopulateWorld;
 import dev.golem.core.gametest.GameTests;
 import dev.golem.core.world.CompatChunkGenerator;
-
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Random;
 import java.util.TreeMap;
 import java.util.function.Function;
-
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.gametest.framework.GameTestHelper;
 import net.minecraft.world.level.biome.BiomeSource;
@@ -66,12 +64,9 @@ public final class PopulateGameTests {
     static final int[][] CHUNKS = {{0, 0}, {3, -2}};
     static final int[][] DRAW_CHUNKS = {{0, 0}, {3, -2}, {-7, 11}, {40, 40}, {-100, 77}};
 
-    /**
-     * Pinned per body: the block counts the populate of {@link #CHUNKS} placed, and the hash of every placed block.
-     */
+    /** Pinned per body: the block counts the populate of {@link #CHUNKS} placed, and the hash of every placed block. */
     static final Map<Body, String> PINNED_COUNTS = new HashMap<>();
     static final Map<Body, Long> PINNED_HASH = new HashMap<>();
-
     static {
         pin(Body.MUN, -5503125155400877527L,
                 "{hbm:ore_bedrock_block=4, hbm:stone_depth=103, hbm:stone_keyhole=1, hbm:stone_resource_bauxite=398, hbm:stone_resource_hematite=4469, ntmspace:cluster_aluminium=18, ntmspace:cluster_copper=28, ntmspace:cluster_iron=35, ntmspace:cluster_titanium=15, ntmspace:ore_aluminium=106, ntmspace:ore_beryllium=22, ntmspace:ore_cinnebar=3, ntmspace:ore_cobalt=13, ntmspace:ore_copper=77, ntmspace:ore_diamond=4, ntmspace:ore_fluorite=43, ntmspace:ore_gold=20, ntmspace:ore_iron=185, ntmspace:ore_lead=65, ntmspace:ore_lithium=56, ntmspace:ore_nickel=90, ntmspace:ore_niter=53, ntmspace:ore_quartz=229, ntmspace:ore_rare=33, ntmspace:ore_redstone=46, ntmspace:ore_shale=16, ntmspace:ore_sulfur=39, ntmspace:ore_thorium=48, ntmspace:ore_titanium=60, ntmspace:ore_tungsten=101, ntmspace:ore_uranium=40, ntmspace:ore_zinc=60, ntmspace:stone_resource_calcium=27}");
@@ -102,9 +97,7 @@ public final class PopulateGameTests {
         PINNED_COUNTS.put(body, counts);
     }
 
-    /**
-     * Pinned from the plain-JVM oracle: the draw fingerprint of all bodies.
-     */
+    /** Pinned from the plain-JVM oracle: the draw fingerprint of all bodies. */
     static final long PINNED_DRAWS = -8647435089504848248L;
 
     private static final GameTests.Suite TESTS = SpaceGameTests.TESTS;
@@ -126,21 +119,17 @@ public final class PopulateGameTests {
     public static final GameTests.Function ORE_DROPS = TESTS.function("body_ore_drops", 20,
             () -> PopulateGameTests::oreDrops);
 
-    private PopulateGameTests() {
-    }
+    private PopulateGameTests() {}
 
-    public static void init() {
-    }
+    public static void init() {}
 
     private static GameTests.Function body(Body body, Function<BiomeSource, ? extends CompatChunkGenerator> factory) {
         return TESTS.function("populate_" + body.name().toLowerCase(java.util.Locale.ROOT), 600,
                 () -> helper -> populate(helper, body, factory));
     }
 
-    private static void populate(GameTestHelper helper, Body body,
-                                 Function<BiomeSource, ? extends CompatChunkGenerator> factory) {
-        CompatChunkGenerator generator = factory.apply(
-                helper.getLevel().getChunkSource().getGenerator().getBiomeSource());
+    private static void populate(GameTestHelper helper, Body body, Function<BiomeSource, ? extends CompatChunkGenerator> factory) {
+        CompatChunkGenerator generator = factory.apply(helper.getLevel().getChunkSource().getGenerator().getBiomeSource());
         generator.useSeed(SEED);
         LayeredBodyTerrain17 terrain = null;
         CelestialTerrain17 base17;
@@ -161,19 +150,17 @@ public final class PopulateGameTests {
         Map<Long, CelestialTerrain17.Primer> primers = new HashMap<>();
         PrimerPopulateWorld.Base base = (x, y, z) -> {
             if (y < 0 || y > 255) return Blocks.AIR.defaultBlockState();
-            CelestialTerrain17.Primer primer = primers.computeIfAbsent(
-                    ((long) (x >> 4) << 32) ^ ((z >> 4) & 0xFFFFFFFFL), key -> {
-                        synchronized (generator) {
-                            // the full primer first: it reseeds the surface pass's Math.random() stand-in for this chunk, which
-                            // BasePrimers17 alone leaves wherever the last chunk left it
-                            base17.provide(x >> 4, z >> 4);
-                            return BasePrimers17.of(base17, x >> 4, z >> 4);
-                        }
-                    });
+            CelestialTerrain17.Primer primer = primers.computeIfAbsent(((long) (x >> 4) << 32) ^ ((z >> 4) & 0xFFFFFFFFL), key -> {
+                synchronized (generator) {
+                    // the full primer first: it reseeds the surface pass's Math.random() stand-in for this chunk, which
+                    // BasePrimers17 alone leaves wherever the last chunk left it
+                    base17.provide(x >> 4, z >> 4);
+                    return BasePrimers17.of(base17, x >> 4, z >> 4);
+                }
+            });
             int index = ((x & 15) * 16 + (z & 15)) * 256 + y;
             Block17 block = primer.blocks[index];
-            return block == null ? Blocks.AIR.defaultBlockState() : LayeredChunkGenerator.state(block,
-                    primer.metas[index]);
+            return block == null ? Blocks.AIR.defaultBlockState() : LayeredChunkGenerator.state(block, primer.metas[index]);
         };
 
         Map<String, Integer> counts = new TreeMap<>();
@@ -190,8 +177,7 @@ public final class PopulateGameTests {
             TreeMap<Long, BlockState> placed = new TreeMap<>();
             for (Map.Entry<Long, BlockState> entry : world.written().entrySet()) {
                 long key = entry.getKey();
-                BlockState was = base.at(PrimerPopulateWorld.x(key), PrimerPopulateWorld.y(key),
-                        PrimerPopulateWorld.z(key));
+                BlockState was = base.at(PrimerPopulateWorld.x(key), PrimerPopulateWorld.y(key), PrimerPopulateWorld.z(key));
                 if (entry.getValue() != was) placed.put(key, entry.getValue());
             }
             for (Map.Entry<Long, BlockState> entry : placed.entrySet()) {
@@ -217,9 +203,7 @@ public final class PopulateGameTests {
         helper.succeed();
     }
 
-    /**
-     * The draw fingerprint of every body over an all-air world (see the class comment).
-     */
+    /** The draw fingerprint of every body over an all-air world (see the class comment). */
     public static long drawFingerprint() {
         BlockState air = Blocks.AIR.defaultBlockState();
         long hash = 1;
@@ -255,8 +239,7 @@ public final class PopulateGameTests {
         long hash = drawFingerprint();
         NtmSpace.LOG.info("populate_draw_sequence: {}L", hash);
         if (hash != PINNED_DRAWS) {
-            fail(helper,
-                    "draw fingerprint " + hash + "L, hbm-space's generators (plain-JVM oracle) give " + PINNED_DRAWS + "L");
+            fail(helper, "draw fingerprint " + hash + "L, hbm-space's generators (plain-JVM oracle) give " + PINNED_DRAWS + "L");
             return;
         }
         helper.succeed();
@@ -290,21 +273,16 @@ public final class PopulateGameTests {
                 continue;
             }
             helper.setBlock(rel, state);
-            java.util.List<net.minecraft.world.item.ItemStack> drops = net.minecraft.world.level.block.Block.getDrops(
-                    state, level, pos, null);
-            boolean found = drops.stream().anyMatch(
-                    stack -> BuiltInRegistries.ITEM.getKey(stack.getItem()).toString().equals(c[2]));
+            java.util.List<net.minecraft.world.item.ItemStack> drops = net.minecraft.world.level.block.Block.getDrops(state, level, pos, null);
+            boolean found = drops.stream().anyMatch(stack -> BuiltInRegistries.ITEM.getKey(stack.getItem()).toString().equals(c[2]));
             if (!found) wrong.add(c[0] + "[body=" + c[1] + "] drops " + drops + ", not " + c[2]);
-            net.minecraft.world.item.Item item = BuiltInRegistries.ITEM.getOptional(
-                    dev.golem.core.Ids.parse("ntmspace:" + c[0] + "_" + c[1])).orElse(null);
-            if (!(item instanceof com.ntmspace.block.BodyOreItem bodyItem) || bodyItem.body() != state.getValue(
-                    com.ntmspace.block.BlockBodyOre.BODY)) {
+            net.minecraft.world.item.Item item = BuiltInRegistries.ITEM.getOptional(dev.golem.core.Ids.parse("ntmspace:" + c[0] + "_" + c[1])).orElse(null);
+            if (!(item instanceof com.ntmspace.block.BodyOreItem bodyItem) || bodyItem.body() != state.getValue(com.ntmspace.block.BlockBodyOre.BODY)) {
                 wrong.add("ntmspace:" + c[0] + "_" + c[1] + " is not that body's item");
             }
         }
         helper.setBlock(rel, Blocks.AIR.defaultBlockState());
-        BlockState kerbin = com.ntmspace.registry.BodyOreBlocks.state("ore_uranium",
-                com.ntmspace.block.BlockBodyOre.Body.KERBIN);
+        BlockState kerbin = com.ntmspace.registry.BodyOreBlocks.state("ore_uranium", com.ntmspace.block.BlockBodyOre.Body.KERBIN);
         if (kerbin == null || !BuiltInRegistries.BLOCK.getKey(kerbin.getBlock()).toString().equals("hbm:ore_uranium")) {
             wrong.add("the Kerbin form of ore_uranium is " + kerbin + ", not hbm:ore_uranium");
         }
@@ -315,9 +293,7 @@ public final class PopulateGameTests {
         helper.succeed();
     }
 
-    /**
-     * Fails the test, logging the reason too: 1.20.1 Fabric's runner prints only the failed test's name.
-     */
+    /** Fails the test, logging the reason too: 1.20.1 Fabric's runner prints only the failed test's name. */
     private static void fail(GameTestHelper helper, String message) {
         NtmSpace.LOG.error("GameTest failure: {}", message);
         helper.fail(message);
