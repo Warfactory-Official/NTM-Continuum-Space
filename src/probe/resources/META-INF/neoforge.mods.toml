@@ -12,13 +12,13 @@ description = '''A second addon, never shipped: it hooks the same HBM extension 
 [[dependencies.ntmprobe]]
 modId = "hbm"
 type = "required"
-versionRange = "[0.1.0,)"
+versionRange = "[1.0.3,)"
 ordering = "AFTER"
 side = "BOTH"
 
 [[dependencies.ntmprobe]]
 modId = "ntmspace"
 type = "required"
-versionRange = "[0.1.0,)"
+versionRange = "[1.0.3,)"
 ordering = "AFTER"
 side = "BOTH"

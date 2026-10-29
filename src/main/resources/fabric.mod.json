@@ -33,8 +33,8 @@
     "depends": {
         "fabricloader": ">=${fabric_loader}",
         "fabric-api": "*",
-        "golemcore": "*",
-        "hbm": "*",
+        "golemcore": ">=1.0.3",
+        "hbm": ">=1.0.3",
         "minecraft": "${minecraft_range}",
         "java": ">=${java_version}"
     }
