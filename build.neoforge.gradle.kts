@@ -31,6 +31,26 @@ val probe = sourceSets.create("probe") {
     runtimeClasspath += sourceSets["main"].output + sourceSets["main"].runtimeClasspath
 }
 
+// The importer for NTM DE: Space worlds (1.21.1 NeoForge only), an addon of HBM's DE importer: its own source root,
+// src/despaceimport (com.ntmspace.despaceimport), added only where `feature.de_space_import=true`. It needs HBM's
+// importer on the same node; `despaceimportBoundary` fails the build if anything else names it.
+if (propOrNull("feature.de_space_import") == "true") {
+    sourceSets["main"].java.srcDir(rootProject.file("src/despaceimport/java"))
+    sourceSets["main"].resources.srcDir(rootProject.file("src/despaceimport/resources"))
+}
+tasks.register("despaceimportBoundary") {
+    description = "Fails if anything outside its own root names the DE: Space importer or HBM's DE importer."
+    val roots = listOf("src/main", "src/probe").map { rootProject.file(it) }.filter { it.exists() }
+    inputs.files(roots.map { fileTree(it) })
+    doLast {
+        val names = listOf("com.ntmspace.despaceimport", "ntmspace_deimport", "com.hbm.deimport", "com.hbm.delegacy")
+        val hits = roots.flatMap { root -> root.walkTopDown().filter { it.isFile }
+            .filter { file -> file.readText().let { text -> names.any { text.contains(it) } } }.toList() }
+        if (hits.isNotEmpty()) throw GradleException("DE: Space importer named outside src/despaceimport: $hits")
+    }
+}
+tasks.named("check") { dependsOn("despaceimportBoundary") }
+
 // The opt-in imported suite shares the real mod and has no native probe content.
 val importedTests = sourceSets.findByName("upstreamTests")
 val devRunSource = importedTests ?: probe
@@ -272,11 +292,21 @@ if (kubejsRun) dependencies {
         kubejsMod(mod) { isTransitive = false }
     }
 }
+// Sable, Create and Create Aeronautics, for HBM's Sable support and the DE importers' airships: this addon has no
+// Sable code. `-Psable.run=true` puts them in the dev runs; off by default so the baselines stay Create-free.
+val sableMod: Configuration by configurations.creating
+if (propOrNull("sable.run") == "true") dependencies {
+    for (mod in listOfNotNull(propOrNull("deps.sable_run")?.let { "maven.modrinth:sable:$it" },
+            propOrNull("deps.create_run")?.let { "maven.modrinth:create:$it" },
+            propOrNull("deps.aeronautics_run")?.let { "maven.modrinth:create-aeronautics:$it" })) {
+        sableMod(mod) { isTransitive = false }
+    }
+}
 // Mod files, not classpath entries (KubeJS carries mixins, which FML registers only for a jar in the mods folder).
 // Always registered and run, so a run without the flag also clears the jars a flagged run left behind.
 for ((run, task) in listOf("client" to "runClient", "harness" to "runClient", "server" to "runServer", "gametest" to "runGameTestServer")) {
     val modsDir = layout.projectDirectory.dir("runs/$run/mods")
-    val runMods = if (run == "client" || run == "harness") listOf(kubejsMod, devModJar) else listOf(kubejsMod)
+    val runMods = if (run == "client" || run == "harness") listOf(kubejsMod, sableMod, devModJar) else listOf(kubejsMod, sableMod)
     val sync = tasks.register("syncKubeJs${run.replaceFirstChar { it.uppercase() }}") {
         description = "Places opt-in dev mod jars in the $run run's mods folder."
         inputs.files(runMods)

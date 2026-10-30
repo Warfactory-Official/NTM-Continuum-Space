@@ -1,0 +1,22 @@
+{
+  "type": "minecraft:chest",
+  "pools": [
+    {
+      "entries": [
+        {
+          "type": "minecraft:loot_table",
+          "value": "ntmspace_de:chests/submarine"
+        }
+      ],
+      "rolls": {
+        "type": "ntmspace_de:wand_loot_scaled",
+        "value": {
+          "type": "minecraft:uniform",
+          "max": 11.0,
+          "min": 6.0
+        }
+      }
+    }
+  ],
+  "random_sequence": "ntmspace_de:chests/submarine_6_11"
+}

@@ -1,0 +1,22 @@
+{
+  "type": "minecraft:chest",
+  "pools": [
+    {
+      "entries": [
+        {
+          "type": "minecraft:loot_table",
+          "value": "hbm:chests/machine_parts"
+        }
+      ],
+      "rolls": {
+        "type": "ntmspace_de:wand_loot_scaled",
+        "value": {
+          "type": "minecraft:uniform",
+          "max": 5.0,
+          "min": 0.0
+        }
+      }
+    }
+  ],
+  "random_sequence": "ntmspace_de:chests/machine_parts_0_5"
+}

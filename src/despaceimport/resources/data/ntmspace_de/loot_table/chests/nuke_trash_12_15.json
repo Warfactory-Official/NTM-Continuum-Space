@@ -1,0 +1,22 @@
+{
+  "type": "minecraft:chest",
+  "pools": [
+    {
+      "entries": [
+        {
+          "type": "minecraft:loot_table",
+          "value": "hbm:chests/nuke_trash"
+        }
+      ],
+      "rolls": {
+        "type": "ntmspace_de:wand_loot_scaled",
+        "value": {
+          "type": "minecraft:uniform",
+          "max": 15.0,
+          "min": 12.0
+        }
+      }
+    }
+  ],
+  "random_sequence": "ntmspace_de:chests/nuke_trash_12_15"
+}
