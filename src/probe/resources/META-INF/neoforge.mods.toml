@@ -19,6 +19,6 @@ side = "BOTH"
 [[dependencies.ntmprobe]]
 modId = "ntmspace"
 type = "required"
-versionRange = "[1.0.3,)"
+versionRange = "[${mod_version},)"
 ordering = "AFTER"
 side = "BOTH"
