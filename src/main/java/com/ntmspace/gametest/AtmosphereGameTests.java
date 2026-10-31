@@ -47,6 +47,7 @@ import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.GameType;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.Blocks;
+import net.minecraft.world.phys.Vec3;
 import org.jetbrains.annotations.Nullable;
 
 /**
@@ -406,9 +407,14 @@ public final class AtmosphereGameTests {
         }
         // 1.7 setOxy: at 0 and below, damage max(1, -oxy/40 - 10) every clamp(oxy/60 + 8, 1, 8) ticks
         pig.tickCount = 40;
+        pig.setDeltaMovement(Vec3.ZERO);
         Breathing.setOxy(pig, -1);
         if (pig.getHealth() != health - 1) {
             fail(helper, "oxyprime should deal 1 at oxygen -1, health " + pig.getHealth());
+            return;
+        }
+        if (pig.getDeltaMovement().horizontalDistanceSqr() > 0) {
+            fail(helper, "suffocating knocked the pig back: " + pig.getDeltaMovement());
             return;
         }
         // an immune mob never loses oxygen

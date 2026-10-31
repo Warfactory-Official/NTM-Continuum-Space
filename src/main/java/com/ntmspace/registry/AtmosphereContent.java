@@ -116,10 +116,10 @@ public final class AtmosphereContent {
         if (declared) return;
         declared = true;
 
-        // 1.7 ModDamageSource.oxyprime: setDamageIsAbsolute().setDamageBypassesArmor()
+        // 1.7 ModDamageSource.oxyprime: setDamageIsAbsolute().setDamageBypassesArmor(), dealt without an attacker
         Damage.declare(NtmSpace.MOD_ID,
-                Damage.type("oxyprime").tags(Damage.BYPASSES_ARMOR, Damage.BYPASSES_EFFECTS),
-                Damage.type("eve").tags(Damage.BYPASSES_ARMOR, Damage.BYPASSES_EFFECTS));
+                Damage.type("oxyprime").tags(Damage.NO_KNOCKBACK, Damage.BYPASSES_ARMOR, Damage.BYPASSES_EFFECTS),
+                Damage.type("eve").tags(Damage.NO_KNOCKBACK, Damage.BYPASSES_ARMOR, Damage.BYPASSES_EFFECTS));
 
         // 1.7 IBlockSealable blocks that answer false although they are full blocks (MachineBrickFurnace, MachineDiFurnace,
         // MachineDiesel; the fan is NTM: Space's substitute block, which answers itself)

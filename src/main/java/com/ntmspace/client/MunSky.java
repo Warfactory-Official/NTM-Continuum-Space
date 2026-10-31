@@ -11,6 +11,7 @@ import com.ntmspace.world.SpaceDimensions;
 import com.ntmspace.world.SpaceSkies;
 import dev.golem.core.render.Sky;
 import dev.golem.core.render.Skyboxes;
+import java.util.Arrays;
 import java.util.List;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.multiplayer.ClientLevel;
@@ -473,9 +474,13 @@ public final class MunSky implements Skyboxes.Skybox {
      * value is its left edge, as in the shader.
      */
     static void crescent(Sky sky, float phase, float size, float offset) {
-        java.util.Map<Integer, java.util.List<Float>> byAlpha = new java.util.HashMap<>();
         float shift = offset == 0 ? 0 : (float) (offset - Math.floor(offset / 0.0625F) * 0.0625F);
         int columns = shift == 0 ? 16 : 17;
+        float lx = (float) Math.sin(phase * Math.PI);
+        float lz = (float) Math.cos(phase * Math.PI);
+        // the cells never overlap, so one draw with a colour per cell matches a draw per alpha level
+        float[] xyzrgba = new float[columns * 16 * 28];
+        int n = 0;
         for (int i = 0; i < columns; i++) {
             for (int j = 0; j < 16; j++) {
                 float fx = i * 0.0625F - shift;
@@ -486,8 +491,6 @@ public final class MunSky implements Skyboxes.Skybox {
                 float uy = 2.25F * fy - 1.1F;
                 float sx = 2.0F * fx - 1.0F;
                 float sy = 2.0F * fy - 1.0F;
-                float lx = (float) Math.sin(phase * Math.PI);
-                float lz = (float) Math.cos(phase * Math.PI);
                 float nz = (float) Math.sqrt(1.0F - Mth.clamp(ux * ux + uy * uy, 0.0F, 1.0F));
                 float brightness = ux * lx + nz * lz;
                 brightness = Math.max(brightness, (Math.abs(phase) - 0.7F) * Mth.clamp(sx * sx + sy * sy, 0.0F, 1.0F));
@@ -497,17 +500,23 @@ public final class MunSky implements Skyboxes.Skybox {
                 brightness = Math.max(brightness, 0.05F);
                 float alpha = Mth.clamp(1.0F - brightness, 0.0F, 1.0F);
                 if (alpha <= 0.0F) continue;
-                int key = Math.round(alpha * 255.0F);
+                float a = Math.round(alpha * 255.0F) / 255.0F;
                 float x0 = -size + 2 * size * cellU0, x1 = -size + 2 * size * cellU1;
                 float z0 = -size + 2 * size * fy, z1 = -size + 2 * size * (fy + 0.0625F);
-                java.util.List<Float> cells = byAlpha.computeIfAbsent(key, k -> new java.util.ArrayList<>());
-                java.util.Collections.addAll(cells, x0, 100F, z0, x1, 100F, z0, x1, 100F, z1, x0, 100F, z1);
+                n = cellVertex(xyzrgba, n, x0, z0, a);
+                n = cellVertex(xyzrgba, n, x1, z0, a);
+                n = cellVertex(xyzrgba, n, x1, z1, a);
+                n = cellVertex(xyzrgba, n, x0, z1, a);
             }
         }
-        for (java.util.Map.Entry<Integer, java.util.List<Float>> group : byAlpha.entrySet()) {
-            float[] xyz = new float[group.getValue().size()];
-            for (int k = 0; k < xyz.length; k++) xyz[k] = group.getValue().get(k);
-            sky.quads(Sky.Blend.ALPHA, 0.0F, 0.0F, 0.0F, group.getKey() / 255.0F, xyz);
-        }
+        if (n > 0) sky.coloredQuads(Sky.Blend.ALPHA, Arrays.copyOf(xyzrgba, n));
+    }
+
+    private static int cellVertex(float[] out, int n, float x, float z, float alpha) {
+        out[n] = x;
+        out[n + 1] = 100F;
+        out[n + 2] = z;
+        out[n + 6] = alpha;
+        return n + 7;
     }
 }
