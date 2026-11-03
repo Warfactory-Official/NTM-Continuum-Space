@@ -3,6 +3,7 @@ package com.ntmspace.gametest;
 import com.hbm.entity.effect.EntityNukeTorex;
 import com.hbm.entity.logic.EntityBalefire;
 import com.hbm.explosion.ExplosionBalefire;
+import com.hbm.explosion.ExplosionNukeCustom;
 import com.ntmspace.fork.ForkContent;
 import com.ntmspace.fork.antimatter.AntimatterBalefire;
 import com.ntmspace.fork.antimatter.TileEntityAntimatter;
@@ -175,7 +176,7 @@ public final class ForkGameTests2 {
         }
         BlockPos at = helper.absolutePos(new BlockPos(2, 2, 2));
         double x = at.getX() + 0.5, y = at.getY() + 0.5, z = at.getZ() + 0.5;
-        com.hbm.explosion.ExplosionNukeCustom.explodeCustom(level, x, y, z, 0F, 0F, 0F, 120F, 0F, 0F, 0F);
+        ExplosionNukeCustom.explodeCustom(level, null, x, y, z, 0F, 0F, 0F, 120F, 0F, 0F, 0F);
         AABB box = new AABB(at).inflate(8);
         List<EntityBalefire> fires = level.getEntitiesOfClass(EntityBalefire.class, box);
         List<EntityNukeTorex> clouds = level.getEntitiesOfClass(EntityNukeTorex.class, box);
