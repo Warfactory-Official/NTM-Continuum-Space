@@ -62,7 +62,8 @@ public final class CelestialWeather {
 
     public static void init() {
         Precipitation.Renderer renderer = CelestialWeather::render;
-        Precipitation.register(Level.OVERWORLD, renderer);
+        // Earth's rain is plain water, so a weather mod's rain may stand; the bodies' rain colours stay ours.
+        if (!Precipitation.weatherModLoaded()) Precipitation.register(Level.OVERWORLD, renderer);
         Precipitation.register(SpaceDimensions.MUN, renderer);
         Precipitation.register(SpaceDimensions.MINMUS, renderer);
         Precipitation.register(SpaceDimensions.DUNA, renderer);
