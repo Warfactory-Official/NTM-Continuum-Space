@@ -271,20 +271,20 @@ public final class AtmosphereHandler {
     // Registration
 
     public static void registerAtmosphere(AtmosphereProvider handler) {
-        LinkedHashMap<AtmosphereProvider, AtmosphereBlob> blobs = blobs(handler.getLevel());
+        LinkedHashMap<AtmosphereProvider, AtmosphereBlob> blobs = blobs(handler.atmosphereLevel());
         AtmosphereBlob blob = blobs.get(handler);
         if (blob == null) {
             blob = new AtmosphereBlob(handler);
             blobs.put(handler, blob);
-            topologyBlobs.put(handler.getLevel().dimension(), List.copyOf(blobs.values()));
+            topologyBlobs.put(handler.atmosphereLevel().dimension(), List.copyOf(blobs.values()));
             blob.addBlock(handler.getRootPosition());
         }
     }
 
     public static void unregisterAtmosphere(AtmosphereProvider handler) {
-        LinkedHashMap<AtmosphereProvider, AtmosphereBlob> blobs = worldBlobs.get(handler.getLevel().dimension());
+        LinkedHashMap<AtmosphereProvider, AtmosphereBlob> blobs = worldBlobs.get(handler.atmosphereLevel().dimension());
         if (blobs != null && blobs.remove(handler) != null) {
-            var dimension = handler.getLevel().dimension();
+            var dimension = handler.atmosphereLevel().dimension();
             if (blobs.isEmpty()) {
                 topologyBlobs.remove(dimension);
                 topologyChanges.remove(dimension);

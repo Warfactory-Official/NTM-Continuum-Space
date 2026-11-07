@@ -75,8 +75,8 @@ public final class ForkHazards {
 
         @Override
         public void addHazardInformation(Player player, List<Component> list, double level, ItemStack stack, List<IHazardModifier> modifiers) {
-            // 1.7 rolled the player's world random; tooltips built without a player (the creative search tree) roll a fresh one
-            boolean world = player != null ? player.level().getRandom().nextInt(10) == 0 : new Random().nextInt(10) == 0;
+            // port: 1.7 rolled the world's random; JEI and the search tree build tooltips on worker threads, which may not touch it
+            boolean world = new Random().nextInt(10) == 0;
             if (world) {
                 list.add(Component.literal("WORLD").withStyle(ChatFormatting.DARK_RED));
                 return;

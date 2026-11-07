@@ -65,7 +65,8 @@ public class TileEntityAirPump extends TileEntityLoadedBase implements IFluidSta
      */
     public interface CO2Scrubber {
         boolean isLoaded();
-        boolean isRemoved();
+        /** Not {@code isRemoved}, for the reason on {@link AtmosphereProvider#atmosphereLevel}. */
+        boolean scrubberRemoved();
         boolean canOperate();
         /** Takes up to {@code amount} of waste gas, returns how much it took. */
         int scrub(int amount);
@@ -126,7 +127,7 @@ public class TileEntityAirPump extends TileEntityLoadedBase implements IFluidSta
                         }
 
                         // Fill scrubbers with waste gas
-                        if (scrubber != null && scrubber.isLoaded() && !scrubber.isRemoved()) {
+                        if (scrubber != null && scrubber.isLoaded() && !scrubber.scrubberRemoved()) {
                             int toScrub = Mth.clamp(wasteFill, 0, 20);
                             int scrubbed = scrubber.scrub(toScrub);
                             wasteFill -= scrubbed;
@@ -249,6 +250,11 @@ public class TileEntityAirPump extends TileEntityLoadedBase implements IFluidSta
     // AtmosphereProvider
 
     @Override
+    public Level atmosphereLevel() {
+        return level;
+    }
+
+    @Override
     public int getMaxBlobRadius() {
         return 256;
     }
@@ -310,7 +316,7 @@ public class TileEntityAirPump extends TileEntityLoadedBase implements IFluidSta
         if (!this.isLoaded || this.isRemoved()) return false;
         if (tank.getTankType() != Fluids.OXYGEN) return false;
         if (this.scrubber == scrubber) return true;
-        if (this.scrubber != null && this.scrubber.isLoaded() && !this.scrubber.isRemoved() && this.scrubber.canOperate()) return false;
+        if (this.scrubber != null && this.scrubber.isLoaded() && !this.scrubber.scrubberRemoved() && this.scrubber.canOperate()) return false;
         this.scrubber = scrubber;
         return true;
     }

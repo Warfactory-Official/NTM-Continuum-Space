@@ -10,7 +10,8 @@ import net.minecraft.world.level.Level;
  */
 public interface AtmosphereProvider {
 
-    Level getLevel();
+    /** Not {@code getLevel}: a remapped jar renames BlockEntity's method and leaves this one without an implementation. */
+    Level atmosphereLevel();
 
     /** The maximum distance an object can maintain a blob. */
     int getMaxBlobRadius();

@@ -106,6 +106,11 @@ public class TileEntityAirScrubber extends TileEntityMachineBase implements IFlu
     }
 
     @Override
+    public boolean scrubberRemoved() {
+        return isRemoved();
+    }
+
+    @Override
     public boolean canOperate() {
         return power > MIN_POWER;
     }

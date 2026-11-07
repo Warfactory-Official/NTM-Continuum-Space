@@ -1,5 +1,8 @@
 package com.ntmspace.gametest;
 
+import com.ntmspace.tileentity.atmosphere.TileEntityAirScrubber;
+import java.lang.reflect.Method;
+import java.util.Arrays;
 import com.hbm.handler.ArmorModHandler;
 import com.hbm.inventory.fluid.FluidType;
 import com.hbm.inventory.fluid.Fluids;
@@ -61,6 +64,8 @@ public final class AtmosphereGameTests {
 
     public static void init() {}
 
+    public static final GameTests.Function REMAP_NAMES = SpaceGameTests.TESTS.function("atmosphere_interfaces_survive_remapping", 20,
+            () -> AtmosphereGameTests::interfacesSurviveRemapping);
     public static final GameTests.Function TRAIT_ROUND_TRIP = SpaceGameTests.TESTS.function("trait_save_round_trip", 20,
             () -> AtmosphereGameTests::traitRoundTrip);
     public static final GameTests.Function TRAIT_DEFAULTS = SpaceGameTests.TESTS.function("trait_defaults_17", 20,
@@ -285,6 +290,26 @@ public final class AtmosphereGameTests {
     }
 
     /** A provider with a fixed gas and pressure, like a vent that is always full. */
+    /** A method shared with a Minecraft superclass is renamed on that side only by remapping, so it must not exist. */
+    private static void interfacesSurviveRemapping(GameTestHelper helper) {
+        for (Class<?> type : List.of(TileEntityAirPump.class, TileEntityAirScrubber.class)) {
+            for (Class<?> face : List.of(type.getInterfaces())) {
+                if (!face.getName().startsWith("com.ntmspace.")) continue;
+                for (Method method : face.getDeclaredMethods()) {
+                    for (Class<?> up = type.getSuperclass(); up != null; up = up.getSuperclass()) {
+                        if (!up.getName().startsWith("net.minecraft.")) continue;
+                        for (Method vanilla : up.getDeclaredMethods()) {
+                            helper.assertTrue(!vanilla.getName().equals(method.getName())
+                                            || !Arrays.equals(vanilla.getParameterTypes(), method.getParameterTypes()),
+                                    face.getSimpleName() + "." + method.getName() + " collides with " + up.getSimpleName());
+                        }
+                    }
+                }
+            }
+        }
+        helper.succeed();
+    }
+
     private static final class TestProvider implements AtmosphereProvider {
         final Level level;
         final BlockPos root;
@@ -296,7 +321,7 @@ public final class AtmosphereGameTests {
             this.root = root.immutable();
         }
 
-        @Override public Level getLevel() { return level; }
+        @Override public Level atmosphereLevel() { return level; }
         @Override public int getMaxBlobRadius() { return 12; }
         @Override public BlockPos getRootPosition() { return root; }
         @Override public FluidType getFluidType() { return Fluids.OXYGEN; }

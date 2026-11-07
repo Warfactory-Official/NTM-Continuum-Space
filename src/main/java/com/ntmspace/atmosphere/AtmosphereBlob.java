@@ -167,8 +167,8 @@ public class AtmosphereBlob implements Runnable {
     private void addSingleBlock(BlockPos blockPos) {
         if (!graph.contains(blockPos)) {
             graph.add(blockPos, getPositionsToAdd(blockPos));
-            if (handler.getLevel().getBlockState(blockPos).getBlock() instanceof BonemealableBlock) {
-                addPlant(handler.getLevel(), blockPos);
+            if (handler.atmosphereLevel().getBlockState(blockPos).getBlock() instanceof BonemealableBlock) {
+                addPlant(handler.atmosphereLevel(), blockPos);
             }
         }
     }
@@ -205,7 +205,7 @@ public class AtmosphereBlob implements Runnable {
             for (Direction direction : Direction.values()) {
                 BlockPos newBlock = blockPos.relative(direction);
                 if (graph.contains(newBlock) && !graph.doesPathExist(newBlock, handler.getRootPosition())) {
-                    runEffectOnWorldBlocks(handler.getLevel(), graph.removeAllNodesConnectedTo(newBlock));
+                    runEffectOnWorldBlocks(handler.atmosphereLevel(), graph.removeAllNodesConnectedTo(newBlock));
                 }
             }
         }
@@ -213,7 +213,7 @@ public class AtmosphereBlob implements Runnable {
 
     /** Removes all nodes from the blob. */
     public void clearBlob() {
-        runEffectOnWorldBlocks(handler.getLevel(), getLocations());
+        runEffectOnWorldBlocks(handler.atmosphereLevel(), getLocations());
         graph.clear();
     }
 
@@ -245,9 +245,9 @@ public class AtmosphereBlob implements Runnable {
                 // Don't path areas we have already scanned
                 if (!graph.contains(searchNextPosition) && !addableBlocks.contains(searchNextPosition)) {
                     try {
-                        if (isPositionAllowed(handler.getLevel(), searchNextPosition)) {
+                        if (isPositionAllowed(handler.atmosphereLevel(), searchNextPosition)) {
                             if (searchNextPosition.distSqr(root) <= (double) maxSize * maxSize
-                                    && !openToSky(handler.getLevel(), searchNextPosition)) {
+                                    && !openToSky(handler.atmosphereLevel(), searchNextPosition)) {
                                 stack.push(searchNextPosition);
                                 addableBlocks.add(searchNextPosition);
                             } else {
@@ -306,7 +306,7 @@ public class AtmosphereBlob implements Runnable {
      * particles belong to the particle port.
      */
     public void decompress(BlockPos pos, Direction dir) {
-        Level level = handler.getLevel();
+        Level level = handler.atmosphereLevel();
         if (!(level instanceof ServerLevel server)) return;
         double x = pos.getX() + 0.5, y = pos.getY() + 0.5, z = pos.getZ() + 0.5;
         Decompressions.add(server, x, y, z, dir.getOpposite(), 20);
@@ -316,7 +316,7 @@ public class AtmosphereBlob implements Runnable {
 
     /** Every second: a plant that grew a stage in the room turns some of the waste gas back into air. */
     public void checkGrowth() {
-        Level level = handler.getLevel();
+        Level level = handler.atmosphereLevel();
         Iterator<Map.Entry<BlockPos, Integer>> iterator = plants.entrySet().iterator();
         while (iterator.hasNext()) {
             Map.Entry<BlockPos, Integer> entry = iterator.next();
