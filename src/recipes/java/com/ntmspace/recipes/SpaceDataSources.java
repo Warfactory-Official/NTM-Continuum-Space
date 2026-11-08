@@ -1,11 +1,16 @@
 package com.ntmspace.recipes;
 
+import com.hbm.util.CategoryTagSource;
+import com.ntmspace.NtmSpace;
+import com.ntmspace.fork.neutron.NeutronActivation;
+import com.ntmspace.recipes.data.SpaceHazards;
 import com.ntmspace.recipes.tables.*;
 import dev.golem.core.world.DataSource;
 import dev.golem.core.world.RecipeSource;
 import dev.golem.core.world.DataSources;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 
 /**
  * NTM: Space's machine recipe rows, generated into {@code data/ntmspace/recipe/<table>/} at build time
@@ -76,6 +81,8 @@ public final class SpaceDataSources implements DataSources {
         // data folders (fluid properties, data maps, item pools, removal lists, ...)
         sources.addAll(com.ntmspace.recipes.data.D5Sources.sources());
         sources.addAll(com.ntmspace.recipes.data.D4Sources.sources());
+        // NTM: Space's items and blocks in HBM's category and convention tags; neutron is hbm-space's own hazard type
+        sources.add(new CategoryTagSource(NtmSpace.MOD_ID, Map.of("neutron", NeutronActivation.NEUTRON), new SpaceHazards()));
         return sources;
     }
 }
