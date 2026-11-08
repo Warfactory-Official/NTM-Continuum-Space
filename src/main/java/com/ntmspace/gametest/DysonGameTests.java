@@ -1,5 +1,6 @@
 package com.ntmspace.gametest;
 
+import com.hbm.api.tile.IHeatSource;
 import com.hbm.blocks.multiblock.BlockMultiblockCore;
 import com.hbm.blocks.multiblock.MultiblockHandlerXR;
 import com.hbm.blocks.multiblock.MultiblockSurface;
@@ -225,6 +226,9 @@ public final class DysonGameTests {
             if (!BlockMultiblockCore.vendsHeatAt(tu, core.above(1)) || !BlockMultiblockCore.vendsHeatAt(tu, core.above(2))
                     || BlockMultiblockCore.vendsHeatAt(tu, core.north())) {
                 errors.add("heat cells are not the two above the core");
+            }
+            if (IHeatSource.at(level, core.above(2)) != tu || IHeatSource.at(level, core.north()) != null) {
+                errors.add("a consumer on top does not reach the converter's heat through its top cell");
             }
             tu.provideEnergy(core.getX(), core.getY() + 1, core.getZ() - 6, Long.MAX_VALUE);
             if (tu.heatEnergy != Integer.MAX_VALUE) errors.add("TU heat does not saturate at Integer.MAX_VALUE: " + tu.heatEnergy);
