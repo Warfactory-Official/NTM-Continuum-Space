@@ -7,9 +7,7 @@ import java.util.Locale;
 import com.hbm.creativetabs.HbmTab;
 import com.hbm.creativetabs.ModTabs;
 import com.hbm.items.ModAbilityToolItems;
-import com.hbm.items.ModEntityItems;
 import com.hbm.items.ModMeleeKitItems;
-import com.hbm.items.tool.ItemDrone;
 import com.ntmspace.rocket.DriveBody;
 import com.ntmspace.block.BlockBodyOre.Body;
 import dev.golem.core.Ids;
@@ -83,8 +81,7 @@ public final class SpaceCreativeOrder {
         ModTabs.insertAfter(HbmTab.MACHINES, "hbm:machine_condenser_powered", "ntmspace:machine_radiator");
         ModTabs.insertAfter(HbmTab.MACHINES, "hbm:machine_lpw2", "ntmspace:machine_htr3", "ntmspace:machine_htrf4",
                 "ntmspace:machine_htrf4neo", "ntmspace:machine_xenon_thruster");
-        // The first machine-tab item follows the station, Dyson and orrery block registrations.
-        ModTabs.addStacksTo(HbmTab.MACHINES, () -> List.of(new ItemStack(ModEntityItems.drone.get(ItemDrone.EnumDroneType.PATROL))));
+        // The first machine-tab item follows the station, Dyson and orrery block registrations; HBM lists the drone.
         ModTabs.insertBefore(HbmTab.MACHINES, "hbm:drone_patrol", "ntmspace:atmosphere_editor", "ntmspace:transporter_rocket",
                 "ntmspace:orbital_station_port", "ntmspace:orbital_station_launcher", "ntmspace:orbital_station_computer",
                 "ntmspace:propulsion_creative", "ntmspace:dyson_launcher", "ntmspace:dyson_receiver",

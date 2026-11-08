@@ -16,6 +16,7 @@ import com.hbm.inventory.recipes.PyroOvenRecipes;
 import com.hbm.inventory.recipes.ShredderRecipes;
 import com.hbm.blocks.ModProduction2Blocks;
 import com.hbm.blocks.ModOreBlocks;
+import com.hbm.handler.jei.UniversalRecipeHandler;
 import com.hbm.items.ModAutogenItems;
 import com.hbm.items.ModBedrockOreItems;
 import com.hbm.items.ModSatelliteItems;
@@ -103,7 +104,26 @@ public final class BedrockSatelliteGameTests {
 
     private BedrockSatelliteGameTests() {}
 
+    public static final GameTests.Function SLOPPER_VIEWER = TESTS.function("bedrock_ore_slopper_viewer_per_body", 20,
+            () -> BedrockSatelliteGameTests::slopperViewer);
+
     public static void init() {}
+
+    /** hbm-space {@code OreSlopperHandler}: one recipe per body with a table, that body's ore and only its types. */
+    private static void slopperViewer(GameTestHelper helper) {
+        List<UniversalRecipeHandler.Row> rows = UniversalRecipeHandler.oreSlopper();
+        helper.assertTrue(rows.size() == CelestialBedrockOre.BODIES.size(),
+                "one ore slopper recipe per body: " + rows.size() + " of " + CelestialBedrockOre.BODIES.size());
+        for (int i = 0; i < rows.size(); i++) {
+            List<BedrockOreType> types = CelestialBedrockOre.get(CelestialBedrockOre.BODIES.get(i));
+            ItemStack ore = rows.get(i).inputs().get(1).get(0);
+            helper.assertTrue(ItemBedrockOreBase.types(ore).equals(types), "row " + i + " takes that body's raw ore");
+            helper.assertTrue(rows.get(i).outputs().size() == types.size() + 1,
+                    "row " + i + ": the body's types and slop, " + rows.get(i).outputs().size());
+            helper.assertTrue(rows.get(i).outputs().size() <= 8, "row " + i + " fits 1.7's layouts");
+        }
+        helper.succeed();
+    }
 
     // ---------------------------------------------------------------------------------------------- bedrock ores
 
