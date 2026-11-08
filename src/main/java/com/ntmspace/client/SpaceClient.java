@@ -13,7 +13,9 @@ import com.ntmspace.client.render.mob.SpaceMobRenderers;
 import com.ntmspace.fork.client.ForkClient;
 import com.ntmspace.tileentity.machine.StardarHeightmap;
 import com.ntmspace.trait.TraitSync;
+import dev.golem.core.client.BlockLayers;
 import dev.golem.core.client.ItemModelProperties;
+import dev.golem.core.client.Tints;
 /** NTM: Space's client start-up, the same on every loader (each loader's client init calls it). */
 public final class SpaceClient {
 
@@ -21,6 +23,8 @@ public final class SpaceClient {
 
     public static void init() {
         ObjBlockModels.install();
+        BlockLayers.install(NtmSpace.MOD_ID);
+        Tints.install(NtmSpace.MOD_ID);
         MunSky.init();
         SkyWeatherClient.init();
         SkyShaderClient.init();
