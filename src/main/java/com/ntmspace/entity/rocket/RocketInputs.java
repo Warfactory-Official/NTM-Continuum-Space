@@ -29,7 +29,7 @@ public final class RocketInputs {
     public static void init() {
         GolemNetwork.registerPlayToServer(CODEC, (payload, player) -> {
             if (player.getVehicle() instanceof EntityRideableRocket rocket) {
-                rocket.pilotJumpTime = player.level().getGameTime();
+                rocket.pilotJumped();
             }
         });
     }

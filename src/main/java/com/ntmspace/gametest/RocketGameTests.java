@@ -35,6 +35,7 @@ import com.ntmspace.tileentity.station.TileEntityOrbitalStation;
 import com.ntmspace.world.SolarSystem;
 import dev.golem.core.gametest.GameTestHelpers;
 import dev.golem.core.gametest.GameTests;
+import dev.golem.core.world.Teleports;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
@@ -44,7 +45,9 @@ import net.minecraft.core.Direction;
 import net.minecraft.gametest.framework.GameTestHelper;
 import net.minecraft.network.chat.Component;
 import net.minecraft.network.chat.contents.TranslatableContents;
+import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.level.GameType;
 
 /**
  * The rocket family's GameTests. The fuel, mass and height expectations come from hbm-space's own
@@ -112,6 +115,10 @@ public final class RocketGameTests {
     /** The rocket's look overlay (1.7 printHook) through HBM's IEntityLookOverlay. */
     public static final GameTests.Function LOOK_OVERLAY = TESTS.function("rocket_look_overlay", 20,
             () -> RocketGameTests::lookOverlay);
+
+    /** A boarded rocket waits for its pilot's jump, then launches (1.7 {@code rider.isJumping}). */
+    public static final GameTests.Function BOARDING = TESTS.function("rocket_waits_for_jump", 60,
+            () -> RocketGameTests::boarding);
 
     private RocketGameTests() {}
 
@@ -411,6 +418,30 @@ public final class RocketGameTests {
             helper.assertTrue(data.sats.containsKey(freq), "the satellite reached orbit on frequency " + freq);
             data.sats.remove(freq);
             release.run();
+        });
+    }
+
+    private static void boarding(GameTestHelper helper) {
+        BlockPos ground = helper.absolutePos(new BlockPos(2, 2, 2));
+        EntityRideableRocket rocket = EntityRideableRocket.create(helper.getLevel(), ground.getX() + 0.5, ground.getY(),
+                ground.getZ() + 0.5, ItemCustomRocket.build(r1(), true)).withProgram(driveTo(DriveBody.MUN, 0, 0));
+        Runnable release = PlotChunks.force(helper, 16);
+        helper.getLevel().addFreshEntity(rocket);
+        Player pilot = GameTestHelpers.mockPlayer(helper, GameType.SURVIVAL);
+        Teleports.remount(pilot, rocket);
+        helper.assertTrue(pilot.getVehicle() == rocket && rocket.getState() == RocketState.AWAITING, "the pilot boards an awaiting rocket");
+
+        helper.runAfterDelay(20, () -> {
+            helper.assertTrue(rocket.getState() == RocketState.AWAITING, "a boarded rocket waits for jump, got " + rocket.getState());
+            rocket.pilotJumped();
+            helper.runAfterDelay(2, () -> {
+                RocketState state = rocket.getState();
+                pilot.stopRiding();
+                rocket.discard();
+                release.run();
+                helper.assertTrue(state == RocketState.LAUNCHING, "jump launches it, got " + state);
+                helper.succeed();
+            });
         });
     }
 

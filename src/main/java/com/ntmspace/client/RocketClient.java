@@ -53,8 +53,7 @@ public final class RocketClient {
     /**
      * hbm-space {@code onRenderRidingPlayerPre}: a player riding a rocket is drawn rotated by minus the rocket's pitch
      * ({@code rotationPitch}, not interpolated) about Z. 1.7 applied the {@code glRotated} before {@code RenderPlayer}
-     * translated to the player, so the pivot is the camera, not the player: odd, kept (the rider swings with the rocket's
-     * turn as seen from the camera).
+     * translated to the player, so the pivot is the viewer's eye: the pilot turns about its own head.
      */
     private static void tiltRider(net.minecraft.world.entity.player.Player player, com.mojang.blaze3d.vertex.PoseStack pose,
                                   float partialTick) {

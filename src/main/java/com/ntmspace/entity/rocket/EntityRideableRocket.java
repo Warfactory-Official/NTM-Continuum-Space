@@ -696,12 +696,16 @@ public class EntityRideableRocket extends CompatEntity implements StationDock, I
         void accept(Level level, BlockPos core, EntityRideableRocket rocket);
     }
 
-    /** The game time of the pilot's last jump key press (sent by the client, {@link RocketInputs}). */
-    long pilotJumpTime = Long.MIN_VALUE;
+    private long pilotJumpTime = Long.MIN_VALUE;
+
+    /** The pilot holds jump this tick (sent by the client, {@link RocketInputs}). */
+    public void pilotJumped() {
+        pilotJumpTime = level().getGameTime();
+    }
 
     /** 1.7 {@code rider.isJumping}: the server learnt it from the vehicle input packet; here the client says so. */
     private boolean isJumping(LivingEntity entity) {
-        return entity instanceof Player && level().getGameTime() - pilotJumpTime <= 1;
+        return entity instanceof Player && pilotJumpTime >= level().getGameTime() - 1;
     }
 
     private double heightValue(int x, int z) {

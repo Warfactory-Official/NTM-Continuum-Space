@@ -10,7 +10,7 @@ import dev.golem.harness.api.*;
  *   <li>a rocket launch pad ({@code /ntmrocket place pad}) takes the rocket and a processed Mun drive
  *       ({@code /ntmrocket drive mun 0 0}); {@code /ntmrocket fuel} fills its kerosene/peroxide tanks and power; the
  *       screen's lamp shows it can launch (03-pad-gui), COMMIT TO LAUNCH spawns the rocket;</li>
- *   <li>the player boards it (use), holds jump: the server logs {@code Rocket <id> -> LAUNCHING}, then TRANSFER in the
+ *   <li>the player boards it (use), nothing happens until it holds jump: the server logs {@code Rocket <id> -> LAUNCHING}, then TRANSFER in the
  *       orbit level, then LANDING and LANDED on the Mun (04-launch, 05-transfer, 06-mun-landed third person,
  *       07-mun-landed first person; 04b-launch-rider-tilted: the 12-block camera and the rider turned with the pitch);</li>
  *   <li>no exception mentioning ntmspace or golem in the log.</li>
@@ -181,7 +181,9 @@ public final class RocketFlight implements Scenario {
         c.lookAt(PAD_X + 0.5, PAD_Y + 4.5, PAD_Z + 0.5);
         c.waitTicks(2);
         c.use(2);
-        c.waitTicks(10);
+        c.waitTicks(40);
+        Expect.that(c.logSinceMark("Rocket .* -> LAUNCHING").isEmpty(), "the boarded rocket waits for jump: "
+                + c.logSinceMark("Rocket"));
         c.keyDown("key.jump");
         c.waitTicks(10);
         c.keyUp("key.jump");
@@ -210,6 +212,11 @@ public final class RocketFlight implements Scenario {
                 transfer = true;
                 c.waitTicks(40);
                 c.screenshot("05-transfer");
+                // later, from the side (the rocket lies along +x): 1.7 turns the pilot about its own head, inside the capsule
+                c.waitTicks(100);
+                c.look(0, 15);
+                c.waitTicks(10);
+                c.screenshot("05b-transfer-side");
             }
             landed = !c.logSinceMark("Rocket .* -> LANDED in .*ntmspace:mun").isEmpty();
         }
