@@ -122,6 +122,13 @@ dependencies {
     implementation("dev.golem:golemcore-neoforge-$mcVersion:${prop("deps.golemcore")}+$mcVersion")
     implementation("com.hbm:hbm-neoforge-$mcVersion:${prop("deps.hbm")}+$mcVersion")
 
+    // Iris and the Sodium it needs, for testing under shader packs: `-Pshaders.run=true` puts both in the client run.
+    // Dev runtime only, off by default. Place a pack in the run's shaderpacks folder and select it in game.
+    if (propOrNull("shaders.run") == "true") propOrNull("deps.iris")?.let { iris ->
+        devModJar("maven.modrinth:iris:$iris")
+        propOrNull("deps.sodium_neoforge")?.let { devModJar("maven.modrinth:sodium:$it") }
+    }
+
     val jei = propOrNull("deps.jei_mc")
     val jeiVer = propOrNull("deps.jei")
     if (jei != null && jeiVer != null) {
