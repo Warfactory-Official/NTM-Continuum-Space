@@ -22,14 +22,14 @@ side = "BOTH"
 [[dependencies.${mod_id}]]
 modId = "golemcore"
 type = "required"
-versionRange = "[1.0.4,)"
+versionRange = "[1.0.5,)"
 ordering = "AFTER"
 side = "BOTH"
 
 [[dependencies.${mod_id}]]
 modId = "hbm"
 type = "required"
-versionRange = "[1.0.4,)"
+versionRange = "[1.0.5,)"
 ordering = "AFTER"
 side = "BOTH"
 

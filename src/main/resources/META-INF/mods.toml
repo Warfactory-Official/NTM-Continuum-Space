@@ -21,14 +21,14 @@ side = "BOTH"
 [[dependencies.${mod_id}]]
 modId = "golemcore"
 mandatory = true
-versionRange = "[1.0.4,)"
+versionRange = "[1.0.5,)"
 ordering = "AFTER"
 side = "BOTH"
 
 [[dependencies.${mod_id}]]
 modId = "hbm"
 mandatory = true
-versionRange = "[1.0.4,)"
+versionRange = "[1.0.5,)"
 ordering = "AFTER"
 side = "BOTH"
 
