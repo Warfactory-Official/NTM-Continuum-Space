@@ -173,6 +173,20 @@ public final class ForkGameTests {
                 errors.add("pellet_charged is not right after the crucible (1.7 order)");
             }
         }
+        // GitHub issue 179: hbm-space's plushie loop, OIL 16, rated 10 only for its first two types
+        List<String> plushies = new ArrayList<>();
+        for (BobmazonOfferFactory.Offer offer : BobmazonOfferFactory.standard()) {
+            String id = id(offer.offer);
+            if (!id.contains(":plushie_")) continue;
+            plushies.add(id);
+            boolean rated = id.equals("hbm:plushie_yomi") || id.equals("hbm:plushie_numbernine");
+            if (offer.cost != 16 || offer.requirement != BobmazonOfferFactory.Requirement.OIL || offer.rating != (rated ? 10 : 0) * 4 - 1) {
+                errors.add(id + " offer " + offer.cost + " / " + offer.requirement + " / " + offer.rating);
+            }
+        }
+        List<String> order = List.of("hbm:plushie_yomi", "hbm:plushie_numbernine", "hbm:plushie_hundun", "ntmspace:plushie_teto",
+                "ntmspace:plushie_miku", "ntmspace:plushie_neru", "hbm:plushie_derg", "ntmspace:plushie_fato");
+        if (!plushies.equals(order)) errors.add("plushie offers " + plushies + ", hbm-space " + order);
         finish(helper, errors);
     }
 

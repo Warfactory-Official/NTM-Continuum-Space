@@ -7,7 +7,9 @@ import com.hbm.world.gen.nbt.MultiblockAssemblyProcessor;
 import com.ntmspace.fork.antimatter.EntityAntimatterBlast;
 import com.ntmspace.fork.bobble.BlockSpaceBobble;
 import com.ntmspace.fork.machine.ThermalTemplateDamage;
+import com.ntmspace.block.generic.BlockSpacePlushie;
 import com.ntmspace.registry.BodyOreBlocks;
+import com.ntmspace.registry.LeftoverContent;
 import dev.golem.core.registry.Entities;
 import net.minecraft.world.entity.EntityType;
 import net.minecraft.world.entity.MobCategory;
@@ -222,6 +224,19 @@ public final class ForkContent {
             special.add(indexAfter(special, "crucible"),
                     new BobmazonOfferFactory.Offer(pellet, BobmazonOfferFactory.Requirement.STEEL, 16, 0));
         });
+        // hbm-space sells every PlushieType at OIL 16: Teto, Miku and Neru after Hundun, FAT TETO after the dragon
+        BobmazonOfferFactory.OFFERS.register((standard, special) -> {
+            int at = indexAfter(standard, "plushie_hundun");
+            for (BlockSpacePlushie.Type type : List.of(BlockSpacePlushie.Type.TETO, BlockSpacePlushie.Type.MIKU, BlockSpacePlushie.Type.NERU)) {
+                standard.add(at++, plushieOffer(type));
+            }
+            standard.add(indexAfter(standard, "plushie_derg"), plushieOffer(BlockSpacePlushie.Type.FATO));
+        });
+    }
+
+    private static BobmazonOfferFactory.Offer plushieOffer(BlockSpacePlushie.Type type) {
+        return new BobmazonOfferFactory.Offer(new ItemStack(LeftoverContent.PLUSHIE_ITEMS.get(type.ordinal()).get()),
+                BobmazonOfferFactory.Requirement.OIL, 16, 0);
     }
 
     /** The position after the first offer of {@code hbm:<path>}, or the end of the list. */
