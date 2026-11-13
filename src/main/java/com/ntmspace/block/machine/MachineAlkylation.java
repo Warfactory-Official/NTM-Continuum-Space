@@ -42,7 +42,7 @@ public class MachineAlkylation extends BlockMultiblockMachine implements IEnergy
 
     @Override
     public MachineCaps caps() {
-        return MachineCaps.of(SpaceMachines.ALKYLATION_BE).powerIn().fluidIn().fluidOut().fe()
+        return MachineCaps.of(SpaceMachines.ALKYLATION_BE).powerIn().fluidIn().fluidOut()
                 .faces(TileEntityMachineAlkylation.class, (be, side) -> side != Direction.DOWN)
                 .fluidFaces(TileEntityMachineAlkylation.class, (be, side) -> side != Direction.DOWN);
     }

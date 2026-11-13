@@ -136,6 +136,8 @@ dependencies {
         compileOnly("mezz.jei:jei-$jei-neoforge-api:$jeiVer")
         localRuntime("mezz.jei:jei-$jei-neoforge:$jeiVer")
     }
+    // Pipez, dev runs only (`-Ppipez.run=true`): a real mod's energy pipe for the foreign-cable scenario
+    if (propOrNull("pipez.run") == "true") propOrNull("deps.pipez")?.let { localRuntime("maven.modrinth:pipez:$it") }
     compileOnly("org.jspecify:jspecify:1.0.0")
 }
 

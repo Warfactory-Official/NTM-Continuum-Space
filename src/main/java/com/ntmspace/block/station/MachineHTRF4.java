@@ -36,7 +36,7 @@ public class MachineHTRF4 extends BlockMultiblockMachine implements IEnergyConne
 
     @Override
     public MachineCaps caps() {
-        return MachineCaps.of(StationBlocks.HTRF4_BE).powerIn().fluidIn().fe()
+        return MachineCaps.of(StationBlocks.HTRF4_BE).powerIn().fluidIn()
                 .faces(TileEntityMachineHTRF4.class, (be, side) -> Orbit.inOrbit(be.getLevel()))
                 .fluidFaces(TileEntityMachineHTRF4.class, (be, side) -> Orbit.inOrbit(be.getLevel()));
     }

@@ -44,7 +44,7 @@ public class ComplexCapacitor extends CompatBlock implements TickingBlock, ILook
     public static final EnumProperty<Direction> FACING = BlockStateProperties.FACING;
 
     public final long power;
-    private static final MachineCaps CAPS = MachineCaps.blockKeyed().powerIn().fe()
+    private static final MachineCaps CAPS = MachineCaps.blockKeyed().powerIn()
             .faces(ComplexCapacitorEntity.class, (owner, side) -> side == owner.inputSide().toDirection());
     @Override public MachineCaps caps() { return CAPS; }
 

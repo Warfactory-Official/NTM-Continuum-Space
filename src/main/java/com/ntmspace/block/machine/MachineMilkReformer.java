@@ -26,7 +26,7 @@ public class MachineMilkReformer extends BlockMultiblockMachine implements IEner
 
     @Override
     public MachineCaps caps() {
-        return MachineCaps.of(SpaceMachines.MILK_REFORMER_BE).powerIn().fluidIn().fluidOut().items().fe()
+        return MachineCaps.of(SpaceMachines.MILK_REFORMER_BE).powerIn().fluidIn().fluidOut().items()
                 .faces(TileEntityMachineMilkReformer.class, (be, side) -> side != Direction.DOWN)
                 .fluidFaces(TileEntityMachineMilkReformer.class, (be, side) -> side != Direction.DOWN);
     }

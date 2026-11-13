@@ -21,7 +21,7 @@ import net.minecraft.world.level.block.state.BlockState;
  * the networks, on all six faces (its {@code tryProvide} at every neighbour). No GUI.
  */
 public class MachineSolar extends BlockMultiblockMachine implements IEnergyConnectorBlock, ICapabilityBlock {
-    private static final MachineCaps CAPS = MachineCaps.of(SpaceMachinesC.SOLAR_BE).powerOut().fe();
+    private static final MachineCaps CAPS = MachineCaps.of(SpaceMachinesC.SOLAR_BE).powerOut();
 
     @Override
     public MachineCaps caps() {

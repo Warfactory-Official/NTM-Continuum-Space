@@ -114,6 +114,7 @@ public final class SpaceGameTests {
         MachineGameTestsC.init();
         MachineGameTestsD.init();
         PortGameTests.init();
+        ForeignEnergyGameTests.init();
         DropPodGameTests.init();
         FacadeGameTests.init();
         WarGameTests.init();

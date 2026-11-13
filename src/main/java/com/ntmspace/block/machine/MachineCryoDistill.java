@@ -41,7 +41,7 @@ public class MachineCryoDistill extends BlockMultiblockMachine implements IEnerg
 
     @Override
     public MachineCaps caps() {
-        return MachineCaps.of(SpaceMachines.CRYO_DISTILL_BE).powerIn().fluidIn().fluidOut().fe()
+        return MachineCaps.of(SpaceMachines.CRYO_DISTILL_BE).powerIn().fluidIn().fluidOut()
                 .faces(TileEntityMachineCryoDistill.class, (be, side) -> side != Direction.DOWN)
                 .fluidFaces(TileEntityMachineCryoDistill.class, (be, side) -> side != Direction.DOWN);
     }

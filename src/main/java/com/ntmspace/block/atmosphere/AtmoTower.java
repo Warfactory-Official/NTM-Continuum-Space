@@ -24,7 +24,7 @@ import net.minecraft.world.level.block.state.BlockState;
  */
 public class AtmoTower extends MachineDeuteriumTower implements ICapabilityBlock {
     private static final MachineCaps CAPS = MachineCaps.of(AtmosphereMachines.ATMO_TOWER_BE)
-                                                       .powerIn().fluidIn().fluidOut().fe();
+                                                       .powerIn().fluidIn().fluidOut();
 
     @Override
     public MachineCaps caps() {

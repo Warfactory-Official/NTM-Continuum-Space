@@ -36,7 +36,7 @@ public class MachineXenonThruster extends BlockMultiblockMachine implements IEne
 
     @Override
     public MachineCaps caps() {
-        return MachineCaps.of(StationBlocks.XENON_THRUSTER_BE).powerIn().fluidIn().fe()
+        return MachineCaps.of(StationBlocks.XENON_THRUSTER_BE).powerIn().fluidIn()
                 .faces(TileEntityXenonThruster.class, (be, side) -> Orbit.inOrbit(be.getLevel()))
                 .fluidFaces(TileEntityXenonThruster.class, (be, side) -> Orbit.inOrbit(be.getLevel()));
     }
