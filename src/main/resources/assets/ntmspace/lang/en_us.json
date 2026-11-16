@@ -814,5 +814,9 @@
   "item.ntmspace.sat.desc.dyson_relay": "Allows a Dyson Receiver to function at night",
   "item.ntmspace.sat.desc.launch_by_hand": "Can be launched by hand from an orbital station",
   "item.ntmspace.sat.desc.deploy_orbit": "Interact to deploy into orbit",
-  "desc.tooltip.hold": "Hold <%s> to display more info"
+  "desc.tooltip.hold": "Hold <%s> to display more info",
+  "entity.ntmspace.entity_antimatter": "Antimatter Explosion",
+  "item.ntmspace.bomb_caller_airliner": "Airstrike Designator",
+  "block.ntmspace.hydrobay_lamp": "Industrial Greenhouse",
+  "item.ntmspace.atmosphere_editor": "Atmosphere Editor"
 }

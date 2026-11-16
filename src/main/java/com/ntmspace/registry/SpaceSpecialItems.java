@@ -1,5 +1,6 @@
 package com.ntmspace.registry;
 
+import com.hbm.config.MachineConfig;
 import com.hbm.items.ModRBMKItems;
 import dev.golem.core.dejson.Equipment;
 import dev.golem.core.world.ArmorSlot;
@@ -168,12 +169,12 @@ public final class SpaceSpecialItems {
 
     /** Heat 20, decays to depleted americium; lifespan {@code getLifespan(13.8, LONG) * 1.5} (the data map entry rules). */
     public static final RegistryObject<ItemRTGPellet> PELLET_RTG_BERKELIUM = rtg("pellet_rtg_berkelium", 20,
-            9_936_000_000L, "Berkelium RTG Pellet");
+            9_936_000_000L);
     /** Heat {@code rtgDecay ? 600 : 200}, decays to lead; lifespan {@code getLifespan(1, SHORT) * 2.5}. */
     public static final RegistryObject<ItemRTGPellet> PELLET_RTG_CF251 = rtg("pellet_rtg_cf251",
-            com.hbm.config.MachineConfig.rtgDecay() ? 600 : 200, 120_000L, "Californium-251 RTG Pellet");
+            MachineConfig.rtgDecay() ? 600 : 200, 120_000L);
     public static final RegistryObject<ItemRTGPellet> PELLET_RTG_CF252 = rtg("pellet_rtg_cf252",
-            com.hbm.config.MachineConfig.rtgDecay() ? 600 : 200, 120_000L, "Californium-252 RTG Pellet");
+            MachineConfig.rtgDecay() ? 600 : 200, 120_000L);
 
     // ---------------------------------------------------------------------------------------- RBMK
 
@@ -222,10 +223,10 @@ public final class SpaceSpecialItems {
                 .transform(Presets.sprite()).tab(HbmTab.CONSUMABLES);
     }
 
-    private static RegistryObject<ItemRTGPellet> rtg(String id, int heat, long lifespan, String name) {
+    private static RegistryObject<ItemRTGPellet> rtg(String id, int heat, long lifespan) {
         // code fallback only; the hbm:rtg_pellet entry holds the values and the decay item
         return REG.item(id, p -> new ItemRTGPellet(p, heat, lifespan,
-                        () -> ModRtgContent.DEPLETED.get(DepletedRTGMaterial.LEAD).get(), name), p -> p.stacksTo(1))
+                        () -> ModRtgContent.DEPLETED.get(DepletedRTGMaterial.LEAD).get()), p -> p.stacksTo(1))
                 .transform(Presets.sprite()).tab(HbmTab.CONTROL);
     }
 
