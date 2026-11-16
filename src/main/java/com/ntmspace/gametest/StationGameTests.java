@@ -1,8 +1,13 @@
 package com.ntmspace.gametest;
 
+import com.hbm.blocks.machine.ModMachineBlocks;
 import com.hbm.blocks.multiblock.BlockMultiblockCore;
 import com.hbm.blocks.multiblock.MultiblockHandlerXR;
 import com.hbm.blocks.multiblock.MultiblockSurface;
+import com.hbm.capability.MachineCaps;
+import com.hbm.lib.ForgeDirection;
+import com.hbm.tileentity.machine.fusion.FusionLink;
+import com.hbm.tileentity.machine.fusion.TileEntityFusionTorus;
 import com.ntmspace.fluid.SpaceFluids;
 import com.ntmspace.orbit.Orbit;
 import com.ntmspace.orbit.OrbitChunkGenerator;
@@ -27,6 +32,7 @@ import net.minecraft.nbt.CompoundTag;
 import net.minecraft.nbt.NbtOps;
 import net.minecraft.nbt.Tag;
 import net.minecraft.network.chat.Component;
+import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.level.NoiseColumn;
 import net.minecraft.world.level.block.state.BlockState;
 
@@ -64,6 +70,10 @@ public final class StationGameTests {
     /** The station core's 5 x 5 port with its twelve rim cells, its block entity and hydrazine tank. */
     public static final GameTests.Function CORE = TESTS.function("station_core_structure", 40, 8,
             () -> StationGameTests::coreStructure);
+
+    /** 1.7's layout: the NEO's plasma end touches the torus's edge and the torus counts it as that arm's receiver. */
+    public static final GameTests.Function NEO_TORUS = TESTS.function("station_neo_fed_by_touching_torus", 40, 32,
+            () -> StationGameTests::neoFedByTouchingTorus);
 
     private StationGameTests() {}
 
@@ -322,5 +332,31 @@ public final class StationGameTests {
         // the port is not placeable by hand (1.7 canPlaceBlockAt false for the core)
         helper.assertTrue(!block.canPlaceAt(helper.getLevel(), core.offset(0, 0, 6), Direction.NORTH), "the core must not be placeable");
         helper.succeed();
+    }
+
+    private static void neoFedByTouchingTorus(GameTestHelper helper) {
+        ServerLevel level = helper.getLevel();
+        ForgeDirection rot = ForgeDirection.getOrientation(Direction.SOUTH).getRotation(ForgeDirection.UP);
+        BlockPos base = helper.absolutePos(new BlockPos(0, 4, 0));
+        BlockPos neoCore = base.offset(rot.offsetX * 11, 0, rot.offsetZ * 11);
+        BlockPos end = neoCore.offset(rot.offsetX * -9, 0, rot.offsetZ * -9);
+        BlockPos torusCore = neoCore.offset(rot.offsetX * -17, -2, rot.offsetZ * -17);
+        MultiblockHandlerXR.placeAssembled(level, neoCore, StationBlocks.MACHINE_HTRF4NEO.get(), Direction.SOUTH);
+        MultiblockHandlerXR.placeAssembled(level, torusCore, ModMachineBlocks.fusion_torus.get(), Direction.NORTH);
+        helper.assertTrue(neoCore.equals(MultiblockSurface.coreOfCell(level, end)), "the NEO's plasma end is not at core - 9");
+        helper.assertTrue(level.getBlockEntity(torusCore) instanceof TileEntityFusionTorus, "no torus");
+        helper.assertTrue(level.getBlockEntity(neoCore) instanceof TileEntityMachineHTRNeo, "the torus replaced the NEO");
+
+        helper.runAfterDelay(5, () -> {
+            helper.assertTrue(level.getBlockEntity(neoCore) instanceof TileEntityMachineHTRNeo,
+                    "no NEO at its core, the block there is " + level.getBlockState(neoCore));
+            TileEntityMachineHTRNeo neo = (TileEntityMachineHTRNeo) level.getBlockEntity(neoCore);
+            TileEntityFusionTorus torus = (TileEntityFusionTorus) level.getBlockEntity(torusCore);
+            helper.assertTrue(FusionLink.at(level, end, MachineCaps.PLASMA_IN) == neo, "the torus beam's cell is not the NEO's");
+            boolean linked = false;
+            for (boolean arm : torus.connections) linked |= arm;
+            helper.assertTrue(linked, "the torus sees no receiver on any arm");
+            helper.succeed();
+        });
     }
 }

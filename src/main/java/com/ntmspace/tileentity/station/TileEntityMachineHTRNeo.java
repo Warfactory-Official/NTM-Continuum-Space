@@ -98,7 +98,8 @@ public class TileEntityMachineHTRNeo extends TileEntityCooledBase implements Pro
             }
         }
 
-        // the torus beam lands on the plasma end (1.7 nodespace: a node ten blocks behind the core)
+        // 1.7 joins the torus net at its own node, core - 10, which is the torus's edge when the plasma end touches it;
+        // the port's torus delivers to the block past its edge, so the NEO claims its plasma end, core - 9
         FusionLink.claim(level, te, te.plasmaPos(), MachineCaps.PLASMA_IN);
 
         te.setChanged();
@@ -149,10 +150,10 @@ public class TileEntityMachineHTRNeo extends TileEntityCooledBase implements Pro
         }
     }
 
-    /** Where the torus beam meets this engine: ten blocks back along the long axis. */
+    /** Where the torus beam meets this engine: its plasma end block, nine back along the long axis. */
     public BlockPos plasmaPos() {
         ForgeDirection dir = MachineCore.facing(getBlockState()).getRotation(ForgeDirection.UP);
-        return new BlockPos(worldPosition.getX() + dir.offsetX * -10, worldPosition.getY(), worldPosition.getZ() + dir.offsetZ * -10);
+        return new BlockPos(worldPosition.getX() + dir.offsetX * -9, worldPosition.getY(), worldPosition.getZ() + dir.offsetZ * -9);
     }
 
     private AudioWrapper createAudioLoop() {
@@ -267,7 +268,8 @@ public class TileEntityMachineHTRNeo extends TileEntityCooledBase implements Pro
     @Override
     public void deserialize(RegistryFriendlyByteBuf buf) {
         super.deserialize(buf);
-        plasmaEnergy = buf.readLong();
+        // port: 1.7 read this into plasmaEnergy only, so the station computer always reported low plasma
+        plasmaEnergy = plasmaEnergySync = buf.readLong();
         isOn = buf.readBoolean();
         fuelCost = buf.readInt();
         soundtime = buf.readFloat();

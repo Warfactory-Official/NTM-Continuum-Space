@@ -22,9 +22,10 @@ import net.minecraft.world.level.block.state.BlockState;
 
 /**
  * hbm-space's {@code MachineHTRFNeo}: the HTR-F4's frame ({@code {2, 2, 2, 2, 11, 9}}, offset 11, two above, turned a
- * quarter), with four power and coolant proxies on the bottom layer. 1.7 offset their x by three along the facing and
- * their z by two, so for a north/south facing they sit on the structure's long sides and for an east/west facing outside
- * it (where {@code makeExtra} did nothing); kept, with the check that a proxy must lie inside the structure.
+ * quarter), with power and coolant proxies on the plasma end (where the torus meets it) and four on the bottom layer.
+ * 1.7 offset the bottom ones' x by three along the facing and their z by two, so for a north/south facing they sit on the
+ * long sides and for an east/west facing outside it (where {@code makeExtra} did nothing); kept, with the check that a
+ * proxy must lie inside the structure.
  */
 public class MachineHTRFNeo extends BlockMultiblockMachine implements IEnergyConnectorBlock, IFluidConnectorBlockMK2, ILookOverlay {
 
@@ -53,7 +54,7 @@ public class MachineHTRFNeo extends BlockMultiblockMachine implements IEnergyCon
                 ROLE_POWER_IN | ROLE_FLUID, visitor);
     }
 
-    /** 1.7 {@code makeExtra} x4: {@code TileEntityProxyCombo(false, true, true)}. */
+    /** 1.7 {@code makeExtra} x5: {@code TileEntityProxyCombo(false, true, true)}. */
     @Override
     protected void visitPassiveCells(BlockPos core, Direction facing, PassiveCellVisitor visitor) {
         for (BlockPos extra : extras(core, facing)) visitor.passiveCell(extra, MASK_ALL, PASSIVE_POWER_IN | PASSIVE_FLUID_IN);
@@ -65,6 +66,7 @@ public class MachineHTRFNeo extends BlockMultiblockMachine implements IEnergyCon
         int x = core.getX(), y = core.getY() - 2, z = core.getZ();
         List<BlockPos> extras = new ArrayList<>();
         for (BlockPos pos : new BlockPos[] {
+                new BlockPos(x - rot.offsetX * 9, core.getY(), z - rot.offsetZ * 9),
                 new BlockPos(x - rot.offsetX * 5 - dir.offsetX * 3, y, z - rot.offsetZ * 5 - dir.offsetZ * 2),
                 new BlockPos(x + rot.offsetX * 1 - dir.offsetX * 3, y, z + rot.offsetZ * 1 - dir.offsetZ * 2),
                 new BlockPos(x - rot.offsetX * 5 - dir.offsetX * 3, y, z - rot.offsetZ * 5 + dir.offsetZ * 2),
