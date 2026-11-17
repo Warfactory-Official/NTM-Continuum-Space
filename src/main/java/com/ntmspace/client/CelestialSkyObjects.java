@@ -20,6 +20,7 @@ import dev.golem.core.Ids;
 import dev.golem.core.client.ClientResourceReloads;
 import dev.golem.core.render.Sky;
 import dev.golem.core.render.TexturePixels;
+import dev.golem.core.world.TimeOfDay;
 import it.unimi.dsi.fastutil.objects.Object2IntOpenHashMap;
 import java.io.IOException;
 import java.io.UncheckedIOException;
@@ -473,25 +474,39 @@ public final class CelestialSkyObjects {
     static void chargedDust(Sky sky, ClientLevel level, SolarSystem.Body body, float glowAlpha, float partialTicks) {
         String surface = surfaceTexture(body);
         if (surface == null) return;
-        Random rand = new Random(0);
-        double time = ((double) dev.golem.core.world.TimeOfDay.get(level) + partialTicks) * 0.002;
-        float r = 0.5F + rand.nextFloat() * 0.5F;
-        float g = 0.5F + rand.nextFloat() * 0.5F;
-        float b = 0.5F + rand.nextFloat() * 0.5F;
-        float a = Math.min(rand.nextFloat() * glowAlpha * 4.0F, 1.0F);
+        double time = ((double) TimeOfDay.get(level) + partialTicks) * 0.002;
+        float r = 0.5F + DUST_TINT[0] * 0.5F;
+        float g = 0.5F + DUST_TINT[1] * 0.5F;
+        float b = 0.5F + DUST_TINT[2] * 0.5F;
+        float a = Math.min(DUST_TINT[3] * glowAlpha * 4.0F, 1.0F);
         int texel = SURFACE_TEXELS.computeIntIfAbsent(surface, CelestialSkyObjects::surfaceTexel);
         r *= ((texel >> 16) & 255) / 255F;
         g *= ((texel >> 8) & 255) / 255F;
         b *= (texel & 255) / 255F;
         a *= ((texel >>> 24) & 255) / 255F;
-        float[] points = new float[1024 * 3];
-        for (int i = 0; i < 1024; i++) {
-            points[i * 3] = (float) (rand.nextGaussian() * 50);
-            points[i * 3 + 1] = 100;
-            double z = Math.abs(rand.nextGaussian() * 20) + time;
-            points[i * 3 + 2] = (float) -((z % Math.abs(rand.nextGaussian())) * 20);
+        for (int i = 0; i < DUST; i++) {
+            double z = DUST_OFFSET[i] + time;
+            DUST_POINTS[i * 3 + 2] = (float) -((z % DUST_MODULUS[i]) * 20);
         }
-        sky.points(null, Sky.Blend.ADDITIVE, r, g, b, a, points);
+        sky.points(null, Sky.Blend.ADDITIVE, r, g, b, a, DUST_POINTS);
+    }
+
+    private static final int DUST = 1024;
+    // 1.7 drew these from a new Random(0) every frame: the tint's four floats, then per point x, the z offset and modulus
+    private static final float[] DUST_TINT = new float[4];
+    private static final double[] DUST_OFFSET = new double[DUST];
+    private static final double[] DUST_MODULUS = new double[DUST];
+    private static final float[] DUST_POINTS = new float[DUST * 3];
+
+    static {
+        Random rand = new Random(0);
+        for (int i = 0; i < 4; i++) DUST_TINT[i] = rand.nextFloat();
+        for (int i = 0; i < DUST; i++) {
+            DUST_POINTS[i * 3] = (float) (rand.nextGaussian() * 50);
+            DUST_POINTS[i * 3 + 1] = 100;
+            DUST_OFFSET[i] = Math.abs(rand.nextGaussian() * 20);
+            DUST_MODULUS[i] = Math.abs(rand.nextGaussian());
+        }
     }
 
     // ---------------------------------------------------------------------------------------------------------------

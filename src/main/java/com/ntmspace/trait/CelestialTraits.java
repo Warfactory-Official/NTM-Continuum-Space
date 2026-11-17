@@ -5,6 +5,7 @@ import dev.golem.core.world.Simulation;
 import com.hbm.inventory.fluid.FluidType;
 import com.hbm.inventory.fluid.Fluids;
 import com.ntmspace.fluid.SpaceFluids;
+import com.ntmspace.world.Atmospheres;
 import com.ntmspace.world.CelestialBodies;
 import com.ntmspace.world.SolarSystem;
 import com.ntmspace.world.SpaceDimensions;
@@ -16,6 +17,7 @@ import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 import net.minecraft.resources.ResourceKey;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerLevel;
@@ -231,7 +233,7 @@ public final class CelestialTraits {
         return current;
     }
 
-    /** Client: what the server synced (1.7 {@code updateClientTraits}). */
+    /** Client: what the server synced (1.7 {@code updateClientTraits}); the store is replaced, never changed in place. */
     public static void receive(Map<String, Map<Class<? extends CelestialBodyTrait>, CelestialBodyTrait>> traits) {
         client = traits == null ? Map.of() : traits;
     }
@@ -242,21 +244,31 @@ public final class CelestialTraits {
     }
 
     /**
-     * Client: the synced air of {@code body} as {@link com.ntmspace.world.Atmospheres} entries (registry names), or null
-     * when the server synced nothing for the body (it is on its defaults).
+     * Client: the synced air of {@code body} as {@link Atmospheres} entries (registry names), or null when the server
+     * synced nothing for the body (it is on its defaults). Read per biome sample of the fog, so kept per store.
      */
-    public static @Nullable List<com.ntmspace.world.Atmospheres.Entry> clientAtmosphere(String body) {
-        Map<Class<? extends CelestialBodyTrait>, CelestialBodyTrait> traits = client.get(body);
+    public static @Nullable List<Atmospheres.Entry> clientAtmosphere(String body) {
+        var store = client;
+        var cache = clientAir;
+        if (cache.store() != store) clientAir = cache = new ClientAir(store, new ConcurrentHashMap<>());
+        Map<Class<? extends CelestialBodyTrait>, CelestialBodyTrait> traits = store.get(body);
         if (traits == null) return null;
-        CBT_Atmosphere atmosphere = (CBT_Atmosphere) traits.get(CBT_Atmosphere.class);
-        List<com.ntmspace.world.Atmospheres.Entry> entries = new ArrayList<>();
-        if (atmosphere != null) {
-            for (CBT_Atmosphere.FluidEntry entry : atmosphere.fluids) {
-                entries.add(new com.ntmspace.world.Atmospheres.Entry(entry.fluid.getRegistryName(), entry.pressure));
+        return cache.bodies().computeIfAbsent(body, name -> {
+            CBT_Atmosphere atmosphere = (CBT_Atmosphere) traits.get(CBT_Atmosphere.class);
+            List<Atmospheres.Entry> entries = new ArrayList<>();
+            if (atmosphere != null) {
+                for (CBT_Atmosphere.FluidEntry entry : atmosphere.fluids) {
+                    entries.add(new Atmospheres.Entry(entry.fluid.getRegistryName(), entry.pressure));
+                }
             }
-        }
-        return entries;
+            return List.copyOf(entries);
+        });
     }
+
+    private record ClientAir(Map<String, Map<Class<? extends CelestialBodyTrait>, CelestialBodyTrait>> store,
+                             ConcurrentHashMap<String, List<Atmospheres.Entry>> bodies) {}
+
+    private static volatile ClientAir clientAir = new ClientAir(Map.of(), new ConcurrentHashMap<>());
 
     /** Something changed: save it and sync it to the clients at the end of the tick. */
     public static void markChanged() {

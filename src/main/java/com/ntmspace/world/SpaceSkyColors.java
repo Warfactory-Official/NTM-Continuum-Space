@@ -1,6 +1,7 @@
 package com.ntmspace.world;
 
 import java.awt.Color;
+import java.util.List;
 import com.hbm.handler.ImpactSky;
 import com.ntmspace.trait.CBT_War;
 import com.ntmspace.trait.CelestialTraits;
@@ -134,8 +135,10 @@ public final class SpaceSkyColors {
     /** {@code WorldProviderCelestial.getFogColor(solarAngle)}, before the shared impact-fog modifier. */
     public static Vec3 fogColor(Level level, float solarAngle, Vec3 position) {
         String air = SpaceSkies.airBody(level);
+        // read once: vanilla's fog sampler asks per biome sample
+        List<Atmospheres.Entry> entries = air == null ? List.of() : Atmospheres.of(air, level.isClientSide());
         // The cold hard vacuum of space
-        if (air == null || !Atmospheres.has(air, level.isClientSide())) return Vec3.ZERO;
+        if (entries.isEmpty()) return Vec3.ZERO;
 
         float sun = Mth.clamp(Mth.cos(solarAngle * (float) Math.PI * 2.0F) * 2.0F + 0.5F, 0.0F, 1.0F);
         float sunR = sun, sunG = sun, sunB = sun;
@@ -145,10 +148,12 @@ public final class SpaceSkyColors {
             sunB *= 0.91F;
         }
 
-        float totalPressure = (float) Atmospheres.pressure(air, level.isClientSide());
+        double pressure = 0;
+        for (Atmospheres.Entry entry : entries) pressure += entry.pressure();
+        float totalPressure = (float) pressure;
         if (totalPressure <= 0.0F) return Vec3.ZERO;
         double r = 0, g = 0, b = 0;
-        for (Atmospheres.Entry entry : Atmospheres.of(air, level.isClientSide())) {
+        for (Atmospheres.Entry entry : entries) {
             double fr, fg, fb;
             String fluid = entry.fluid();
             if (fluid.equals(Atmospheres.EVEAIR)) {
