@@ -3,6 +3,23 @@
 Each release has a `## <version>` section; the release workflow uploads only the section matching
 `mod.version` in gradle.properties.
 
+## 1.0.3
+
+Requires Golem Core 1.0.6 and NTM - Continuum 1.0.6. The 26.1 NeoForge jar accepts NeoForge 26.1.2.114 again.
+
+### Added
+- German, French, Italian, Japanese, Polish, Portuguese, Russian, Ukrainian and Chinese translations.
+- Other mods' energy cables connect to Space machines, the Dyson launcher and complex capacitor included (NTM -
+  Continuum 1.0.6).
+- Bobmazon sells the Teto, Miku, Neru and FAT TETO plushies, as hbm-space does (NTM - Continuum issue 179).
+- Space's death messages name the killer when there is one.
+
+### Fixed
+- The HTR-F NEO got no plasma from a torus it touched; its plasma end takes power and coolant again, and the station
+  computer reads its plasma.
+- Thrusters other than the xenon thruster lost their model or some blocks when placed onto a Sable ship (fixed in NTM -
+  Continuum 1.0.6 and Golem Core 1.0.6).
+
 ## 1.0.2
 
 Requires Golem Core 1.0.5 and NTM - Continuum 1.0.5.
