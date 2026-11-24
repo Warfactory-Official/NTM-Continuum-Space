@@ -1,5 +1,6 @@
-# Builds every node (chiseledBuild) against Golem Core's and NTM - Continuum's main branches and publishes the release
-# jars, NTM: Space's plus the matching NTM - Continuum and Golem Core jars it was built against, as a GitHub pre-release.
+# Builds every node (chiseledBuild) against Golem Core's and NTM - Continuum's main branches (only those nodes of Golem
+# Core) and publishes the release jars, NTM: Space's plus the matching NTM - Continuum and Golem Core jars it was built
+# against, as a GitHub pre-release.
 # Runs on pushes to main that change a build input (see paths below) and on demand.
 #
 # Repository secrets: HBM_TOKEN, a fine-grained token with read access to Warfactory-Official/NTM-Continuum while
@@ -92,7 +93,11 @@ jobs:
         env:
           CI: "false"
         working-directory: Golem-Core
-        run: bash ./gradlew chiseledBuild --no-daemon --stacktrace
+        # Only the Golem Core nodes NTM: Space has (new-hbm-space/versions/*), not Core's whole matrix.
+        run: |
+          tasks=$(for f in ../new-hbm-space/versions/*/gradle.properties; do n=$(basename "$(dirname "$f")"); echo ":$n:build"; done)
+          echo "Golem Core tasks: $tasks"
+          bash ./gradlew $tasks --no-daemon --stacktrace
 
       - name: Build NTM - Continuum
         env:
@@ -127,8 +132,12 @@ jobs:
         run: |
           mkdir -p dist
           # build/libs holds the release jar per node (remapJar/reobfJar/jar); devlibs is not shipped.
-          for repo in new-hbm-space NTM-Continuum Golem-Core; do
-            find $repo/versions/*/build/libs -maxdepth 1 -name '*.jar' ! -name '*-sources.jar' -exec cp {} dist/ \;
+          # NTM: Space's nodes, and HBM's and Golem Core's jars for those nodes only.
+          for f in new-hbm-space/versions/*/gradle.properties; do
+            node=$(basename "$(dirname "$f")")
+            for repo in new-hbm-space NTM-Continuum Golem-Core; do
+              find $repo/versions/$node/build/libs -maxdepth 1 -name '*.jar' ! -name '*-sources.jar' -exec cp {} dist/ \;
+            done
           done
           # Tag every jar with this build's number, so jars from different builds never share a file name:
           # ntmspace-fabric-0.1.0+1.20.1.jar -> ntmspace-fabric-0.1.0+1.20.1-build.42.jar

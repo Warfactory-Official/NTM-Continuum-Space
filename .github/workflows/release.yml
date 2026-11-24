@@ -159,7 +159,11 @@ jobs:
       # Golem Core, then HBM: the obfuscated Fabric nodes refuse an upstream jar older than its sources.
       - name: Build Golem Core
         working-directory: Golem-Core
-        run: bash ./gradlew chiseledBuild --no-daemon --stacktrace
+        # Only the Golem Core nodes NTM: Space has (new-hbm-space/versions/*), not Core's whole matrix.
+        run: |
+          tasks=$(for f in ../new-hbm-space/versions/*/gradle.properties; do n=$(basename "$(dirname "$f")"); echo ":$n:build"; done)
+          echo "Golem Core tasks: $tasks"
+          bash ./gradlew $tasks --no-daemon --stacktrace
 
       - name: Build NTM - Continuum
         working-directory: NTM-Continuum
