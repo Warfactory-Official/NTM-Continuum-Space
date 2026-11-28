@@ -10,6 +10,7 @@ import com.ntmspace.fork.BombPlacementLog;
 import com.ntmspace.fork.ForkContent;
 import com.ntmspace.fork.ForkEffects;
 import com.ntmspace.fork.Nitan;
+import com.ntmspace.fork.machine.TileEntityChungusSpace;
 import dev.golem.core.Ids;
 import dev.golem.core.gametest.GameTestHelpers;
 import dev.golem.core.gametest.GameTests;
@@ -49,6 +50,8 @@ public final class ForkGameTests {
     public static final GameTests.Function BOMBPL = TESTS.function("fork_bomb_placement_log", 20, () -> ForkGameTests::bombpl);
     public static final GameTests.Function DEPOSITS = TESTS.function("fork_fluid_deposits", 40, () -> ForkGameTests::deposits);
     public static final GameTests.Function DAMAGED = TESTS.function("fork_damaged_machines", 40, () -> ForkGameTests::damaged);
+    public static final GameTests.Function DAMAGED_PORTS =
+            TESTS.function("fork_damaged_leviathan_ports", 20, () -> ForkGameTests::damagedPorts);
     public static final GameTests.Function SALTED = TESTS.function("fork_salted_charge", 20, () -> ForkGameTests::salted);
     public static final GameTests.Function TWEAKS = TESTS.function("fork_machine_tweaks", 20, () -> ForkGameTests::tweaks);
 
@@ -405,6 +408,25 @@ public final class ForkGameTests {
             if (!condenser.isDamaged() || condenser.getRepairMaterials().size() != 3) errors.add("condenser wreck / repair list");
         } else {
             errors.add("the condenser core has no TileEntityCondenserPoweredSpace");
+        }
+        finish(helper, errors);
+    }
+
+    /** hbm-space runs the Leviathan's ports before its damaged check: a wreck keeps its power and steam ports. */
+    private static void damagedPorts(GameTestHelper helper) {
+        List<String> errors = new ArrayList<>();
+        var level = helper.getLevel();
+        BlockPos core = helper.absolutePos(new BlockPos(5, 2, 5));
+        level.setBlock(core, block("hbm:machine_chungus").defaultBlockState(), 3);
+        if (level.getBlockEntity(core) instanceof TileEntityChungusSpace turbine) {
+            turbine.transformTE(level, 0);
+            TileEntityChungusSpace.serverTick(level, core, level.getBlockState(core), turbine);
+            if (turbine.powerPorts == null || turbine.fluidInPorts == null || turbine.fluidOutPorts == null) {
+                errors.add("a damaged Leviathan has no ports");
+            }
+            if (!turbine.isDamaged() || turbine.powerBuffer != 0) errors.add("the wreck ran: " + turbine.powerBuffer);
+        } else {
+            errors.add("the Leviathan core has no TileEntityChungusSpace: " + level.getBlockEntity(core));
         }
         finish(helper, errors);
     }

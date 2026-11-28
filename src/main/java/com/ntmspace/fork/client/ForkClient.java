@@ -47,7 +47,6 @@ public final class ForkClient {
         ForkHud.init();
         // part 3: wings fold while riding, the refueler's tank overlay, the compressor tube's gas line
         ForkBaseClient.init();
-        ElectrolyserSpaceModel.init();
         // hbm-space's airliner and B2X bombers
         ForkBomberSkins.init();
         // hbm-space's bobbleheads: HBM's commemorative panel, HBM's figure

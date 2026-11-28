@@ -28,13 +28,7 @@ public final class MachineItemDeclarations {
         // RenderMilkReformer: inv translate(0, -3, 0) scale(3.5); common scale(0.5), renderAll
         machine("machine_milk_reformer", "machines/milker.obj", "machines/milker.png", 3.5, -3.0);
 
-        // HBM's items draw these through ItemModels aliases: RenderElectrolyser's hull and the two damaged wrecks
-        Dejson.item(NS, "machine_electrolyser")
-                .definition(MachineObjModel.of("ntmspace:models/machines/electrolyser_space.obj",
-                                "ntmspace:textures/models/machines/electrolyser.png")
-                        .scale(0.5).ty(0.0).yaw(0.0).guiScale(2.5).rawLegacyTransform().noCull()
-                        .itemTranslate(0.0, 0.0, 0.0).itemPreTranslate(0.0, 0.0, 0.0).guiTranslate(-1.0, -1.0, 0.0))
-                .oversizedInGui().register();
+        // HBM's items draw these through ItemModels aliases: the two damaged wrecks
         thermal("machine_chungus",
                 turbine("hbm:models/machines/chungus.obj", "hbm:textures/models/machines/chungus.png"),
                 turbine("ntmspace:models/machines/chungus_destroyed.obj",

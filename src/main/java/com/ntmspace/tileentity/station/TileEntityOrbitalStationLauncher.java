@@ -6,10 +6,10 @@ import com.hbm.inventory.fluid.Fluids;
 import com.hbm.inventory.fluid.tank.FluidTankNTM;
 import com.hbm.items.ISatChip;
 import com.hbm.items.ModFuelItems;
+import com.hbm.module.portmanager.ModulePortManFluidAdaptive;
 import com.hbm.tileentity.TileEntityMachineBase;
 import com.hbm.tileentity.TilePort.PortDef;
 import com.hbm.tileentity.machine.MachineFluidContainerIO;
-import com.ntmspace.block.station.BlockOrbitalStation;
 import com.ntmspace.entity.rocket.EntityRideableRocket;
 import com.ntmspace.entity.rocket.EntityRideableRocket.RocketState;
 import com.ntmspace.inventory.station.ContainerOrbitalStationLauncher;
@@ -81,11 +81,15 @@ public class TileEntityOrbitalStationLauncher extends TileEntityMachineBase impl
     public boolean hasDocked = false;
     public boolean hasRider = false;
 
+    protected final ModulePortManFluidAdaptive moduleFluidPorts;
+
     public TileEntityOrbitalStationLauncher(BlockPos pos, BlockState state) {
         super(StationLauncherBlocks.ORBITAL_STATION_LAUNCHER_BE.get(), pos, state, SLOT_COUNT);
 
         tanks = new FluidTankNTM[RocketStruct.MAX_STAGES * 2]; // enough tanks for any combination of rocket stages
         for (int i = 0; i < tanks.length; i++) tanks[i] = new FluidTankNTM(Fluids.NONE, 64_000);
+
+        moduleFluidPorts = new ModulePortManFluidAdaptive(this).setInputTanks(getReceivingTanks());
     }
 
     @Override
@@ -121,6 +125,8 @@ public class TileEntityOrbitalStationLauncher extends TileEntityMachineBase impl
 
     /** 1.7 {@code updateEntity}'s server half (the orbit check is the caller's; GameTests call it directly). */
     public void updateServer() {
+        moduleFluidPorts.update(getPorts());
+
         // ROCKET CONSTRUCTION //
         // updates the orbital station information and syncs it to the client, if necessary
         ItemVOTVdrive.publishStation(getItem(SLOT_DRIVE), level);
@@ -131,11 +137,6 @@ public class TileEntityOrbitalStationLauncher extends TileEntityMachineBase impl
 
         // ROCKET LAUNCHING
         updateTanks();
-
-        // 1.7 subscribed the rim for each typed tank only while the rocket is valid
-        setupFluidInPorts(tanks, PortDef.combine(BlockOrbitalStation.rimPorts(worldPosition)));
-        updateAllPorts();
-        if (rocket.validate()) receiveFluid(tanks);
 
         for (FluidTankNTM tank : tanks) {
             if (tank.getTankType() != Fluids.NONE) MachineFluidContainerIO.load(tank, inventory, SLOT_FUEL_IN, SLOT_FUEL_OUT);
@@ -286,6 +287,19 @@ public class TileEntityOrbitalStationLauncher extends TileEntityMachineBase impl
         TileEntityLaunchPadRocket.updateStorageTanks(rocket, tanks, solidFuel, false);
     }
 
+    private PortDef[] cachedPorts;
+
+    public PortDef[] getPorts() {
+        if (cachedPorts == null) cachedPorts = TileEntityOrbitalStation.ports(worldPosition);
+        return cachedPorts;
+    }
+
+    @Override
+    public void setRemoved() {
+        if (level != null) moduleFluidPorts.destroy();
+        super.setRemoved();
+    }
+
     public List<Component> findIssues() {
         List<Component> issues = new ArrayList<>();
 
@@ -373,13 +387,10 @@ public class TileEntityOrbitalStationLauncher extends TileEntityMachineBase impl
         return tanks;
     }
 
-    /** 1.7 subscribed the rim to each typed tank only while the rocket is valid. */
+    /** Every tank; an idle one has no type and takes nothing. */
     @Override
     public FluidTankNTM[] getReceivingTanks() {
-        if (!rocket.validate()) return new FluidTankNTM[0];
-        List<FluidTankNTM> typed = new ArrayList<>();
-        for (FluidTankNTM tank : tanks) if (tank.getTankType() != Fluids.NONE) typed.add(tank);
-        return typed.toArray(new FluidTankNTM[0]);
+        return tanks;
     }
 
     @Override

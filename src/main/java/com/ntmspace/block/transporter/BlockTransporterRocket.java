@@ -3,12 +3,10 @@ package com.ntmspace.block.transporter;
 import com.hbm.api.fluidmk2.IFluidConnectorBlockMK2;
 import com.hbm.blocks.multiblock.BlockMultiblockMachine;
 import com.hbm.blocks.multiblock.MultiblockHandlerXR;
-import com.hbm.blocks.multiblock.MultiblockMaskTable;
-import com.hbm.lib.DirPos;
 import com.hbm.lib.ForgeDirection;
+import com.ntmspace.block.machine.MachinePorts;
 import com.ntmspace.item.ItemTransporterLinker;
 import com.ntmspace.tileentity.transporter.TileEntityTransporterRocket;
-import java.util.List;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.world.InteractionResult;
@@ -24,10 +22,9 @@ import net.minecraft.world.phys.BlockHitResult;
  * block high) with six fluid proxies ({@code makeExtra}): the four floor corners next to the core and the two cells by
  * the fuel connections. Use opens the pad's screen unless the player holds the linker, whose own use then runs.
  *
- * <p>Fluid faces: 1.7 subscribed the cargo tanks at {@code getConPos} and the fuel tanks at {@code getTankPos}, both
- * points just outside the structure; here the structure faces next to those points open for ducts, and the pad
- * ({@link com.hbm.api.fluidmk2.IFluidMultiUserMK2}) hands a duct at a fuel point its separate fuel receiver, as 1.7's
- * second subscription did, so cargo and fuel never share a delivery.
+ * <p>Fluid faces: the cargo tanks sit on 1.7's {@code getFluidPorts} and the fuel tanks on {@code getFuelPorts}; the
+ * pad ({@link com.hbm.api.fluidmk2.IFluidMultiUserMK2}) hands a duct on a fuel port its separate fuel receiver, so
+ * cargo and fuel never share a delivery.
  */
 public class BlockTransporterRocket extends BlockMultiblockMachine implements IFluidConnectorBlockMK2 {
 
@@ -62,8 +59,8 @@ public class BlockTransporterRocket extends BlockMultiblockMachine implements IF
     protected void visitCells(BlockPos core, Direction facing, CellVisitor visitor) {
         for (int[] box : BOXES) MultiblockHandlerXR.visitBox(core, box, facing, visitor);
         ForgeDirection dir = ForgeDirection.getOrientation(facing);
-        ports(core, facing, List.of(TileEntityTransporterRocket.conPos(core, dir)), ROLE_FLUID, visitor);
-        ports(core, facing, List.of(TileEntityTransporterRocket.tankPos(core, dir)), ROLE_FLUID_IN, visitor);
+        MachinePorts.portFaces(core, facing, TileEntityTransporterRocket.fluidPorts(core, dir), ROLE_FLUID, visitor);
+        MachinePorts.portFaces(core, facing, TileEntityTransporterRocket.fuelPorts(core, dir), ROLE_FLUID_IN, visitor);
     }
 
     /** 1.7 {@code makeExtra}: {@code TileEntityProxyCombo().fluid()} at the four floor corners and by the fuel points. */
@@ -78,43 +75,5 @@ public class BlockTransporterRocket extends BlockMultiblockMachine implements IF
         visitor.passiveCell(core.offset(-1, 0, -1), MASK_ALL, domains);
         visitor.passiveCell(core.offset(dir.offsetX - rot.offsetX * 2, 0, dir.offsetZ - rot.offsetZ * 2), MASK_ALL, domains);
         visitor.passiveCell(core.offset(-dir.offsetX - rot.offsetX * 2, 0, -dir.offsetZ - rot.offsetZ * 2), MASK_ALL, domains);
-    }
-
-    private static boolean inStructure(BlockPos core, Direction facing, BlockPos pos) {
-        for (int[] box : BOXES) {
-            int[] rot = MultiblockHandlerXR.rotate(box, facing);
-            int dx = pos.getX() - core.getX(), dy = pos.getY() - core.getY(), dz = pos.getZ() - core.getZ();
-            if (dx >= -rot[4] && dx <= rot[5] && dy >= -rot[1] && dy <= rot[0] && dz >= -rot[2] && dz <= rot[3]) return true;
-        }
-        return false;
-    }
-
-    /**
-     * For each 1.7 connection point, the faces of the structure that touch it, open for {@code roles}. The mask table
-     * keeps the last mask written per cell and role, so the faces of one cell (a floor corner touches a side point and
-     * the point above it) are gathered first and written once.
-     */
-    private static void ports(BlockPos core, Direction facing, List<DirPos> points, int roles, CellVisitor visitor) {
-        java.util.Map<BlockPos, Integer> masks = new java.util.LinkedHashMap<>();
-        for (DirPos point : points) {
-            BlockPos at = point.getPos();
-            for (Direction toCell : Direction.values()) {
-                BlockPos cell = at.relative(toCell);
-                if (cell.equals(core) || !inStructure(core, facing, cell)) continue;
-                masks.merge(cell, maskOf(MultiblockMaskTable.toLocal(toCell.getOpposite(), facing)), (x, y) -> x | y);
-            }
-        }
-        masks.forEach((cell, mask) -> visitor.cell(cell, mask, roles));
-    }
-
-    private static int maskOf(Direction local) {
-        return switch (local) {
-            case NORTH -> MASK_NORTH;
-            case SOUTH -> MASK_SOUTH;
-            case WEST -> MASK_WEST;
-            case EAST -> MASK_EAST;
-            case UP -> MASK_UP;
-            case DOWN -> MASK_DOWN;
-        };
     }
 }

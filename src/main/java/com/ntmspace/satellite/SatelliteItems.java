@@ -1,10 +1,7 @@
 package com.ntmspace.satellite;
 
 import com.hbm.items.ISatChip;
-import com.hbm.items.machine.ItemSatellite;
-import com.hbm.saveddata.SatelliteSavedData;
 import com.hbm.saveddata.satellites.Satellite;
-import com.hbm.saveddata.satellites.SatelliteScience;
 import com.hbm.saveddata.satellites.SatelliteType;
 import com.hbm.saveddata.satellites.XSatelliteRegistry;
 import com.ntmspace.orbit.Orbit;
@@ -46,32 +43,19 @@ public final class SatelliteItems {
     public static InteractionResult use(ItemStack stack, SatelliteType type, Level level, Player player, InteractionHand hand) {
         if (player.isSpectator() || player.getItemInHand(hand) != stack || stack.isEmpty()
                 || XSatelliteRegistry.typeFor(stack) != type) return InteractionResult.TRY_WITH_EMPTY_HAND;
-        var module = stack.getItem() instanceof ItemSatellite item
-                && (item.typeOf(stack) == ItemSatellite.EnumSatType.SCIENCE_SENSOR
-                    || item.typeOf(stack) == ItemSatellite.EnumSatType.SCIENCE_ASSEMBLER);
-        var space = type != null && SpaceSatellites.isSpace(type);
-        if (!space && type != SatelliteType.SCIENCE && !module) return InteractionResult.TRY_WITH_EMPTY_HAND;
+        if (type == null || !SpaceSatellites.isSpace(type)) return InteractionResult.TRY_WITH_EMPTY_HAND;
 
         if (player.isShiftKeyDown()) {
-            if (!space || module) return InteractionResult.TRY_WITH_EMPTY_HAND;
             if (player instanceof ServerPlayer serverPlayer) SatelliteSettings.open(serverPlayer, hand);
             return InteractionResult.SUCCESS;
         }
 
-        var part = module ? RocketParts.get(stack) : null;
-        if (!(module ? part != null && part.mass() <= HAND_LAUNCH_MASS : byHand(type)) || !Orbit.inOrbit(level)) {
-            return InteractionResult.TRY_WITH_EMPTY_HAND;
-        }
-        if (module && level.isClientSide()) return InteractionResult.TRY_WITH_EMPTY_HAND;
+        if (!byHand(type) || !Orbit.inOrbit(level)) return InteractionResult.TRY_WITH_EMPTY_HAND;
         if (level instanceof ServerLevel server) {
             var station = OrbitalStation.getStationFromPosition(server.getServer(), player.getBlockX(), player.getBlockZ());
             var target = server.getServer().getLevel(Orbit.levelOf(station.orbiting));
             if (target == null) return InteractionResult.TRY_WITH_EMPTY_HAND;
-            var frequency = ISatChip.getFreqS(stack);
-            if (module && !(SatelliteSavedData.get(target).getSatFromFreq(frequency) instanceof SatelliteScience)) {
-                return InteractionResult.TRY_WITH_EMPTY_HAND;
-            }
-            Satellite.orbit(target, stack, frequency, player.getX(), player.getY(), player.getZ());
+            Satellite.orbit(target, stack, ISatChip.getFreqS(stack), player.getX(), player.getY(), player.getZ());
             player.sendSystemMessage(Component.translatable("chat.ntmspace.satellite.launched"));
         }
         stack.shrink(1);

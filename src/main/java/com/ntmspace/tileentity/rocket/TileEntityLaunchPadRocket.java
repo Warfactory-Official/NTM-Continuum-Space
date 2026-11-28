@@ -111,15 +111,13 @@ public class TileEntityLaunchPadRocket extends TileEntityMachineBase implements 
     }
 
     public static void serverTick(Level level, BlockPos pos, BlockState state, TileEntityLaunchPadRocket te) {
+        te.setupAllPorts(te.getPorts());
+        te.updatePortPIFIFO();
+
         ItemVOTVdrive.publishStation(te.getItem(SLOT_DRIVE), level);
 
         // Setup tanks required for the current rocket
         te.updateTanks();
-
-        te.setupAllPorts(te.getPorts());
-        te.updateAllPorts();
-        te.receivePower();
-        if (te.hasRocket()) te.receiveFluid(te.getReceivingTanks());
 
         // Fills, note that the liquid input also takes solid fuel
         te.power = Library.chargeTEFromItems(te.inventory, SLOT_BATTERY, te.power, te.maxPower);
@@ -229,7 +227,7 @@ public class TileEntityLaunchPadRocket extends TileEntityMachineBase implements 
 
     private PortDef[] cachedPorts;
 
-    /** 1.7 {@code getConPos}: the 13 input cells, each aimed back out of the pad. */
+    /** 1.7 {@code getPorts}: the 12 + 1 input cells at the back of the pad, for power and every typed tank. */
     public PortDef[] getPorts() {
         if (cachedPorts == null) {
             ForgeDirection back = ForgeDirection.getOrientation(facing()).getOpposite();

@@ -16,9 +16,7 @@ import com.hbm.sound.WorldSounds;
 import com.hbm.tileentity.MachineCore;
 import com.hbm.tileentity.TileEntityLoadedBase;
 import com.hbm.tileentity.TilePort.PortDef;
-import com.ntmspace.block.machine.MachinePorts;
 import com.ntmspace.registry.AtmosphereMachines;
-import com.ntmspace.trait.CelestialTraits;
 import dev.golem.core.data.DataIn;
 import dev.golem.core.data.DataOut;
 import java.util.function.Consumer;
@@ -32,7 +30,8 @@ import org.jetbrains.annotations.Nullable;
 /**
  * hbm-space's {@code TileEntityAtmosphericEmitter} ({@code machine_atmo_emitter}, "Atmospheric Emitter"): the terraformer.
  * Its 50,000 mB tank takes any gas set with a fluid identifier; every tick it vents half of what it holds (at least
- * 1 mB) into the body's air ({@code FT_Gaseous.release}) and as pollution, for 10 HE per mB (250,000 HE buffer).
+ * 1 mB) as a spill ({@code FluidTrait.onRelease}: pollution, and a gas joins the body's air), for 10 HE per mB
+ * (250,000 HE buffer).
  * Antimatter in the tank blows it up (a 10-strength burning explosion). Client: a motor loop and the gas's plume.
  */
 public class TileEntityAtmosphericEmitter extends TileEntityLoadedBase implements IEnergyReceiverMK2, IFluidStandardReceiverMK2 {
@@ -69,7 +68,6 @@ public class TileEntityAtmosphericEmitter extends TileEntityLoadedBase implement
                 }
                 te.tank.setFill(te.tank.getFill() - toSpill);
                 FluidTrait.onRelease(level, pos, te.tank.getTankType(), FluidReleaseType.SPILL, toSpill);
-                CelestialTraits.release(level, te.tank.getTankType(), toSpill);
                 te.power -= toSpill * 10L;
             }
         }
@@ -129,30 +127,35 @@ public class TileEntityAtmosphericEmitter extends TileEntityLoadedBase implement
 
     private PortDef[] cachedPorts;
 
-    /** The 1.7 connection points as ports. */
     public PortDef[] getPorts() {
-        if (cachedPorts == null) cachedPorts = MachinePorts.ports(level, getBlockState(), worldPosition, getConPos());
+        if (cachedPorts == null) cachedPorts = ports(worldPosition, MachineCore.facing(getBlockState()));
         return cachedPorts;
     }
 
-    /** 1.7 {@code getConPos} (meta - 10: the facing). */
-    public DirPos[] getConPos() {
-        return conPos(worldPosition, MachineCore.facing(getBlockState()));
+    /**
+     * 1.7 {@code getPorts} (meta - 10: the facing). Every base cell is listed twice, and a power port that finds a node
+     * on its cell takes that one over, so power comes in on the front and back faces only; the gas on all eight.
+     */
+    public static PortDef[] ports(BlockPos core, ForgeDirection dir) {
+        ForgeDirection rot = dir.getRotation(ForgeDirection.UP);
+        int x = core.getX(), y = core.getY(), z = core.getZ();
+        return new PortDef[] {
+                PortDef.make(x, y, z, dir),
+                PortDef.make(x + rot.offsetX, y, z + rot.offsetZ, dir),
+
+                PortDef.make(x - dir.offsetX, y, z - dir.offsetZ, dir.getOpposite()),
+                PortDef.make(x - dir.offsetX + rot.offsetX, y, z - dir.offsetZ + rot.offsetZ, dir.getOpposite()),
+
+                PortDef.make(x + rot.offsetX, y, z + rot.offsetZ, rot),
+                PortDef.make(x + rot.offsetX - dir.offsetX, y, z + rot.offsetZ - dir.offsetZ, rot),
+
+                PortDef.make(x, y, z, rot.getOpposite()),
+                PortDef.make(x - dir.offsetX, y, z - dir.offsetZ, rot.getOpposite())
+        };
     }
 
     public static DirPos[] conPos(BlockPos core, ForgeDirection dir) {
-        ForgeDirection rot = dir.getRotation(ForgeDirection.UP);
-        int x = core.getX(), y = core.getY(), z = core.getZ();
-        return new DirPos[] {
-                new DirPos(x + dir.offsetX, y, z + dir.offsetZ, dir),
-                new DirPos(x + dir.offsetX + rot.offsetX, y, z + dir.offsetZ + rot.offsetZ, dir),
-                new DirPos(x - dir.offsetX * 2, y, z - dir.offsetZ * 2, dir.getOpposite()),
-                new DirPos(x - dir.offsetX * 2 + rot.offsetX, y, z - dir.offsetZ * 2 + rot.offsetZ, dir.getOpposite()),
-                new DirPos(x + rot.offsetX * 2, y, z + rot.offsetZ * 2, rot),
-                new DirPos(x + rot.offsetX * 2 - dir.offsetX, y, z + rot.offsetZ * 2 - dir.offsetZ, rot),
-                new DirPos(x - rot.offsetX, y, z - rot.offsetZ, rot.getOpposite()),
-                new DirPos(x - rot.offsetX - dir.offsetX, y, z - rot.offsetZ - dir.offsetZ, rot.getOpposite())
-        };
+        return PortDef.connections(ports(core, dir));
     }
 
     @Override

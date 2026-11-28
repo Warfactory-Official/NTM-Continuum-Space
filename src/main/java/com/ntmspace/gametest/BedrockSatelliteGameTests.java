@@ -16,10 +16,14 @@ import com.hbm.inventory.recipes.PyroOvenRecipes;
 import com.hbm.inventory.recipes.ShredderRecipes;
 import com.hbm.blocks.ModProduction2Blocks;
 import com.hbm.blocks.ModOreBlocks;
+import com.hbm.creativetabs.HbmTab;
+import com.hbm.creativetabs.ModTabs;
 import com.hbm.handler.jei.UniversalRecipeHandler;
 import com.hbm.items.ModAutogenItems;
 import com.hbm.items.ModBedrockOreItems;
 import com.hbm.items.ModSatelliteItems;
+import com.hbm.items.machine.ItemSatellite;
+import com.hbm.items.machine.ItemSatellite.EnumSatType;
 import com.hbm.items.special.BedrockOreSample;
 import com.hbm.items.special.BedrockOreType;
 import com.hbm.items.special.BedrockOreType.BedrockOreOutput;
@@ -36,9 +40,14 @@ import com.ntmspace.fluid.SpaceFluids;
 import com.ntmspace.orbit.Orbit;
 import com.ntmspace.orbit.StationData;
 import com.ntmspace.registry.BedrockOreItems;
+import com.ntmspace.rocket.RocketParts;
+import com.ntmspace.rocket.RocketStruct;
+import com.ntmspace.satellite.SatelliteItems;
 import com.ntmspace.satellite.SatelliteOrbit;
 import com.ntmspace.satellite.SatelliteRailgun;
+import com.ntmspace.satellite.SatelliteSky;
 import com.ntmspace.satellite.SpaceSatellites;
+import com.ntmspace.tileentity.rocket.TileEntityMachineRocketAssembly;
 import com.ntmspace.world.SolarSystem;
 import com.ntmspace.world.SpaceDimensions;
 import com.ntmspace.world.populate.Populate17;
@@ -47,9 +56,11 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import net.minecraft.core.BlockPos;
+import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.gametest.framework.GameTestHelper;
 import net.minecraft.nbt.NbtOps;
 import net.minecraft.nbt.Tag;
+import net.minecraft.network.chat.Component;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.item.Item;
@@ -101,6 +112,18 @@ public final class BedrockSatelliteGameTests {
     /** The satellite linker copies orbit settings between two satellite items only. */
     public static final GameTests.Function SAT_LINKER = TESTS.function("satellite_linker_copies_orbit_settings", 20,
             () -> BedrockSatelliteGameTests::satelliteLinker);
+
+    /** The space laboratory is a Space satellite (1.7 colour, orbit settings, 28 t, sky) that no hand or rocket launches. */
+    public static final GameTests.Function SAT_SCIENCE = TESTS.function("satellite_science_is_space_satellite", 20,
+            () -> BedrockSatelliteGameTests::satelliteScience);
+
+    /** The Dyson relay and the war satellite tell a ground station their item's name. */
+    public static final GameTests.Function SAT_INFO = TESTS.function("satellite_info_names", 20,
+            () -> BedrockSatelliteGameTests::satelliteInfo);
+
+    /** The missile tab lists the science modules, the ID chip and the satellites in 1.7 registration order. */
+    public static final GameTests.Function SAT_TAB = TESTS.function("satellite_creative_order", 20,
+            () -> BedrockSatelliteGameTests::satelliteTab);
 
     private BedrockSatelliteGameTests() {}
 
@@ -159,8 +182,19 @@ public final class BedrockSatelliteGameTests {
                 Mats.MAT_SCHRABIDIUM, 3);
         expectRow(errors, "tekto", "plastic", Mats.MAT_POLYMER, 18, Mats.MAT_RUBBER, 9, Mats.matByName.get("semtex"), 6,
                 Mats.MAT_PVC, 3);
-        expectRow(errors, "dres", "light", Mats.matByName.get("nickel_pure"), 18, Mats.MAT_TITANIUM, 9, Mats.MAT_CADMIUM, 6,
+        expectRow(errors, "dres", "light", Mats.matByName.get("nickel_pure"), 18, Mats.MAT_ILMENITE, 9, Mats.MAT_CADMIUM, 6,
                 Mats.matByName.get("gallium"), 3);
+        // titanium ore is ilmenite on every body but Tekto
+        expectRow(errors, "moho", "light", Mats.MAT_ILMENITE, 18, Mats.MAT_CHLOROCALCITE, 9, Mats.matByName.get("nickel_pure"), 6,
+                Mats.MAT_LITHIUM, 3);
+        expectRow(errors, "tekto", "light", Mats.MAT_TITANIUM, 18, Mats.MAT_COPPER, 9, Mats.matByName.get("nickel_pure"), 6,
+                Mats.MAT_LITHIUM, 3);
+        for (BedrockOreType type : all) {
+            boolean tekto = "tekto".equals(CelestialBedrockOre.bodyOf(type));
+            for (BedrockOreOutput out : type.outputs()) {
+                if (out.material() == Mats.MAT_TITANIUM && !tekto) errors.add(type + " still yields titanium");
+            }
+        }
         // 1.7 getTotalTypeCount and the first index of each body (the noise salt Populate17 uses)
         int[] start = {0, 4, 9, 14, 20, 26, 32, 38, 42, 48};
         for (int i = 0; i < start.length; i++) {
@@ -293,7 +327,8 @@ public final class BedrockSatelliteGameTests {
                     Grade.PRIMARY_NORAD}) {
                 crystallizer(errors, t, in, Fluids.HYDROGEN, Grade.PRIMARY_FIRST, 200, 1, 250);
             }
-            crystallizer(errors, t, Grade.CRUMBS, Fluids.SLOP, Grade.BASE, 200, 64, 1000);
+            // crumbs come back washed, which halves what a loop through slop can yield
+            crystallizer(errors, t, Grade.CRUMBS, Fluids.SLOP, Grade.BASE_WASHED, 200, 64, 1000);
 
             // ElectrolyserMetalRecipes.makeBedrockOreProduct
             electrolysis(errors, t, Grade.PRIMARY_FIRST, primary, 8, ore(Grade.CRUMBS, t));
@@ -631,6 +666,107 @@ public final class BedrockSatelliteGameTests {
             errors.add("radar defaults " + radar);
         }
         finish(helper, errors);
+    }
+
+    private static void satelliteScience(GameTestHelper helper) {
+        List<String> errors = new ArrayList<>();
+        ItemStack lab = XSatelliteRegistry.stackFor(SatelliteType.SCIENCE);
+        if (!SpaceSatellites.isSpace(SatelliteType.SCIENCE)) errors.add("the laboratory has no orbit settings");
+        // 1.7 registerSatellite(SatelliteScience.class, sat_science, 0.2F, 0.64F, 0.8F)
+        SatelliteOrbit defaults = SpaceSatellites.orbit(lab);
+        if (defaults.colorR() != 0.2F || defaults.colorG() != 0.64F || defaults.colorB() != 0.8F
+                || defaults.altitude() != 100F || !defaults.owner().equals("None")) {
+            errors.add("laboratory defaults " + defaults);
+        }
+        if (!SpaceSatellites.orbit(SatelliteType.SCIENCE.create()).equals(defaults)) {
+            errors.add("a laboratory already in orbit has other defaults");
+        }
+        // 1.7 ItemSatellite(28_000): above the sixteen tonnes a station deploys by hand
+        if (SpaceSatellites.launchMass(lab) != 28_000) errors.add("laboratory mass " + SpaceSatellites.launchMass(lab));
+        if (SatelliteItems.byHand(SatelliteType.SCIENCE) || !SatelliteItems.byHand(SatelliteType.MAPPER)) {
+            errors.add("the laboratory launches by hand, or the mapper does not");
+        }
+        // 1.7 has no MissilePart for sat_science: the payload slot takes it and the rocket has no payload
+        if (RocketParts.get(lab) != null || !TileEntityMachineRocketAssembly.isCapsule(lab)) {
+            errors.add("the laboratory is a rocket part, or the payload slot refuses it");
+        }
+        if (onStage(lab).validate() || !onStage(XSatelliteRegistry.stackFor(SatelliteType.MAPPER)).validate()) {
+            errors.add("a rocket is built around the laboratory, or none around the mapper");
+        }
+        // 1.7's modules are the plain enum item: no rocket part, no satellite of their own
+        for (EnumSatType module : List.of(EnumSatType.SCIENCE_SENSOR, EnumSatType.SCIENCE_ASSEMBLER)) {
+            ItemStack stack = ItemSatellite.make(module);
+            if (RocketParts.get(stack) != null || TileEntityMachineRocketAssembly.isCapsule(stack)
+                    || XSatelliteRegistry.typeFor(stack) != null) {
+                errors.add(module + " is a rocket payload or launches by hand");
+            }
+        }
+
+        SatelliteOrbit settings = new SatelliteOrbit(15F, 95F, 45F, false, 0.3F, "Lab", 0.4F, 0.5F, 0.6F);
+        SpaceSatellites.ORBIT.set(lab, settings);
+        ItemStack radar = XSatelliteRegistry.stackFor(SatelliteType.RADAR);
+        if (!SpaceSatellites.copyItemData(lab, radar) || !settings.equals(SpaceSatellites.orbit(radar))) {
+            errors.add("the linker does not copy a laboratory's settings");
+        }
+
+        ServerLevel level = helper.getLevel();
+        int freq = freeFrequency(level);
+        XSatelliteRegistry.orbit(level, lab, freq, 0, 80, 0);
+        Satellite sat = SatelliteSavedData.get(level).getSatFromFreq(freq);
+        if (sat == null || sat.type() != SatelliteType.SCIENCE) {
+            errors.add("no laboratory in orbit");
+        } else if (!settings.equals(SpaceSatellites.orbit(sat))) {
+            errors.add("orbit settings not copied at launch: " + SpaceSatellites.orbit(sat));
+        }
+        boolean drawn = false;
+        for (SatelliteSky.Sat seen : SatelliteSky.view(level).satellites()) {
+            if (seen.freq() == freq && seen.orbit().equals(settings)) drawn = true;
+        }
+        if (!drawn) errors.add("the laboratory is not sent to the sky");
+        SatelliteSavedData.get(level).descend(freq);
+        finish(helper, errors);
+    }
+
+    private static RocketStruct onStage(ItemStack payload) {
+        RocketStruct rocket = new RocketStruct(payload);
+        rocket.addStage(RocketParts.get("ntmspace:rp_f_20_12"), null, RocketParts.get("hbm:mp_thruster_20_kerosene"), 1, 1);
+        return rocket;
+    }
+
+    private static void satelliteInfo(GameTestHelper helper) {
+        List<String> errors = new ArrayList<>();
+        ServerLevel level = helper.getLevel();
+        Component[] relay = SpaceSatellites.DYSON_RELAY.create().getInfo(level);
+        if (relay.length != 1
+                || !relay[0].equals(Component.translatable(SpaceSatellites.SAT_DYSON_RELAY.get().getDescriptionId()))) {
+            errors.add("dyson relay shows " + relay.length + " line(s)");
+        }
+        Component[] war = SpaceSatellites.RAILGUN.create().getInfo(level);
+        if (war.length != 1 || !war[0].equals(Component.translatable(SpaceSatellites.SAT_WAR.get().getDescriptionId()))) {
+            errors.add("war satellite shows " + war.length + " line(s)");
+        }
+        finish(helper, errors);
+    }
+
+    private static void satelliteTab(GameTestHelper helper) {
+        List<String> ids = new ArrayList<>();
+        for (ItemStack stack : ModTabs.displayStacks(ModTabs.get(HbmTab.MISSILES).getKey())) {
+            ids.add(BuiltInRegistries.ITEM.getKey(stack.getItem()).toString());
+        }
+        // 1.7 names: satellite (assembler, sensor), sat_chip, sat_mapper .. sat_science, sat_dyson_relay, sat_coord ..
+        List<String> expected = List.of("hbm:satellite_science_assembler", "hbm:satellite_science_sensor", "hbm:sat_chip",
+                "hbm:satellite_spy", "hbm:satellite_scanner", "hbm:satellite_radar", "hbm:satellite_death_ray",
+                "hbm:satellite_relay", "hbm:satellite_xenium_resonator", "hbm:satellite_miner_astro",
+                "hbm:satellite_miner_lunar", "hbm:sat_gerald", "hbm:satellite_precision_laser", "hbm:satellite_detector",
+                "hbm:satellite_ray_scan", "hbm:satellite_science", "ntmspace:sat_dyson_relay", "hbm:sat_coord",
+                "hbm:sat_designator", "hbm:sat_relay");
+        int start = ids.indexOf(expected.get(0));
+        List<String> found = start < 0 ? List.of() : ids.subList(start, Math.min(ids.size(), start + expected.size()));
+        if (!found.equals(expected)) {
+            helper.fail("the missile tab lists the satellites as " + found);
+            return;
+        }
+        helper.succeed();
     }
 
     private static void finish(GameTestHelper helper, List<String> errors) {

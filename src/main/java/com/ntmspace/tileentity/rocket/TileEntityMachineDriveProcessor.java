@@ -2,10 +2,11 @@ package com.ntmspace.tileentity.rocket;
 
 import com.hbm.api.energymk2.IEnergyReceiverMK2;
 import com.hbm.interfaces.IControlReceiver;
+import com.hbm.lib.ForgeDirection;
 import com.hbm.lib.Library;
+import com.hbm.tileentity.MachineCore;
 import com.hbm.tileentity.TileEntityMachineBase;
 import com.hbm.tileentity.TilePort.PortDef;
-import com.hbm.tileentity.TilePortShapes;
 import com.ntmspace.inventory.rocket.ContainerDriveProcessor;
 import com.ntmspace.orbit.Orbit;
 import com.ntmspace.registry.DriveProcessorBlocks;
@@ -85,17 +86,26 @@ public class TileEntityMachineDriveProcessor extends TileEntityMachineBase imple
 
     private PortDef[] cachedPorts;
 
-    /** 1.7: power on the six sides of the core. */
     public PortDef[] getPorts() {
-        if (cachedPorts == null) cachedPorts = TilePortShapes.around(worldPosition.getX(), worldPosition.getY(), worldPosition.getZ());
+        if (cachedPorts == null) cachedPorts = ports(worldPosition, MachineCore.facing(getBlockState()));
         return cachedPorts;
+    }
+
+    public static PortDef[] ports(BlockPos core, ForgeDirection dir) {
+        ForgeDirection rot = dir.getRotation(ForgeDirection.DOWN);
+        int x = core.getX(), y = core.getY(), z = core.getZ();
+        return new PortDef[] {
+                PortDef.make(x + rot.offsetX, y, z + rot.offsetZ, dir.getOpposite(), rot),
+                PortDef.make(x, y, z, dir.getOpposite(), rot.getOpposite()),
+        };
     }
 
     /** 1.7 {@code updateEntity} (server side). */
     void update(Level level) {
-        power = Library.chargeTEFromItems(inventory, SLOT_BATTERY, power, maxPower);
         setupAllPorts(getPorts());
         updatePortPIFIFO();
+
+        power = Library.chargeTEFromItems(inventory, SLOT_BATTERY, power, maxPower);
 
         if (power < maxPower * 0.75) {
             isProcessing = false;

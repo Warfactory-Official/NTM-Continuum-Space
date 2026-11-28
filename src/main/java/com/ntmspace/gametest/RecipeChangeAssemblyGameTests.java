@@ -47,7 +47,7 @@ public final class RecipeChangeAssemblyGameTests {
             "alkylation|ass.alkylation|ntmspace:machine_alkylation|1|400|100|#c:plates/stainlessx12,mat:steel/shellx6,hbm:circuit_capacitorx8,hbm:catalyst_clayx12,hbm:coil_tungstenx8|-|#c:plates_welded/stainlessx4,hbm:item_expensive_steel_platingx4,hbm:circuit_capacitorx8,hbm:catalyst_clayx12,hbm:coil_tungstenx8|528.stainless|-",
             "astroturf|ass.astroturf|ntmspace:astroturf|16|100|100|minecraft:dirtx16,#c:ingots/any_plasticx1|-|-|-|-",
             "cryodistil|ass.cryodistil|ntmspace:machine_cryo_distill|1|600|100|mat:steel/castplatex2,#c:plates/stainlessx12,#c:ingots/any_plasticx4,#c:ingots/niobiumx4|-|hbm:item_expensive_heavy_framex2,#c:plates_welded/stainlessx4,#c:ingots/niobiumx4|528.stainless|-",
-            "electrolyzer|ass.electrolyzer|hbm:machine_electrolyser|1|200|100|mat:steel/castplatex8,#c:plates/copperx16,mat:titanium/shellx3,#c:ingots/rubberx8,hbm:ingot_firebrickx16,hbm:coil_copperx16,hbm:circuit_basicx8|-|hbm:item_expensive_heavy_framex4,mat:titanium/shellx3,#c:ingots/rubberx8,hbm:ingot_firebrickx16,hbm:coil_copperx16,hbm:circuit_analogx24|-|-",
+            "electrolyzer|ass.electrolyzer|hbm:machine_electrolyser|1|200|100|mat:steel/castplatex8,#c:plates/copperx16,#c:ingots/rubberx8,hbm:ingot_firebrickx16,hbm:arc_electrodex1,hbm:circuit_basicx4|-|hbm:item_expensive_heavy_framex4,#c:ingots/rubberx8,hbm:ingot_firebrickx16,hbm:coil_copperx16,hbm:circuit_analogx24|-|-",
             "entanglementkit|ass.entanglementkit|hbm:entanglement_kit|1|200|100|mat:dura_steel/castplatex4,#c:plates/copperx24,mat:gold/densewirex16|ntmspace:krypton/8000|-|-|-",
             "exastro|ass.exastro|ntmspace:item_expensive_astro|1|2000|100000|ntmspace:item_expensive_avionicsx2,hbm:circuit_controller_advancedx1,ntmspace:circuit_molychipx32,ntmspace:circuit_gaschipx16|ntmspace:argon/1000|-|-|!enable_528",
             "exastro_528|ass.exastro|ntmspace:item_expensive_astro|1|2000|100000|ntmspace:item_expensive_avionicsx2,hbm:circuit_controller_advancedx1,ntmspace:circuit_molychipx32,ntmspace:circuit_gaschipx16|hbm:xenon/1000|-|-|enable_528",
@@ -102,6 +102,7 @@ public final class RecipeChangeAssemblyGameTests {
             "platenickel|ass.platenickel|ntmspace:plate_nickel|1|60|100|#c:ingots/nickel_purex1|-|-|-|-",
             "platestainless|ass.platestainless|ntmspace:plate_stainless|1|60|100|#c:ingots/stainless_steelx1|-|-|-|-",
             "radiator|ass.radiator|ntmspace:machine_radiator|1|400|100|mat:aluminium/castplatex6,#c:plates/stainlessx6,mat:copper/pipex4,hbm:thermo_elementx3|-|-|-|-",
+            "relaysat|ass.relaysat|hbm:sat_relay|1|1200|25000|mat:aluminium/shellx16,hbm:photo_panelx16,hbm:circuit_basicx24,hbm:part_generic_ldex16,hbm:circuit_controllerx1|-|-|-|-",
             "satdysonrelay|ass.satdysonrelay|ntmspace:sat_dyson_relay|1|600|100|#c:plates/saturnitex24,hbm:motor_bismuthx2,hbm:circuit_advancedx8,fi:hbm:fluid_barrel/hbm:kerosenex1,hbm:thruster_smallx1,mat:bscco/densewirex64,hbm:battery_lithiumx1|-|-|-|-",
             "solarpanel|ass.solarpanel|ntmspace:machine_solar|1|100|100|#c:plates/stainlessx4,hbm:photo_panelx4,#c:ingots/any_plasticx2,mat:red_copper/wirex8|-|-|-|-",
             "stardar|ass.stardar|ntmspace:machine_stardar|1|200|100|hbm:motorx4,mat:gold/castplatex16,hbm:photo_panelx32,hbm:magnetronx32,#c:concretesx16,hbm:steel_scaffoldx8,hbm:circuit_basicx4|-|hbm:motorx4,mat:gold/castplatex16,hbm:photo_panelx32,hbm:magnetronx32,hbm:item_expensive_heavy_framex2,hbm:item_expensive_circuitx4|528.aluminium|-",
@@ -163,6 +164,7 @@ public final class RecipeChangeAssemblyGameTests {
         // a replacing row takes the position of HBM's row it replaces (orderOf in the addon's source), 1.7's line order
         checkOrder(errors, table, "ass.entanglementkit", 45 * AssemblyMachineRecipes.ORDER_STRIDE);
         checkOrder(errors, table, "ass.electrolyzer", 95 * AssemblyMachineRecipes.ORDER_STRIDE);
+        checkOrder(errors, table, "ass.relaysat", 348 * AssemblyMachineRecipes.ORDER_STRIDE);
         for (String name : REMOVED) {
             if (table.getRecipe(name) != null) errors.add(name + " is still in the table");
         }

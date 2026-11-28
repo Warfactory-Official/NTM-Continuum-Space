@@ -3,6 +3,26 @@
 Each release has a `## <version>` section; the release workflow uploads only the section matching
 `mod.version` in gradle.properties.
 
+## Unreleased
+
+Follows hbm-space X5853 (was X5778).
+
+### Added
+- The Ancient Root on Laythe, with its planks, liquefaction and ashpit uses.
+- The Space Laboratory satellite (28 t, too heavy to launch by hand).
+- Ammonia terraforms Duna sands.
+
+### Changed
+- Every Space machine connects at hbm-space X5853's ports, cell for cell.
+- The docking port takes hydrazine whenever it is in orbit, and the station launcher and launch pad take fuel for their
+  set tanks without a rocket loaded.
+- The complex capacitor is decorative, as in NTM - Continuum; placed ones lose their charge.
+- The electrolyser has no extra side ports and the fluid barrel no longer ruptures or makes an antimatter blast.
+- The relay satellite assembly recipe makes the radar relay, as hbm-space does.
+
+### Removed
+- The HTR-F4 thruster; placed ones disappear.
+
 ## 1.0.3
 
 Requires Golem Core 1.0.6 and NTM - Continuum 1.0.6. The 26.1 NeoForge jar accepts NeoForge 26.1.2.114 again.

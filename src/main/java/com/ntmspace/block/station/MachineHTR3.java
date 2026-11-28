@@ -14,6 +14,7 @@ import com.hbm.inventory.fluid.trait.FT_Heatable;
 import com.hbm.items.machine.IItemFluidId;
 import com.hbm.lib.ForgeDirection;
 import com.hbm.util.BobMathUtil;
+import com.ntmspace.block.machine.MachinePorts;
 import com.ntmspace.fluid.trait.FT_Rocket;
 import com.ntmspace.orbit.Orbit;
 import com.ntmspace.tileentity.station.TileEntityMachineHTR3;
@@ -68,7 +69,7 @@ public class MachineHTR3 extends BlockMultiblockMachine implements IFluidConnect
     @Override
     protected void visitCells(BlockPos core, Direction facing, CellVisitor visitor) {
         super.visitCells(core, facing, visitor);
-        StationMachines.ports(core, DIMS, facing, List.of(TileEntityMachineHTR3.conPos(core, ForgeDirection.getOrientation(facing))),
+        MachinePorts.portFaces(core, facing, TileEntityMachineHTR3.ports(core, ForgeDirection.getOrientation(facing)),
                 ROLE_FLUID_IN, visitor);
     }
 

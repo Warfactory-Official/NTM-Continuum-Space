@@ -1,18 +1,25 @@
 package com.ntmspace.jei;
 
 //? if jei {
+import com.hbm.blocks.machine.ModMachineBlocks;
+import com.hbm.handler.jei.ConstructionRecipeHandler;
+import com.hbm.handler.jei.HbmJeiRecipeTypes;
 import com.hbm.inventory.recipes.loader.GenericRecipe;
+import com.hbm.items.ItemEnums.EnumAshType;
+import com.hbm.items.ModIngredientItems;
 import com.ntmspace.NtmSpace;
 import com.ntmspace.recipe.AlkylationRecipes;
 import com.ntmspace.recipe.AtmosphereRecipes;
 import com.ntmspace.recipe.CryoRecipes;
 import com.ntmspace.recipe.VacuumCircuitRecipes;
 import com.ntmspace.registry.AtmosphereMachines;
+import com.ntmspace.registry.LaytheTektoBlocks;
 import com.ntmspace.registry.SpaceMachines;
 import com.ntmspace.registry.SpaceMachinesB;
 import dev.golem.core.jei.JeiViewer;
 import dev.golem.core.viewer.ViewerPlugin;
 import dev.golem.core.viewer.ViewerType;
+import java.util.List;
 import mezz.jei.api.registration.IRecipeCatalystRegistration;
 import mezz.jei.api.registration.IRecipeCategoryRegistration;
 import mezz.jei.api.registration.IRecipeRegistration;
@@ -71,6 +78,13 @@ public final class SpaceJeiCommon {
             reg.add(ATMOSPHERE, atmosphere.buildRecipes());
             reg.add(DAIRY, dairy.rows());
             reg.add(ATMOSPHERE_EXTRACTION, atmosphereExtraction.rows());
+            // port: 1.7 cycles the Laythe root in the wood fuel row; HBM's row is a closed list, so it gets its own row
+            List<ItemStack> ovens = List.of(new ItemStack(ModMachineBlocks.heater_firebox.get()),
+                    new ItemStack(ModMachineBlocks.heater_oven.get()));
+            reg.add(HbmJeiRecipeTypes.ASHPIT, List.of(new ConstructionRecipeHandler.Row(
+                    List.of(ovens, List.of(new ItemStack(LaytheTektoBlocks.LAYTHE_ROOT_ITEM.get()))),
+                    new ItemStack(ModIngredientItems.ash(EnumAshType.WOOD)),
+                    List.of(new ItemStack(ModMachineBlocks.machine_ashpit.get())))));
         }
 
         @Override

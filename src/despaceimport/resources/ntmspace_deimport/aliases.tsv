@@ -269,7 +269,6 @@ item	hbmspace:machine_atmo_vent	ntmspace:machine_atmo_vent
 item	hbmspace:machine_cryo_distill	ntmspace:machine_cryo_distill
 item	hbmspace:machine_drive_processor	ntmspace:machine_drive_processor
 item	hbmspace:machine_htr3	ntmspace:machine_htr3
-item	hbmspace:machine_htrf4	ntmspace:machine_htrf4
 item	hbmspace:machine_htrf4neo	ntmspace:machine_htrf4neo
 item	hbmspace:machine_magma	ntmspace:machine_magma
 item	hbmspace:machine_milk_reformer	ntmspace:machine_milk_reformer
@@ -1139,7 +1138,6 @@ block	hbmspace:machine_atmo_vent	ntmspace:machine_atmo_vent
 block	hbmspace:machine_cryo_distill	ntmspace:machine_cryo_distill
 block	hbmspace:machine_drive_processor	ntmspace:machine_drive_processor
 block	hbmspace:machine_htr3	ntmspace:machine_htr3
-block	hbmspace:machine_htrf4	ntmspace:machine_htrf4
 block	hbmspace:machine_htrf4neo	ntmspace:machine_htrf4neo
 block	hbmspace:machine_magma	ntmspace:machine_magma
 block	hbmspace:machine_milk_reformer	ntmspace:machine_milk_reformer

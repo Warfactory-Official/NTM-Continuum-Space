@@ -4,7 +4,9 @@ import com.hbm.saveddata.satellites.Satellite;
 import com.mojang.serialization.Codec;
 import com.mojang.serialization.MapCodec;
 import com.mojang.serialization.codecs.RecordCodecBuilder;
+import net.minecraft.network.chat.Component;
 import net.minecraft.server.level.ServerLevel;
+import net.minecraft.world.level.Level;
 
 /**
  * hbm-space's {@code SatelliteWar} ("time to clean up this shit and make it PROPER."): the base of the war satellites,
@@ -45,5 +47,10 @@ public abstract class SatelliteWar extends Satellite {
     @Override
     public String getType() {
         return "WAR";
+    }
+
+    @Override
+    public Component[] getInfo(Level level) {
+        return new Component[] { Component.translatable(SpaceSatellites.SAT_WAR.get().getDescriptionId()) };
     }
 }

@@ -9,7 +9,6 @@ import com.hbm.lib.ForgeDirection;
 import com.hbm.tileentity.MachineCore;
 import com.hbm.tileentity.TileEntityMachineBase;
 import com.hbm.tileentity.TilePort.PortDef;
-import com.ntmspace.block.machine.MachinePorts;
 import com.ntmspace.fluid.SpaceFluids;
 import com.ntmspace.recipe.AlkylationRecipes;
 import com.ntmspace.registry.SpaceMachines;
@@ -24,8 +23,8 @@ import net.minecraft.world.phys.AABB;
 /**
  * hbm-space's {@code TileEntityMachineAlkylation}: every second tick one step of its {@code ntmspace:alkylation} recipe
  * (100 mB of the primary input in tank 0, the secondary in tank 1, two outputs into tanks 2 and 3), 4,000 HE a step
- * (40 kHE/s) from a 1 MHE buffer. Every ten ticks it sends both outputs at its ten connection points. It has eleven slots
- * and no GUI (as in 1.7, where nothing used them).
+ * (40 kHE/s) from a 1 MHE buffer. Power, both inputs and both outputs go through the ports of its six side cells. It has
+ * eleven slots and no GUI (as in 1.7, where nothing used them).
  *
  * <p>Not ported: 1.7 {@code IPersistentNBT} (deferred, as for HBM's own machines).
  */
@@ -93,29 +92,36 @@ public class TileEntityMachineAlkylation extends TileEntityMachineBase implement
     private PortDef[] cachedPorts;
 
     public PortDef[] getPorts() {
-        if (cachedPorts == null) cachedPorts = MachinePorts.ports(level, getBlockState(), worldPosition, conPos(worldPosition, MachineCore.facing(getBlockState())));
+        if (cachedPorts == null) cachedPorts = ports(worldPosition, MachineCore.facing(getBlockState()));
         return cachedPorts;
     }
 
-    /** 1.7 {@code getConPos} (note: rotated about DOWN, as 1.7 wrote it). */
-    public static DirPos[] conPos(BlockPos core, ForgeDirection dir) {
+    /**
+     * 1.7 {@code getPorts} (rotated about DOWN, as 1.7 wrote it). The four end corners are listed twice, and a power
+     * port that finds a node on its cell takes that one over, so a corner takes power on the face listed first only.
+     */
+    public static PortDef[] ports(BlockPos core, ForgeDirection dir) {
         ForgeDirection rot = dir.getRotation(ForgeDirection.DOWN);
         int x = core.getX(), y = core.getY(), z = core.getZ();
-        return new DirPos[] {
-                new DirPos(x + rot.offsetX * 2, y, z + rot.offsetZ * 2, rot),
-                new DirPos(x + rot.offsetX * 2 + dir.offsetX * 2, y, z + rot.offsetZ * 2 + dir.offsetZ * 2, rot),
-                new DirPos(x + rot.offsetX * 2 - dir.offsetX * 2, y, z + rot.offsetZ * 2 - dir.offsetZ * 2, rot),
+        return new PortDef[] {
+                PortDef.make(x + rot.offsetX, y, z + rot.offsetZ, rot),
+                PortDef.make(x + rot.offsetX + dir.offsetX * 2, y, z + rot.offsetZ + dir.offsetZ * 2, rot),
+                PortDef.make(x + rot.offsetX - dir.offsetX * 2, y, z + rot.offsetZ - dir.offsetZ * 2, rot),
 
-                new DirPos(x + rot.offsetX + dir.offsetX * 3, y, z + rot.offsetZ + dir.offsetZ * 3, dir),
-                new DirPos(x - rot.offsetX + dir.offsetX * 3, y, z - rot.offsetZ + dir.offsetZ * 3, dir),
+                PortDef.make(x + rot.offsetX + dir.offsetX * 2, y, z + rot.offsetZ + dir.offsetZ * 2, dir),
+                PortDef.make(x - rot.offsetX + dir.offsetX * 2, y, z - rot.offsetZ + dir.offsetZ * 2, dir),
 
-                new DirPos(x - rot.offsetX * 2, y, z - rot.offsetZ * 2, rot.getOpposite()),
-                new DirPos(x - rot.offsetX * 2 + dir.offsetX * 2, y, z - rot.offsetZ * 2 + dir.offsetZ * 2, rot.getOpposite()),
-                new DirPos(x - rot.offsetX * 2 - dir.offsetX * 2, y, z - rot.offsetZ * 2 - dir.offsetZ * 2, rot.getOpposite()),
+                PortDef.make(x - rot.offsetX, y, z - rot.offsetZ, rot.getOpposite()),
+                PortDef.make(x - rot.offsetX + dir.offsetX * 2, y, z - rot.offsetZ + dir.offsetZ * 2, rot.getOpposite()),
+                PortDef.make(x - rot.offsetX - dir.offsetX * 2, y, z - rot.offsetZ - dir.offsetZ * 2, rot.getOpposite()),
 
-                new DirPos(x + rot.offsetX - dir.offsetX * 3, y, z + rot.offsetZ - dir.offsetZ * 3, dir.getOpposite()),
-                new DirPos(x - rot.offsetX - dir.offsetX * 3, y, z - rot.offsetZ - dir.offsetZ * 3, dir.getOpposite()),
+                PortDef.make(x + rot.offsetX - dir.offsetX * 2, y, z + rot.offsetZ - dir.offsetZ * 2, dir.getOpposite()),
+                PortDef.make(x - rot.offsetX - dir.offsetX * 2, y, z - rot.offsetZ - dir.offsetZ * 2, dir.getOpposite()),
         };
+    }
+
+    public static DirPos[] conPos(BlockPos core, ForgeDirection dir) {
+        return PortDef.connections(ports(core, dir));
     }
 
     /** 1.7 {@code getRenderBoundingBox}. */

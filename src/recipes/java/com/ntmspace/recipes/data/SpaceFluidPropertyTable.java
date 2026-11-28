@@ -28,6 +28,7 @@ import com.hbm.inventory.fluid.trait.FT_Poison;
 import com.hbm.inventory.fluid.trait.FT_Polluting;
 import com.hbm.inventory.fluid.trait.FT_VentRadiation;
 import com.ntmspace.fluid.trait.FT_Rocket;
+import com.ntmspace.fluid.trait.SpaceFluidTraits.FT_Terraformer;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.Map;
@@ -144,7 +145,7 @@ final class SpaceFluidPropertyTable {
     private static void init() {
 
         fluid(NITROGEN, 0xB3C6D2, 1, 0, 0, Symbol.CRYOGENIC).setTemp(-90).addTraits(LIQUID, EVAP);
-        fluid(AMMONIA, 0x00A0F7, 2, 0, 1, Symbol.ASPHYXIANT).addTraits(new FT_Poison(true, 4), GASEOUS);
+        fluid(AMMONIA, 0x00A0F7, 2, 0, 1, Symbol.ASPHYXIANT).addTraits(new FT_Poison(true, 4), GASEOUS, new FT_Terraformer("DUNA"));
         fluid(HYDRAZINE, 0x31517D, 2, 3, 2, Symbol.NONE).addTraits((new FT_Flammable(500_000)), new FT_Combustible(FuelGrade.HIGH, 1_250_000), new FT_Corrosive(30), LIQUID, new FT_Rocket(210, 600_000));
         fluid(BLOODGAS, 0x591000, 3, 1, 1, Symbol.NONE).addTraits(new FT_Flammable(1_000_000), new FT_Combustible(FuelGrade.AERO, 2_500_000)).addTraits(LIQUID);
         fluid(EARTHAIR, 0xD1CEEE, 0, 0, 0, Symbol.NONE).addTraits(GASEOUS);

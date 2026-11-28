@@ -990,7 +990,7 @@ public class EntityRideableRocket extends CompatEntity implements StationDock, I
         }
     }
 
-    /** 1.7 {@code EntityMissileBaseNT.spawnContraolWithOffset}: puffs along the last step, thrown back along the axis. */
+    /** 1.7 {@code EntityMissileBaseNT.spawnContrailWithOffset}: puffs along the last step, thrown back along the axis. */
     private void spawnContrailWithOffset(double offsetX, double offsetY, double offsetZ) {
         Vec3 step = new Vec3(contrailX - getX(), contrailY - getY(), contrailZ - getZ());
         double len = step.length();

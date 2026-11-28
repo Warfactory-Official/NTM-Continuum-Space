@@ -14,7 +14,6 @@ import com.hbm.tileentity.MachineCore;
 import com.hbm.tileentity.TileEntityMachineBase;
 import com.hbm.tileentity.TilePort.PortDef;
 import com.hbm.tileentity.machine.MachineFluidContainerIO;
-import com.ntmspace.block.machine.MachinePorts;
 import com.ntmspace.fluid.SpaceFluids;
 import com.ntmspace.inventory.machine.ContainerMachineCryoDistill;
 import com.ntmspace.recipe.CryoRecipes;
@@ -22,6 +21,7 @@ import com.ntmspace.registry.SpaceMachines;
 import dev.golem.core.data.DataIn;
 import dev.golem.core.data.DataOut;
 import net.minecraft.core.BlockPos;
+import net.minecraft.core.Direction;
 import net.minecraft.network.RegistryFriendlyByteBuf;
 import net.minecraft.network.chat.Component;
 import net.minecraft.world.MenuProvider;
@@ -69,17 +69,18 @@ public class TileEntityMachineCryoDistill extends TileEntityMachineBase implemen
     }
 
     public static void serverTick(Level level, BlockPos pos, BlockState state, TileEntityMachineCryoDistill te) {
-        te.power = Library.chargeTEFromItems(te.inventory, SLOT_BATTERY, te.power, maxPower);
-        if (MachineSlots.setTypeFromId(te.tanks[0], te.inventory, SLOT_FLUID_ID, level, pos)) te.setChanged();
-
         if (te.cachedPowerPorts == null) {
-            Ports ports = ports(pos, MachineCore.facing(state));
-            te.cachedPowerPorts = MachinePorts.ports(level, state, pos, ports.power());
-            te.setupFluidInPorts(te.getReceivingTanks(), PortDef.combine(MachinePorts.ports(level, state, pos, ports.input())));
-            te.setupFluidOutPorts(te.getSendingTanks(), PortDef.combine(MachinePorts.ports(level, state, pos, ports.outputs())));
+            ForgeDirection dir = MachineCore.facing(state);
+            te.cachedPowerPorts = powerPorts(pos, dir);
+            te.setupFluidInPorts(te.getReceivingTanks(), PortDef.combine(inputFluidPorts(pos, dir)));
+            te.setupFluidOutPorts(te.getSendingTanks(), PortDef.combine(outputFluidPorts(pos, dir)));
         }
         te.setupPowerPorts(te.cachedPowerPorts);
         te.updatePortPIFIFO();
+
+        te.power = Library.chargeTEFromItems(te.inventory, SLOT_BATTERY, te.power, maxPower);
+        if (MachineSlots.setTypeFromId(te.tanks[0], te.inventory, SLOT_FLUID_ID, level, pos)) te.setChanged();
+
         te.distill();
 
         for (var i = 0; i < SLOT_UNLOAD.length; i++)
@@ -114,24 +115,45 @@ public class TileEntityMachineCryoDistill extends TileEntityMachineBase implemen
 
     private PortDef[] cachedPowerPorts;
 
-    /** 1.7 {@code getConPos} split by role: [0] input, [1..4] outputs, [5] power. */
+    /** 1.7 {@code getInputFluidPorts}: the side cell that takes the air. */
+    public static PortDef[] inputFluidPorts(BlockPos core, ForgeDirection dir) {
+        ForgeDirection rot = dir.getRotation(ForgeDirection.UP);
+        int x = core.getX(), y = core.getY(), z = core.getZ();
+        return new PortDef[] {
+                PortDef.make(x + dir.offsetX * -1 + rot.offsetX * -2, y - 2, z + dir.offsetZ * -1 + rot.offsetZ * -2, rot.getOpposite()),
+        };
+    }
+
+    /** 1.7 {@code getOutputFluidPorts}: the four front cells, each giving all four fractions. */
+    public static PortDef[] outputFluidPorts(BlockPos core, ForgeDirection dir) {
+        ForgeDirection rot = dir.getRotation(ForgeDirection.UP);
+        int x = core.getX(), y = core.getY(), z = core.getZ();
+        return new PortDef[] {
+                PortDef.make(x + dir.offsetX * 3 + rot.offsetX * -2, y - 2, z + dir.offsetZ * 3 + rot.offsetZ * -2, dir),
+                PortDef.make(x + dir.offsetX * 3 + rot.offsetX * -1, y - 2, z + dir.offsetZ * 3 + rot.offsetZ * -1, dir),
+                PortDef.make(x + dir.offsetX * 3 + rot.offsetX * 1, y - 2, z + dir.offsetZ * 3 + rot.offsetZ * 1, dir),
+                PortDef.make(x + dir.offsetX * 3 + rot.offsetX * 2, y - 2, z + dir.offsetZ * 3 + rot.offsetZ * 2, dir),
+        };
+    }
+
+    /** 1.7 {@code getPowerPorts}: the side cell behind the air input. */
+    public static PortDef[] powerPorts(BlockPos core, ForgeDirection dir) {
+        ForgeDirection rot = dir.getRotation(ForgeDirection.UP);
+        int x = core.getX(), y = core.getY(), z = core.getZ();
+        return new PortDef[] {
+                PortDef.make(x + dir.offsetX * -2 + rot.offsetX * -2, y - 2, z + dir.offsetZ * -2 + rot.offsetZ * -2, rot.getOpposite()),
+        };
+    }
+
+    /** The points the three port groups face. */
     public record Ports(DirPos[] input, DirPos[] outputs, DirPos[] power) {}
 
     public static Ports ports(BlockPos core, ForgeDirection dir) {
-        ForgeDirection rot = dir.getRotation(ForgeDirection.UP);
-        int x = core.getX(), y = core.getY(), z = core.getZ();
-        DirPos input = new DirPos(x + dir.offsetX * -1 + rot.offsetX * -3, y - 2, z + dir.offsetZ * -1 + rot.offsetZ * -3, rot.getOpposite());
-        DirPos[] outputs = {
-                new DirPos(x + dir.offsetX * 4 + rot.offsetX * -2, y - 2, z + dir.offsetZ * 4 + rot.offsetZ * -2, dir),
-                new DirPos(x + dir.offsetX * 4 + rot.offsetX * -1, y - 2, z + dir.offsetZ * 4 + rot.offsetZ * -1, dir),
-                new DirPos(x + dir.offsetX * 4 + rot.offsetX * 1, y - 2, z + dir.offsetZ * 4 + rot.offsetZ * 1, dir),
-                new DirPos(x + dir.offsetX * 4 + rot.offsetX * 2, y - 2, z + dir.offsetZ * 4 + rot.offsetZ * 2, dir),
-        };
-        DirPos power = new DirPos(x + dir.offsetX * -2 + rot.offsetX * -3, y - 2, z + dir.offsetZ * -2 + rot.offsetZ * -3, rot.getOpposite());
-        return new Ports(new DirPos[] {input}, outputs, new DirPos[] {power});
+        return new Ports(PortDef.connections(inputFluidPorts(core, dir)), PortDef.connections(outputFluidPorts(core, dir)),
+                PortDef.connections(powerPorts(core, dir)));
     }
 
-    public static Ports ports(BlockPos core, net.minecraft.core.Direction facing) {
+    public static Ports ports(BlockPos core, Direction facing) {
         return ports(core, ForgeDirection.getOrientation(facing));
     }
 

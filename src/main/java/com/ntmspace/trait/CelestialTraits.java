@@ -177,7 +177,8 @@ public final class CelestialTraits {
 
     private static void put(Map<String, Map<Class<? extends CelestialBodyTrait>, CelestialBodyTrait>> map, String body,
                             CelestialBodyTrait... traits) {
-        Map<Class<? extends CelestialBodyTrait>, CelestialBodyTrait> set = new HashMap<>();
+        // 1.7 CelestialBody.traits is a LinkedHashMap: defaults iterate in withTraits order
+        Map<Class<? extends CelestialBodyTrait>, CelestialBodyTrait> set = new LinkedHashMap<>();
         for (CelestialBodyTrait trait : traits) set.put(trait.getClass(), trait);
         map.put(body, Collections.unmodifiableMap(set));
     }

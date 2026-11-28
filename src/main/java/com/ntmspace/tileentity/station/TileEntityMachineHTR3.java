@@ -3,15 +3,14 @@ package com.ntmspace.tileentity.station;
 import com.hbm.api.fluidmk2.IFluidStandardReceiverMK2;
 import com.hbm.inventory.fluid.FluidType;
 import com.hbm.inventory.fluid.tank.FluidTankNTM;
-import com.hbm.lib.DirPos;
 import com.hbm.lib.ForgeDirection;
+import com.hbm.module.portmanager.ModulePortManFluidAdaptive;
 import com.hbm.particle.RocketFlameColor;
 import com.hbm.sound.AudioSystem;
 import com.hbm.sound.AudioWrapper;
 import com.hbm.tileentity.MachineCore;
 import com.hbm.tileentity.TileEntityMachineBase;
 import com.hbm.tileentity.TilePort.PortDef;
-import com.ntmspace.block.machine.MachinePorts;
 import com.ntmspace.fluid.SpaceFluids;
 import com.ntmspace.fluid.trait.FT_Rocket;
 import com.ntmspace.orbit.Orbit;
@@ -54,22 +53,25 @@ public class TileEntityMachineHTR3 extends TileEntityMachineBase implements Prop
 
     public int fuelCost;
 
+    protected final ModulePortManFluidAdaptive moduleFluidPorts;
+
     public TileEntityMachineHTR3(BlockPos pos, BlockState state) {
         super(StationBlocks.HTR3_BE.get(), pos, state, 0);
         tanks = new FluidTankNTM[] {new FluidTankNTM(SpaceFluids.SUPERHEATED_HYDROGEN, 1_280_000)};
+
+        moduleFluidPorts = new ModulePortManFluidAdaptive(this).setInputTanks(getReceivingTanks());
     }
 
     public static void serverTick(Level level, BlockPos pos, BlockState state, TileEntityMachineHTR3 te) {
         if (!Orbit.inOrbit(level)) return;
+
+        te.moduleFluidPorts.update(te.getPorts());
 
         if (!te.hasRegistered) {
             if (te.isFacingPrograde()) te.registerPropulsion();
             te.hasRegistered = true;
             te.isOn = false;
         }
-
-        te.setupAllPorts(te.getPorts());
-        te.updatePortFIFO();
 
         if (te.isOn) {
             te.soundtime++;
@@ -149,19 +151,16 @@ public class TileEntityMachineHTR3 extends TileEntityMachineBase implements Prop
     private PortDef[] cachedPorts;
 
     public PortDef[] getPorts() {
-        if (cachedPorts == null) cachedPorts = MachinePorts.ports(level, getBlockState(), worldPosition, getConPos());
+        if (cachedPorts == null) cachedPorts = ports(worldPosition, MachineCore.facing(getBlockState()));
         return cachedPorts;
     }
 
-    /** 1.7 {@code getConPos}: one point, six blocks out along the long axis. */
-    public DirPos[] getConPos() {
-        return conPos(worldPosition, MachineCore.facing(getBlockState()));
-    }
-
-    /** {@link #getConPos} for a core at {@code core} facing {@code facing}. */
-    public static DirPos[] conPos(BlockPos core, ForgeDirection facing) {
+    /** 1.7 {@code getPorts} for a core at {@code core} facing {@code facing}: the end cell of the long axis, open outward. */
+    public static PortDef[] ports(BlockPos core, ForgeDirection facing) {
         ForgeDirection dir = facing.getRotation(ForgeDirection.UP);
-        return new DirPos[] {new DirPos(core.getX() - dir.offsetX * 6, core.getY(), core.getZ() - dir.offsetZ * 6, dir)};
+        return new PortDef[] {
+                PortDef.make(core.getX() - dir.offsetX * 5, core.getY(), core.getZ() - dir.offsetZ * 5, dir.getOpposite())
+        };
     }
 
     private AudioWrapper createAudioLoop() {
@@ -171,6 +170,7 @@ public class TileEntityMachineHTR3 extends TileEntityMachineBase implements Prop
 
     @Override
     public void setRemoved() {
+        if (level != null) moduleFluidPorts.destroy();
         super.setRemoved();
         if (hasRegistered) {
             unregisterPropulsion();

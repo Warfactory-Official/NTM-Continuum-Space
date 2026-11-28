@@ -38,7 +38,7 @@ public class BlockOrbitalStationLauncher extends BlockOrbitalStation {
         super(properties, false);
     }
 
-    /** The launcher owns its fuel tanks; only its subscriptions require an assembled rocket. */
+    /** The launcher owns its fuel tanks, open to ducts while typed. */
     @Override
     public MachineCaps caps() {
         return MachineCaps.of(StationLauncherBlocks.ORBITAL_STATION_LAUNCHER_BE).fluidIn().itemsAtCells();

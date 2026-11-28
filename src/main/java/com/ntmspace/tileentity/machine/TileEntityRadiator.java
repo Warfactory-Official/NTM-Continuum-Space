@@ -8,7 +8,6 @@ import com.hbm.tileentity.IConfigurableMachine;
 import com.hbm.tileentity.MachineCore;
 import com.hbm.tileentity.TilePort.PortDef;
 import com.hbm.tileentity.machine.TileEntityCondenser;
-import com.ntmspace.block.machine.MachinePorts;
 import com.ntmspace.registry.SpaceMachinesC;
 import java.io.IOException;
 import net.minecraft.core.BlockPos;
@@ -20,7 +19,7 @@ import net.minecraft.world.phys.AABB;
  * hbm-space's {@code TileEntityRadiator} (Steam Radiator): HBM's condenser with 500 mB tanks, vacuum-optimised (it
  * condenses spent steam to water in a vacuum too, where a plain condenser boils it off). Each tick it converts as much
  * spent steam as the water tank has room for. It takes steam and gives water at the four corner cells, through the faces
- * behind them (1.7 {@code subscribeToAllAround} / {@code sendFluidToAll} at core - dir +/- rot, one up and one down).
+ * behind them (1.7 {@code getPorts}).
  *
  * <p>Both tank capacities are 1.7's {@code radiator} entry of {@code hbmMachines.json}.
  */
@@ -56,26 +55,24 @@ public class TileEntityRadiator extends TileEntityCondenser {
 
     @Override
     public PortDef[] getPorts() {
-        if (cachedPorts == null) cachedPorts = MachinePorts.ports(level, getBlockState(), worldPosition, getConPos());
+        if (cachedPorts == null) cachedPorts = ports(worldPosition, MachineCore.facing(getBlockState()));
         return cachedPorts;
     }
 
-    /** The four points behind the corner cells, where 1.7 subscribed for steam and sent its water. */
-    @Override
-    public DirPos[] getConPos() {
-        return conPos(worldPosition, MachineCore.facing(getBlockState()));
-    }
-
-    /** 1.7 named the facing as each point's direction, though the points lie behind the machine; kept. */
-    public static DirPos[] conPos(BlockPos core, ForgeDirection dir) {
+    /** 1.7 {@code getPorts}: the four corner cells, through the faces behind them. */
+    public static PortDef[] ports(BlockPos core, ForgeDirection dir) {
         ForgeDirection rot = dir.getRotation(ForgeDirection.UP);
         int x = core.getX(), y = core.getY(), z = core.getZ();
-        return new DirPos[] {
-                new DirPos(x - dir.offsetX + rot.offsetX, y + 1, z - dir.offsetZ + rot.offsetZ, dir),
-                new DirPos(x - dir.offsetX + rot.offsetX, y - 1, z - dir.offsetZ + rot.offsetZ, dir),
-                new DirPos(x - dir.offsetX - rot.offsetX, y + 1, z - dir.offsetZ - rot.offsetZ, dir),
-                new DirPos(x - dir.offsetX - rot.offsetX, y - 1, z - dir.offsetZ - rot.offsetZ, dir),
+        return new PortDef[] {
+                PortDef.make(x + rot.offsetX, y + 1, z + rot.offsetZ, dir.getOpposite()),
+                PortDef.make(x + rot.offsetX, y - 1, z + rot.offsetZ, dir.getOpposite()),
+                PortDef.make(x - rot.offsetX, y + 1, z - rot.offsetZ, dir.getOpposite()),
+                PortDef.make(x - rot.offsetX, y - 1, z - rot.offsetZ, dir.getOpposite()),
         };
+    }
+
+    public static DirPos[] conPos(BlockPos core, ForgeDirection dir) {
+        return PortDef.connections(ports(core, dir));
     }
 
     /** 1.7 {@code getRenderBoundingBox} (41 blocks wide, as written). */

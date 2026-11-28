@@ -3,13 +3,11 @@ package com.ntmspace.tileentity.machine;
 import com.hbm.api.energymk2.IEnergyReceiverMK2;
 import com.hbm.inventory.material.MaterialShapes;
 import com.hbm.inventory.material.Mats;
-import com.hbm.lib.DirPos;
 import com.hbm.lib.ForgeDirection;
 import com.hbm.tileentity.MachineCore;
 import com.hbm.tileentity.TileEntityLoadedBase;
 import com.hbm.tileentity.TilePort.PortDef;
 import com.hbm.util.CrucibleUtil;
-import com.ntmspace.block.machine.MachinePorts;
 import com.ntmspace.inventory.material.SpaceMaterials;
 import com.ntmspace.registry.SpaceMachinesC;
 import com.ntmspace.trait.CelestialTraits;
@@ -166,21 +164,20 @@ public class TileEntityMachineMagma extends TileEntityLoadedBase implements IEne
     private PortDef[] cachedPorts;
 
     public PortDef[] getPorts() {
-        if (cachedPorts == null) cachedPorts = MachinePorts.ports(level, getBlockState(), worldPosition, conPos(worldPosition, MachineCore.facing(getBlockState())));
+        if (cachedPorts == null) cachedPorts = ports(worldPosition, MachineCore.facing(getBlockState()));
         return cachedPorts;
     }
 
-    /** 1.7 {@code getConPos}: one block behind the six back-face cells. */
-    public static DirPos[] conPos(BlockPos core, ForgeDirection dir) {
+    public static PortDef[] ports(BlockPos core, ForgeDirection dir) {
         ForgeDirection rot = dir.getRotation(ForgeDirection.UP);
         int x = core.getX(), y = core.getY(), z = core.getZ();
-        return new DirPos[] {
-                new DirPos(x - dir.offsetX * 4, y - 1, z - dir.offsetZ * 4, dir),
-                new DirPos(x - dir.offsetX * 4, y - 2, z - dir.offsetZ * 4, dir),
-                new DirPos(x - dir.offsetX * 4 + rot.offsetX, y - 1, z - dir.offsetZ * 4 + rot.offsetZ, dir),
-                new DirPos(x - dir.offsetX * 4 + rot.offsetX, y - 2, z - dir.offsetZ * 4 + rot.offsetZ, dir),
-                new DirPos(x - dir.offsetX * 4 - rot.offsetX, y - 1, z - dir.offsetZ * 4 - rot.offsetZ, dir),
-                new DirPos(x - dir.offsetX * 4 - rot.offsetX, y - 2, z - dir.offsetZ * 4 - rot.offsetZ, dir),
+        return new PortDef[] {
+                PortDef.make(x - dir.offsetX * 3, y - 1, z - dir.offsetZ * 3, dir.getOpposite()),
+                PortDef.make(x - dir.offsetX * 3, y - 2, z - dir.offsetZ * 3, dir.getOpposite()),
+                PortDef.make(x - dir.offsetX * 3 + rot.offsetX, y - 1, z - dir.offsetZ * 3 + rot.offsetZ, dir.getOpposite()),
+                PortDef.make(x - dir.offsetX * 3 + rot.offsetX, y - 2, z - dir.offsetZ * 3 + rot.offsetZ, dir.getOpposite()),
+                PortDef.make(x - dir.offsetX * 3 - rot.offsetX, y - 1, z - dir.offsetZ * 3 - rot.offsetZ, dir.getOpposite()),
+                PortDef.make(x - dir.offsetX * 3 - rot.offsetX, y - 2, z - dir.offsetZ * 3 - rot.offsetZ, dir.getOpposite()),
         };
     }
 

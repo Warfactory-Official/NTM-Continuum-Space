@@ -5,6 +5,8 @@ import com.hbm.blocks.multiblock.MultiblockSurface;
 import com.hbm.inventory.RecipesCommon.AStack;
 import com.hbm.inventory.fluid.FluidType;
 import com.hbm.inventory.fluid.Fluids;
+import com.hbm.inventory.fluid.trait.FluidReleaseType;
+import com.hbm.inventory.fluid.trait.FluidTrait;
 import com.hbm.inventory.recipes.AssemblyMachineRecipes;
 import com.hbm.inventory.recipes.anvil.AnvilRecipes;
 import com.hbm.inventory.recipes.loader.GenericRecipe;
@@ -20,6 +22,7 @@ import com.ntmspace.tileentity.atmosphere.TileEntityAtmosphericCompressor;
 import com.ntmspace.tileentity.atmosphere.TileEntityAtmosphericEmitter;
 import com.ntmspace.trait.CBT_Atmosphere;
 import com.ntmspace.trait.CelestialTraits;
+import dev.golem.core.Ids;
 import dev.golem.core.gametest.GameTestHelpers;
 import dev.golem.core.gametest.GameTests;
 import java.util.ArrayList;
@@ -43,6 +46,7 @@ import net.minecraft.world.level.block.Blocks;
  *   <li>compressor: 200 mB of the air's main gas per 20,000 HE, taken out of Kerbin's air (two steps from 40,000 HE);</li>
  *   <li>emitter: half the tank a tick (at least 1 mB) into the air for 10 HE per mB: 1,000 mB xenon and 10,000 HE end as
  *       0 mB and 0 HE in eleven ticks with exactly 1,000 mB of xenon in Kerbin's air;</li>
+ *   <li>fluid release: a gas a machine spills, burns or voids joins Kerbin's air, a liquid does not;</li>
  *   <li>CO2 scrubber: in a sealed room with an oxygen vent, it claims the vent and stores its waste gas as CO2 at 10 HE per
  *       mB;</li>
  *   <li>editor: 10^2 mB of neon per 5 ticks while on, captured again in capture mode, saved by fluid name;</li>
@@ -61,6 +65,8 @@ public final class AtmosphereMachineGameTests {
             () -> AtmosphereMachineGameTests::compressor);
     public static final GameTests.Function EMITTER = TESTS.function("atmo_emitter_releases_gas", 80, 8,
             () -> AtmosphereMachineGameTests::emitter);
+    public static final GameTests.Function RELEASE = TESTS.function("atmo_fluid_release_joins_air", 20,
+            () -> AtmosphereMachineGameTests::fluidRelease);
     public static final GameTests.Function SCRUBBER = TESTS.function("air_scrubber_takes_co2", 400, 12,
             () -> AtmosphereMachineGameTests::scrubber);
     public static final GameTests.Function EDITOR = TESTS.function("atmosphere_editor_emits_captures", 80, 4,
@@ -160,6 +166,26 @@ public final class AtmosphereMachineGameTests {
             com.ntmspace.NtmSpace.LOG.info("atmo_emitter_releases_gas: released {} mB xenon", added);
             CelestialTraits.capture(level, gas, 1000.001); // take it back (a hair more, so no rounding residue keeps a xenon entry)
         });
+    }
+
+    /** 1.7 {@code FT_Gaseous.onFluidRelease}: a gas any machine releases joins the body's air, whatever the release type. */
+    private static void fluidRelease(GameTestHelper helper) {
+        Level level = helper.getLevel();
+        BlockPos pos = helper.absolutePos(new BlockPos(1, 2, 1));
+        FluidType gas = SpaceFluids.KRYPTON;
+        double before = pressure(level, gas);
+        double water = pressure(level, Fluids.WATER);
+        FluidTrait.onRelease(level, pos, gas, FluidReleaseType.SPILL, 300);
+        FluidTrait.onRelease(level, pos, gas, FluidReleaseType.BURN, 200);
+        FluidTrait.onRelease(level, pos, gas, FluidReleaseType.VOID, 100);
+        FluidTrait.onRelease(level, pos, Fluids.WATER, FluidReleaseType.SPILL, 500);
+        double added = (pressure(level, gas) - before) * MB;
+        boolean wet = pressure(level, Fluids.WATER) != water;
+        CelestialTraits.capture(level, gas, 600.001); // take it back
+        List<String> errors = new ArrayList<>();
+        if (Math.abs(added - 600) > 1e-3) errors.add("released " + added + " mB of krypton into Kerbin's air, 1.7 600");
+        if (wet) errors.add("a released liquid joined the air");
+        MachineGameTests.finish(helper, errors);
     }
 
     private static void scrubber(GameTestHelper helper) {
@@ -279,6 +305,14 @@ public final class AtmosphereMachineGameTests {
         construction(errors, "machine_atmo_tower", new int[] {6, 8, 4, 1});
         construction(errors, "machine_atmo_vent", new int[] {4, 4, 4, 1});
         construction(errors, "machine_atmo_emitter", new int[] {6, 8, 4, 1});
+        // 1.7 ANY_CONCRETE.any(): the tower and the vent take any concrete
+        ItemStack ducrete = new ItemStack(BuiltInRegistries.ITEM.getOptional(Ids.of("hbm", "ducrete")).orElseThrow());
+        for (String file : new String[] {"machine_atmo_tower", "machine_atmo_vent"}) {
+            AnvilRecipes.AnvilConstructionRecipe r = AnvilRecipes.constructionById("ntmspace:anvil_construction/" + file);
+            if (r != null && r.input.size() > 2 && !r.input.get(2).matchesRecipe(ducrete, true)) {
+                errors.add(file + " does not take ducrete as its concrete");
+            }
+        }
         AssemblyMachineRecipes table = AssemblyMachineRecipes.INSTANCE;
         table.registerRecipes();
         GenericRecipe row = table.getRecipe("ass.airscrubber");

@@ -32,9 +32,9 @@ import net.minecraft.world.phys.BlockHitResult;
 
 /**
  * hbm-space's {@code MachineAlkylation}: 3 x 4 x 5 ({@code {3, 0, 2, 2, 1, 1}}, offset 2), no GUI. Six
- * {@code TileEntityProxyCombo(false, true, true)} cells (power and fluid) either side of the long axis; the ten 1.7
- * connection points take power and both input fluids and send both outputs. Using a fluid identifier on it (not sneaking)
- * sets the primary input's type and says so in chat.
+ * {@code TileEntityProxyCombo(false, true, true)} cells (power and fluid) either side of the long axis; their ten outer
+ * faces take both input fluids and send both outputs, six of them power (1.7's port list). Using a fluid identifier on it
+ * (not sneaking) sets the primary input's type and says so in chat.
  */
 public class MachineAlkylation extends BlockMultiblockMachine implements IEnergyConnectorBlock, IFluidConnectorBlockMK2, ILookOverlay, ICapabilityBlock {
 

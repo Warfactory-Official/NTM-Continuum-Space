@@ -324,6 +324,8 @@ public class TileEntityMachineRocketAssembly extends TileEntityMachineBase imple
 
     /** The payload a stack is, for the payload slot (1.7 {@code SlotCapsule}): a capsule or a satellite, not the pod. */
     public static boolean isCapsule(ItemStack stack) {
+        // 1.7 sat_science is a satellite warhead without a part: the slot takes it and the rocket stays invalid
+        if (SpaceSatellites.isLaboratory(stack)) return true;
         var part = RocketParts.get(stack);
         if (part == null || part.type() != com.hbm.items.weapon.ItemCustomMissilePart.PartType.WARHEAD) return false;
         if (RocketParts.POD.equals(part.id())) return false;

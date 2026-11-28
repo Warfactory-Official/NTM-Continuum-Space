@@ -4,6 +4,7 @@ import com.hbm.lib.ForgeDirection;
 import com.hbm.api.fluidmk2.IFluidStandardReceiverMK2;
 import com.hbm.inventory.fluid.FluidType;
 import com.hbm.inventory.fluid.tank.FluidTankNTM;
+import com.hbm.module.portmanager.ModulePortManFluidAdaptive;
 import com.hbm.tileentity.TileEntityMachineBase;
 import com.hbm.tileentity.TilePort.PortDef;
 import com.ntmspace.block.station.BlockOrbitalStation;
@@ -39,7 +40,7 @@ import org.jspecify.annotations.Nullable;
  *
  * <p>A docked reusable craft ({@link StationDock}) is refuelled from the port's hydrazine tank: the tank is resized to the
  * fuel the craft needs to reach the ground of the orbited body ({@link #getFillRequirement}; 500 mB for a hop to another
- * station) and takes hydrazine from ducts only while such a craft is docked. When the craft leaves, the fuel it used is
+ * station) and takes hydrazine from ducts in orbit, docked craft or not. When the craft leaves, the fuel it used is
  * drained; 16 slots hold what a stowed craft leaves behind.
  */
 public class TileEntityOrbitalStation extends TileEntityMachineBase implements IFluidStandardReceiverMK2 {
@@ -48,7 +49,6 @@ public class TileEntityOrbitalStation extends TileEntityMachineBase implements I
     private @Nullable StationDock docked;
 
     public final FluidTankNTM[] tanks;
-    private boolean subscribed;
 
     public boolean isReserved = false;
 
@@ -63,9 +63,13 @@ public class TileEntityOrbitalStation extends TileEntityMachineBase implements I
     public float rot;
     public float prevRot;
 
+    protected final ModulePortManFluidAdaptive moduleFluidPorts;
+
     public TileEntityOrbitalStation(BlockPos pos, BlockState state) {
         super(StationBlocks.ORBITAL_STATION_BE.get(), pos, state, 16);
         tanks = new FluidTankNTM[] {new FluidTankNTM(SpaceFluids.HYDRAZINE, 16_000)};
+
+        moduleFluidPorts = new ModulePortManFluidAdaptive(this).setInputTanks(getReceivingTanks());
     }
 
     @Override
@@ -79,6 +83,8 @@ public class TileEntityOrbitalStation extends TileEntityMachineBase implements I
         int previousFill = storedFuel.getFill();
         int previousCapacity = storedFuel.getMaxFill();
 
+        te.updatePorts();
+
         // Station TEs handle syncing information about the current orbital parameters to players on the station
         te.station = OrbitalStation.getStationFromPosition(level.getServer(), pos.getX(), pos.getZ());
 
@@ -86,20 +92,12 @@ public class TileEntityOrbitalStation extends TileEntityMachineBase implements I
         te.station.addPort(te);
 
         StationDock docked = te.docked;
-        te.subscribed = false;
         if (docked != null && docked.isReusable()) {
             int fillRequirement = te.getFillRequirement(false); // Use higher fill requirement for tank sizing
 
             // Update tank sizes based on fuel requirement, preserving existing fills
             for (FluidTankNTM tank : te.tanks) tank.changeTankSize(Math.max(fillRequirement, tank.getFill()));
-
-            // Connections: 1.7 subscribed the rim to its tank only now
-            te.subscribed = true;
         }
-
-        te.setupFluidInPorts(te.tanks, PortDef.combine(BlockOrbitalStation.rimPorts(pos)));
-        te.updateAllPorts();
-        if (te.subscribed) te.receiveFluid(te.tanks);
 
         if (docked != null && (docked.entity().isRemoved() || docked.isUndocking())) {
             // Drain tanks only upon successful undocking, just in case the pod gets stashed before the player can launch (in multi-player stations)
@@ -139,6 +137,46 @@ public class TileEntityOrbitalStation extends TileEntityMachineBase implements I
             te.rot -= 2.25F;
             if (te.rot < 0) te.rot = 0;
         }
+    }
+
+    /** The rim's ports, which 1.7 updates first each tick in orbit (GameTests call it outside orbit). */
+    public void updatePorts() {
+        moduleFluidPorts.update(getPorts());
+    }
+
+    private PortDef[] cachedPorts;
+
+    public PortDef[] getPorts() {
+        if (cachedPorts == null) cachedPorts = ports(worldPosition);
+        return cachedPorts;
+    }
+
+    /** 1.7 {@code getPorts} (world axes, the launcher's too): the twelve rim cells, each open outward. */
+    public static PortDef[] ports(BlockPos core) {
+        int x = core.getX(), y = core.getY(), z = core.getZ();
+        return new PortDef[] {
+                PortDef.make(x - 1, y + 1, z + 2, ForgeDirection.SOUTH),
+                PortDef.make(x + 0, y + 1, z + 2, ForgeDirection.SOUTH),
+                PortDef.make(x + 1, y + 1, z + 2, ForgeDirection.SOUTH),
+
+                PortDef.make(x - 1, y + 1, z - 2, ForgeDirection.NORTH),
+                PortDef.make(x + 0, y + 1, z - 2, ForgeDirection.NORTH),
+                PortDef.make(x + 1, y + 1, z - 2, ForgeDirection.NORTH),
+
+                PortDef.make(x + 2, y + 1, z - 1, ForgeDirection.EAST),
+                PortDef.make(x + 2, y + 1, z + 0, ForgeDirection.EAST),
+                PortDef.make(x + 2, y + 1, z + 1, ForgeDirection.EAST),
+
+                PortDef.make(x - 2, y + 1, z - 1, ForgeDirection.WEST),
+                PortDef.make(x - 2, y + 1, z + 0, ForgeDirection.WEST),
+                PortDef.make(x - 2, y + 1, z + 1, ForgeDirection.WEST),
+        };
+    }
+
+    @Override
+    public void setRemoved() {
+        if (level != null) moduleFluidPorts.destroy();
+        super.setRemoved();
     }
 
     /** 1.7 {@code invalidate}: a removed port leaves its station and drops its craft. */
@@ -317,7 +355,7 @@ public class TileEntityOrbitalStation extends TileEntityMachineBase implements I
 
     @Override
     public FluidTankNTM[] getReceivingTanks() {
-        return subscribed ? tanks : new FluidTankNTM[0];
+        return tanks;
     }
 
     @Override
@@ -326,11 +364,11 @@ public class TileEntityOrbitalStation extends TileEntityMachineBase implements I
         if (remaining != amount) setChanged();
         return remaining;
     }
-    /** The immediate face query follows the dock state; network storage remains subscription-gated above. */
+    /** The rim is open wherever the port ticks, which is in orbit. */
     @Override
     public boolean exposesFluidContact(@Nullable FluidType type,
                                        ForgeDirection dir, boolean receiving) {
-        return needsFuel && IFluidStandardReceiverMK2.super.exposesFluidContact(type, dir, receiving);
+        return level != null && Orbit.inOrbit(level) && IFluidStandardReceiverMK2.super.exposesFluidContact(type, dir, receiving);
     }
 
     /** The station this port belongs to, once it ticked (server), or the synced one (client core). */

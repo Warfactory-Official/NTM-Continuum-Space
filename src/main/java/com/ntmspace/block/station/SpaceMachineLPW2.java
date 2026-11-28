@@ -13,6 +13,7 @@ import com.hbm.inventory.fluid.tank.FluidTankNTM;
 import com.hbm.lib.ForgeDirection;
 import com.hbm.util.BobMathUtil;
 import com.ntmspace.NtmSpace;
+import com.ntmspace.block.machine.MachinePorts;
 import com.ntmspace.orbit.Orbit;
 import com.ntmspace.tileentity.station.TileEntityMachineLPW2Space;
 import dev.golem.core.registry.BlockEntities;
@@ -78,11 +79,11 @@ public class SpaceMachineLPW2 extends MachineLPW2 implements IFluidConnectorBloc
     @Override
     protected void visitCells(BlockPos core, Direction facing, CellVisitor visitor) {
         super.visitCells(core, facing, visitor);
-        StationMachines.ports(core, getDimensions(), facing,
-                List.of(TileEntityMachineLPW2Space.conPos(core, ForgeDirection.getOrientation(facing))), ROLE_FLUID_IN, visitor);
+        MachinePorts.portFaces(core, facing, TileEntityMachineLPW2Space.ports(core, ForgeDirection.getOrientation(facing)),
+                ROLE_FLUID_IN, visitor);
     }
 
-    /** 1.7 {@code makeExtra} at {@code core +- dir * 3 - rot}, three up: the cells next to the two ports. */
+    /** 1.7 {@code makeExtra} at {@code core +- dir * 3 - rot}, three up: the two port cells. */
     @Override
     protected void visitPassiveCells(BlockPos core, Direction facing, PassiveCellVisitor visitor) {
         ForgeDirection dir = ForgeDirection.getOrientation(facing);

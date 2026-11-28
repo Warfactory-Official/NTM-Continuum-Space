@@ -1,5 +1,6 @@
 package com.ntmspace.inventory.rocket;
 
+import com.hbm.util.InventoryUtil;
 import com.ntmspace.registry.RocketBlocks;
 import com.ntmspace.tileentity.rocket.TileEntityLaunchPadRocket;
 import dev.golem.core.world.Compat;
@@ -66,8 +67,8 @@ public class ContainerLaunchPadRocket extends AbstractContainerMenu {
             ItemStack stack = slot.getItem();
             result = stack.copy();
             if (index < TileEntityLaunchPadRocket.SLOT_COUNT) {
-                if (!moveItemStackTo(stack, TileEntityLaunchPadRocket.SLOT_COUNT, this.slots.size(), true)) return ItemStack.EMPTY;
-            } else if (!moveItemStackTo(stack, 0, 5, false)) {
+                if (!InventoryUtil.mergeItemStack(slots, stack, TileEntityLaunchPadRocket.SLOT_COUNT, this.slots.size(), true)) return ItemStack.EMPTY;
+            } else if (!InventoryUtil.mergeItemStack(slots, stack, 0, 5, false)) {
                 return ItemStack.EMPTY;
             }
             if (stack.isEmpty()) slot.setByPlayer(ItemStack.EMPTY); else slot.setChanged();

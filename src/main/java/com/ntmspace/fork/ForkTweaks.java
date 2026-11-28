@@ -5,6 +5,7 @@ import com.hbm.blocks.generic.BlockWandLoot;
 import com.hbm.entity.mob.EntityMaskMan;
 import com.hbm.handler.ArmorModEvents;
 import com.hbm.interfaces.ILookOverlay;
+import com.hbm.tileentity.machine.TileEntityMachineTeleporter;
 import com.hbm.tileentity.machine.TileEntityRefueler;
 import com.ntmspace.registry.SpaceItems;
 import com.ntmspace.registry.SpaceSpecialItems;
@@ -26,16 +27,24 @@ import com.hbm.particle.helper.ExplosionCreator;
 import com.hbm.tileentity.machine.storage.TileEntityFileCabinet;
 import com.ntmspace.NtmSpace;
 import dev.golem.core.Ids;
+import dev.golem.core.registry.Entities;
 import dev.golem.core.registry.Substitutions;
 import dev.golem.core.world.Compat;
 import dev.golem.core.world.CompatConsumables;
+import dev.golem.core.world.Spawns;
 import java.util.List;
 import net.minecraft.server.level.ServerLevel;
+import net.minecraft.world.entity.Entity;
+import net.minecraft.world.entity.EntityType;
+import net.minecraft.world.entity.item.ItemEntity;
+import net.minecraft.world.entity.monster.Slime;
 import net.minecraft.world.entity.npc.villager.Villager;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.item.Items;
 import net.minecraft.world.level.Level;
+import net.minecraft.world.phys.Vec3;
 
 /** Space changes to HBM explosions, cabinet contents and consumable containers. */
 public final class ForkTweaks {
@@ -75,6 +84,7 @@ public final class ForkTweaks {
         BlockWandLoot.scaleInventoryDraws = true;
         EntityPlaneBase.CRASH.register((plane, x, y, z) -> ExplosionCreator.composeEffectLarge(plane.level(), x, y, z));
         TileEntityFileCabinet.TICK.register(ForkTweaks::soyuz);
+        TileEntityMachineTeleporter.SENT.register(ForkTweaks::bread);
         // 1.7 Space EntityMaskMan.dropFewItems:119 drops the V1 where NTM drops the bottled cloud
         // (M65, coin and skull stay), through the actual custom-loot slot on every loader.
         EntityMaskMan.SPECIAL_DROP = () -> new ItemStack(SpaceSpecialItems.V1.get());
@@ -104,6 +114,19 @@ public final class ForkTweaks {
         }
     }
 
+
+    /** hbm-space {@code TileEntityMachineTeleporter.teleport}: a sent bread item leaves a slime at the exit. */
+    static void bread(Entity sent, ServerLevel destination, Vec3 exit) {
+        if (!(sent instanceof ItemEntity item) || !item.getItem().is(Items.BREAD)) return;
+        Slime slime = Entities.createTriggered(EntityType.SLIME, destination);
+        slime.setPos(exit.x, exit.y, exit.z);
+        slime.setYRot(sent.getYRot());
+        slime.setXRot(sent.getXRot());
+        Spawns.finalizeTriggered(slime, destination);
+        // 1.7's slime is size 1, 2 or 4 at equal odds
+        slime.setSize(1 << slime.getRandom().nextInt(3), true);
+        destination.addFreshEntity(slime);
+    }
 
     /** hbm-space {@code BlockRefueler.printHook}; the readout contains no client-only state. */
     static ILookOverlay.Data refueler(Level level, BlockPos pos,

@@ -97,7 +97,6 @@ public final class ProbeHookGameTests {
         rows.add(new Row("DemonLamp.IRRADIATED", com.hbm.blocks.machine.DemonLamp.TileEntityDemonLamp.IRRADIATED, false));
         rows.add(new Row("EntityBalefire.TICK", com.hbm.entity.logic.EntityBalefire.TICK, false));
         rows.add(new Row("ExplosionNukeCustom.ANTIMATTER", com.hbm.explosion.ExplosionNukeCustom.ANTIMATTER, false));
-        rows.add(new Row("TileEntityBarrel.ANTIMATTER_BLAST", com.hbm.tileentity.machine.storage.TileEntityBarrel.ANTIMATTER_BLAST, false));
         rows.add(new Row("EntityBomber.LOOP_SOUND", com.hbm.entity.logic.EntityBomber.LOOP_SOUND, false));
         rows.add(new Row("EntityPlaneBase.CRASH", com.hbm.entity.logic.EntityPlaneBase.CRASH, false));
         rows.add(new Row("TileEntityFileCabinet.TICK", com.hbm.tileentity.machine.storage.TileEntityFileCabinet.TICK, false));

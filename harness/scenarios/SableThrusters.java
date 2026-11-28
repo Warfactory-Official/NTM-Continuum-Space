@@ -19,8 +19,7 @@ public final class SableThrusters implements Scenario {
     private static final int Y = 100, D = Y + 1;
     private static final Pattern MASS = Pattern.compile("Mass: (-?[0-9.]+)");
     private static final String[] THRUSTERS = {
-            "ntmspace:machine_xenon_thruster", "ntmspace:machine_htr3", "hbm:machine_lpw2",
-            "ntmspace:machine_htrf4", "ntmspace:machine_htrf4neo"};
+            "ntmspace:machine_xenon_thruster", "ntmspace:machine_htr3", "hbm:machine_lpw2", "ntmspace:machine_htrf4neo"};
 
     @Override
     public void run(Client c) throws Exception {

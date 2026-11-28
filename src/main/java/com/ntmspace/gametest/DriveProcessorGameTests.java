@@ -3,6 +3,10 @@ package com.ntmspace.gametest;
 import com.hbm.blocks.multiblock.MultiblockHandlerXR;
 import com.hbm.blocks.multiblock.MultiblockSurface;
 import com.hbm.items.ModEntityItems;
+import com.hbm.lib.ForgeDirection;
+import com.hbm.uninos.PortNodes;
+import com.hbm.uninos.networkproviders.PowerNetProvider;
+import com.ntmspace.block.rocket.MachineDriveProcessor;
 import com.ntmspace.orbit.Orbit;
 import com.ntmspace.registry.DriveProcessorBlocks;
 import com.ntmspace.registry.RocketItems;
@@ -19,6 +23,7 @@ import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.gametest.framework.GameTestHelper;
 import net.minecraft.nbt.CompoundTag;
+import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.item.ItemStack;
 
 /**
@@ -45,6 +50,9 @@ public final class DriveProcessorGameTests {
     /** The save names its items and fields; it reads back whole. */
     public static final GameTests.Function SAVES = TESTS.function("drive_processor_saves_by_name", 40, 8,
             () -> DriveProcessorGameTests::saves);
+
+    public static final GameTests.Function PORTS = TESTS.function("drive_processor_ports", 40, 8,
+            () -> DriveProcessorGameTests::ports);
 
     private DriveProcessorGameTests() {}
 
@@ -108,6 +116,40 @@ public final class DriveProcessorGameTests {
             DriveData data = ItemVOTVdrive.data(stack);
             helper.assertTrue(data.x() == 120 && data.z() == -40 && !data.copied(), "coordinates kept, not copied");
         });
+    }
+
+    private static void ports(GameTestHelper helper) {
+        TileEntityMachineDriveProcessor te = place(helper);
+        BlockPos core = te.getBlockPos();
+        ServerLevel level = helper.getLevel();
+        MachineDriveProcessor block = DriveProcessorBlocks.MACHINE_DRIVE_PROCESSOR.get();
+
+        // facing north: the second block is west of the core, the back is south
+        BlockPos cell = core.west();
+        helper.assertTrue(core.equals(MultiblockSurface.coreOfCell(level, cell)), "the second block is west of the core");
+        Object[][] open = {{core, ForgeDirection.SOUTH}, {core, ForgeDirection.EAST}, {cell, ForgeDirection.SOUTH}, {cell, ForgeDirection.WEST}};
+        Object[][] closed = {{core, ForgeDirection.NORTH}, {core, ForgeDirection.UP}, {core, ForgeDirection.DOWN},
+                {cell, ForgeDirection.NORTH}, {cell, ForgeDirection.UP}, {cell, ForgeDirection.DOWN}};
+        for (Object[] face : open) {
+            helper.assertTrue(block.canConnect(level, (BlockPos) face[0], (ForgeDirection) face[1]), "a cable connects at " + face[0] + " " + face[1]);
+        }
+        for (Object[] face : closed) {
+            helper.assertTrue(!block.canConnect(level, (BlockPos) face[0], (ForgeDirection) face[1]), "no cable connects at " + face[0] + " " + face[1]);
+        }
+
+        helper.succeedWhen(() -> {
+            helper.assertTrue(PortNodes.isPorted(level, te, true), "the machine has power ports");
+            for (Object[] face : open) {
+                helper.assertTrue(takesPower(level, te, (BlockPos) face[0], (ForgeDirection) face[1]), "power comes in at " + face[0] + " " + face[1]);
+            }
+            for (Object[] face : closed) {
+                helper.assertTrue(!takesPower(level, te, (BlockPos) face[0], (ForgeDirection) face[1]), "no power comes in at " + face[0] + " " + face[1]);
+            }
+        });
+    }
+
+    private static boolean takesPower(ServerLevel level, Object te, BlockPos port, ForgeDirection side) {
+        return PortNodes.allows(level, port.relative(side.toDirection()).asLong(), side, te, PowerNetProvider.THE_PROVIDER, true);
     }
 
     private static void tiers(GameTestHelper helper) {

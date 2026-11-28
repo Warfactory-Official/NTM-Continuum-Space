@@ -8,7 +8,6 @@ import com.hbm.blocks.multiblock.BlockMultiblockMachine;
 import com.hbm.inventory.fluid.Fluids;
 import com.hbm.inventory.fluid.tank.FluidTankNTM;
 import com.hbm.items.ModFinalConsumableItems;
-import com.hbm.lib.DirPos;
 import com.hbm.lib.ForgeDirection;
 import com.hbm.lib.Library;
 import com.hbm.tileentity.MachineCore;
@@ -16,7 +15,6 @@ import com.hbm.tileentity.TileEntityMachineBase;
 import com.hbm.tileentity.TilePort.PortDef;
 import com.ntmspace.atmosphere.AtmosphereHandler;
 import com.ntmspace.block.machine.MachineHydroponic;
-import com.ntmspace.block.machine.MachinePorts;
 import com.ntmspace.inventory.machine.ContainerHydroponic;
 import com.ntmspace.registry.SpaceMachinesB;
 import dev.golem.core.data.DataIn;
@@ -104,9 +102,8 @@ public class TileEntityHydroponic extends TileEntityMachineBase implements MenuP
     public static void serverTick(Level level, BlockPos pos, BlockState state, TileEntityHydroponic te) {
         if (!(level instanceof ServerLevel server)) return;
         if (te.cachedPowerPorts == null) {
-            Ports ports = ports(pos, MachineCore.facing(state));
-            te.cachedPowerPorts = MachinePorts.ports(level, state, pos, ports.power());
-            te.cachedFluidPorts = MachinePorts.ports(level, state, pos, ports.fluid());
+            te.cachedPowerPorts = powerPorts(pos);
+            te.cachedFluidPorts = fluidPorts(pos, MachineCore.facing(state));
         }
         te.setupPowerPorts(te.cachedPowerPorts);
         te.setupFluidPorts(te.cachedFluidPorts);
@@ -287,20 +284,19 @@ public class TileEntityHydroponic extends TileEntityMachineBase implements MenuP
     private PortDef[] cachedPowerPorts;
     private PortDef[] cachedFluidPorts;
 
-    /** 1.7 {@code getFluidPos} and {@code getPowerPos}. */
-    public record Ports(DirPos[] fluid, DirPos[] power) {}
-
-    public static Ports ports(BlockPos core, ForgeDirection dir) {
+    public static PortDef[] fluidPorts(BlockPos core, ForgeDirection dir) {
         ForgeDirection rot = dir.getRotation(ForgeDirection.UP);
         int x = core.getX(), y = core.getY(), z = core.getZ();
-        DirPos[] fluid = {
-                new DirPos(x + rot.offsetX * 2 + dir.offsetX, y, z + rot.offsetZ * 2 + dir.offsetZ, dir),
-                new DirPos(x - rot.offsetX * 2 + dir.offsetX, y, z - rot.offsetZ * 2 + dir.offsetZ, dir),
-                new DirPos(x + rot.offsetX * 2 - dir.offsetX, y, z + rot.offsetZ * 2 - dir.offsetZ, dir.getOpposite()),
-                new DirPos(x - rot.offsetX * 2 - dir.offsetX, y, z - rot.offsetZ * 2 - dir.offsetZ, dir.getOpposite()),
+        return new PortDef[] {
+                PortDef.make(x + rot.offsetX * 2, y, z + rot.offsetZ * 2, dir),
+                PortDef.make(x - rot.offsetX * 2, y, z - rot.offsetZ * 2, dir),
+                PortDef.make(x + rot.offsetX * 2, y, z + rot.offsetZ * 2, dir.getOpposite()),
+                PortDef.make(x - rot.offsetX * 2, y, z - rot.offsetZ * 2, dir.getOpposite()),
         };
-        DirPos[] power = {new DirPos(x, y + 3, z, ForgeDirection.UP)};
-        return new Ports(fluid, power);
+    }
+
+    public static PortDef[] powerPorts(BlockPos core) {
+        return new PortDef[] {PortDef.make(core.getX(), core.getY() + 2, core.getZ(), ForgeDirection.UP)};
     }
 
     /** The three plant positions, 1.7's loop order. */

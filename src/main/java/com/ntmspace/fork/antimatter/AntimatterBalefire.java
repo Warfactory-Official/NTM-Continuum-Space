@@ -5,11 +5,9 @@ import com.hbm.entity.logic.EntityBalefire;
 import com.hbm.explosion.ExplosionBalefire;
 import com.hbm.explosion.ExplosionLarge;
 import com.hbm.explosion.ExplosionNukeCustom;
-import com.hbm.explosion.vanillant.ExplosionVNT;
 import com.hbm.items.special.ItemCell;
 import com.hbm.particle.helper.HbmEffectNT;
 import com.hbm.tileentity.bomb.TileEntityNukeCustom;
-import com.hbm.tileentity.machine.storage.TileEntityBarrel;
 import com.hbm.util.ContaminationUtil;
 import com.hbm.util.ContaminationUtil.ContaminationType;
 import com.hbm.util.ContaminationUtil.HazardType;
@@ -44,11 +42,8 @@ import net.minecraft.world.phys.AABB;
  *   <li>every balefire (hbm-space changed {@code EntityBalefire} itself, not only the antimatter mode): an explosion
  *       sound on one tick in five and a thunderclap on every tick until the crater is done;</li>
  *   <li>the custom nuke's antimatter stage spawns it with the rainbow cloud ({@code startFacAnti}, Torex type 2),
- *       and antimatter arms without the 50-nuke floor; a dropped antimatter cell blasts at 5 (1.7: 3); antimatter in a
- *       matter barrel is an {@code ExplosionVNT(5).makeAmat()} at the barrel's corner.</li>
+ *       and antimatter arms without the 50-nuke floor; a dropped antimatter cell blasts at 5 (1.7: 3).</li>
  * </ul>
- * A barrel ruptured by pipe pressure selects {@link BarrelPressure}; a surviving receiver retires before its
- * blast and cannot exchange fluid or emit another blast, including after saving and loading.
  * The {@code particle_amat} drop blast remains absent: that plain item has no item-entity update behavior.
  */
 public final class AntimatterBalefire {
@@ -72,12 +67,6 @@ public final class AntimatterBalefire {
             cloud(level, x + 0.5, y + 5, z + 0.5, amat);
             return true;
         });
-        // hbm-space TileEntityBarrel.checkFluidInteraction: new ExplosionVNT(world, xCoord, yCoord, zCoord, 5).makeAmat()
-        TileEntityBarrel.ANTIMATTER_BLAST.register((level, pos, type) -> {
-            new ExplosionVNT(level, pos.getX(), pos.getY(), pos.getZ(), 5F).makeAmat().explode();
-            return true;
-        });
-        TileEntityBarrel.PRESSURE_BLAST.register(new BarrelPressure());
         // hbm-space TileEntityNukeCustom: "//if(nuke < 50) amat = 0;"
         TileEntityNukeCustom.amatNukeFloor = 0F;
         // hbm-space ItemDrop: cell_antimatter ExplosionVNT 5F (1.7 3F)

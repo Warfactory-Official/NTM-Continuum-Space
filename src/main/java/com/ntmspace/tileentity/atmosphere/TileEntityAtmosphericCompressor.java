@@ -12,7 +12,6 @@ import com.hbm.tileentity.MachineCore;
 import com.hbm.tileentity.TileEntityMachineBase;
 import com.hbm.tileentity.TilePort.PortDef;
 import com.ntmspace.atmosphere.AtmosphereHandler;
-import com.ntmspace.block.machine.MachinePorts;
 import com.ntmspace.fluid.SpaceFluids;
 import com.ntmspace.registry.AtmosphereMachines;
 import com.ntmspace.trait.CBT_Atmosphere;
@@ -146,30 +145,26 @@ public class TileEntityAtmosphericCompressor extends TileEntityMachineBase imple
 
     private PortDef[] cachedPorts;
 
-    /** The 1.7 connection points as ports. */
     public PortDef[] getPorts() {
-        if (cachedPorts == null) cachedPorts = MachinePorts.ports(level, getBlockState(), worldPosition, getConPos());
+        if (cachedPorts == null) cachedPorts = ports(worldPosition, MachineCore.facing(getBlockState()));
         return cachedPorts;
     }
 
-    /** The deuterium tower's eight points (1.7 copied its {@code getConPos}). */
-    public DirPos[] getConPos() {
-        return conPos(worldPosition, MachineCore.facing(getBlockState()));
+    /** 1.7 {@code getPorts}: the four base cells, each through its two outer faces (rotated about DOWN, as 1.7 wrote it). */
+    public static PortDef[] ports(BlockPos core, ForgeDirection dir) {
+        ForgeDirection rot = dir.getRotation(ForgeDirection.DOWN);
+        int x = core.getX(), y = core.getY(), z = core.getZ();
+        return new PortDef[] {
+                PortDef.make(x - dir.offsetX, y, z - dir.offsetZ, dir.getOpposite(), rot.getOpposite()),
+                PortDef.make(x - dir.offsetX + rot.offsetX, y, z - dir.offsetZ + rot.offsetZ, dir.getOpposite(), rot),
+
+                PortDef.make(x, y, z, dir, rot.getOpposite()),
+                PortDef.make(x + rot.offsetX, y, z + rot.offsetZ, dir, rot),
+        };
     }
 
     public static DirPos[] conPos(BlockPos core, ForgeDirection dir) {
-        ForgeDirection rot = dir.getRotation(ForgeDirection.DOWN);
-        int x = core.getX(), y = core.getY(), z = core.getZ();
-        return new DirPos[] {
-                new DirPos(x - dir.offsetX * 2, y, z - dir.offsetZ * 2, dir.getOpposite()),
-                new DirPos(x - dir.offsetX * 2 + rot.offsetX, y, z - dir.offsetZ * 2 + rot.offsetZ, dir.getOpposite()),
-                new DirPos(x + dir.offsetX, y, z + dir.offsetZ, dir),
-                new DirPos(x + dir.offsetX + rot.offsetX, y, z + dir.offsetZ + rot.offsetZ, dir),
-                new DirPos(x - rot.offsetX, y, z - rot.offsetZ, rot.getOpposite()),
-                new DirPos(x - dir.offsetX - rot.offsetX, y, z - dir.offsetZ - rot.offsetZ, rot.getOpposite()),
-                new DirPos(x + rot.offsetX * 2, y, z + rot.offsetZ * 2, rot),
-                new DirPos(x - dir.offsetX + rot.offsetX * 2, y, z - dir.offsetZ + rot.offsetZ * 2, rot),
-        };
+        return PortDef.connections(ports(core, dir));
     }
 
     @Override

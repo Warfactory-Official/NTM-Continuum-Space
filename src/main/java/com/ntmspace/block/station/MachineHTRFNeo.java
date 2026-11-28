@@ -7,6 +7,7 @@ import com.hbm.blocks.multiblock.MultiblockSurface;
 import com.hbm.interfaces.ILookOverlay;
 import com.hbm.lib.ForgeDirection;
 import com.hbm.util.BobMathUtil;
+import com.ntmspace.block.machine.MachinePorts;
 import com.ntmspace.orbit.Orbit;
 import com.ntmspace.tileentity.station.TileEntityMachineHTRNeo;
 import java.util.ArrayList;
@@ -21,13 +22,15 @@ import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.block.state.BlockState;
 
 /**
- * hbm-space's {@code MachineHTRFNeo}: the HTR-F4's frame ({@code {2, 2, 2, 2, 11, 9}}, offset 11, two above, turned a
+ * hbm-space's {@code MachineHTRFNeo}: a {@code {2, 2, 2, 2, 11, 9}} frame (offset 11, two above, turned a
  * quarter), with power and coolant proxies on the plasma end (where the torus meets it) and four on the bottom layer.
  * 1.7 offset the bottom ones' x by three along the facing and their z by two, so for a north/south facing they sit on the
  * long sides and for an east/west facing outside it (where {@code makeExtra} did nothing); kept, with the check that a
  * proxy must lie inside the structure.
  */
 public class MachineHTRFNeo extends BlockMultiblockMachine implements IEnergyConnectorBlock, IFluidConnectorBlockMK2, ILookOverlay {
+
+    private static final int[] DIMS = {2, 2, 2, 2, 11, 9};
 
     public MachineHTRFNeo(Properties properties) {
         super(properties);
@@ -38,7 +41,7 @@ public class MachineHTRFNeo extends BlockMultiblockMachine implements IEnergyCon
         return new TileEntityMachineHTRNeo(pos, state);
     }
 
-    @Override public int[] getDimensions() { return MachineHTRF4.DIMS.clone(); }
+    @Override public int[] getDimensions() { return DIMS.clone(); }
     @Override public int getOffset() { return 11; }
     @Override public int getHeightOffset() { return 2; }
 
@@ -50,7 +53,7 @@ public class MachineHTRFNeo extends BlockMultiblockMachine implements IEnergyCon
     @Override
     protected void visitCells(BlockPos core, Direction facing, CellVisitor visitor) {
         super.visitCells(core, facing, visitor);
-        StationMachines.ports(core, MachineHTRF4.DIMS, facing, TileEntityMachineHTRNeo.conPos(core, ForgeDirection.getOrientation(facing)),
+        MachinePorts.portFaces(core, facing, TileEntityMachineHTRNeo.ports(core, ForgeDirection.getOrientation(facing)),
                 ROLE_POWER_IN | ROLE_FLUID, visitor);
     }
 
@@ -72,7 +75,7 @@ public class MachineHTRFNeo extends BlockMultiblockMachine implements IEnergyCon
                 new BlockPos(x - rot.offsetX * 5 - dir.offsetX * 3, y, z - rot.offsetZ * 5 + dir.offsetZ * 2),
                 new BlockPos(x + rot.offsetX * 1 - dir.offsetX * 3, y, z + rot.offsetZ * 1 + dir.offsetZ * 2)}) {
             // 1.7 makeExtra did nothing where the block was not part of the machine
-            if (StationMachines.inBox(core, MachineHTRF4.DIMS, facing, pos)) extras.add(pos);
+            if (MachinePorts.inBox(core, DIMS, facing, pos)) extras.add(pos);
         }
         return extras;
     }

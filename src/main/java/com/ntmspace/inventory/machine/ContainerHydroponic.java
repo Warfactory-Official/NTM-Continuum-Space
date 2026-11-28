@@ -1,5 +1,6 @@
 package com.ntmspace.inventory.machine;
 
+import com.hbm.util.InventoryUtil;
 import com.ntmspace.registry.SpaceMachinesB;
 import com.ntmspace.tileentity.machine.TileEntityHydroponic;
 import net.minecraft.core.BlockPos;
@@ -61,8 +62,8 @@ public class ContainerHydroponic extends AbstractContainerMenu {
             ItemStack stack = slot.getItem();
             result = stack.copy();
             if (index < MACHINE_SLOTS) {
-                if (!moveItemStackTo(stack, MACHINE_SLOTS, slots.size(), true)) return ItemStack.EMPTY;
-            } else if (!moveItemStackTo(stack, 0, MACHINE_SLOTS, false)) {
+                if (!InventoryUtil.mergeItemStack(slots, stack, MACHINE_SLOTS, slots.size(), true)) return ItemStack.EMPTY;
+            } else if (!InventoryUtil.mergeItemStack(slots, stack, 0, MACHINE_SLOTS, false)) {
                 return ItemStack.EMPTY;
             }
             if (stack.isEmpty()) slot.setByPlayer(ItemStack.EMPTY);

@@ -1,5 +1,6 @@
 package com.ntmspace.inventory.rocket;
 
+import com.hbm.util.InventoryUtil;
 import com.ntmspace.registry.DriveProcessorBlocks;
 import com.ntmspace.tileentity.rocket.TileEntityMachineDriveProcessor;
 import dev.golem.core.world.Compat;
@@ -68,8 +69,8 @@ public class ContainerDriveProcessor extends AbstractContainerMenu {
             result = stack.copy();
             int size = machine.getContainerSize();
             if (index < size) {
-                if (!moveItemStackTo(stack, size, slots.size(), true)) return ItemStack.EMPTY;
-            } else if (!moveItemStackTo(stack, 0, size, false)) {
+                if (!InventoryUtil.mergeItemStack(slots, stack, size, slots.size(), true)) return ItemStack.EMPTY;
+            } else if (!InventoryUtil.mergeItemStack(slots, stack, 0, size, false)) {
                 return ItemStack.EMPTY;
             }
             if (stack.isEmpty()) slot.setByPlayer(ItemStack.EMPTY);

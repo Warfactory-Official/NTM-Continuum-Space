@@ -47,12 +47,6 @@ public final class StationItemDeclarations {
                         .scale(0.5).ty(0.0).yaw(0.0).guiScale(2.5).rawLegacyTransform()
                         .itemTranslate(0.0, 0.0, 0.0).itemPreTranslate(0.0, 0.0, 0.0).guiTranslate(0.0, -3.0, 0.0).exclude("ExhaustVacuum"))
                 .oversizedInGui().register();
-        // RenderHTRF4: inv translate(0, -1, 0) scale(1.5); common scale(0.5), renderAll, lpw2 texture
-        Dejson.item(NS, "machine_htrf4")
-                .definition(MachineObjModel.of("ntmspace:models/machines/htrf4.obj", "ntmspace:textures/models/machines/lpw2.png")
-                        .scale(0.5).ty(0.0).yaw(0.0).guiScale(1.5).rawLegacyTransform()
-                        .itemTranslate(0.0, 0.0, 0.0).itemPreTranslate(0.0, 0.0, 0.0).guiTranslate(0.0, -1.0, 0.0))
-                .oversizedInGui().register();
         // RenderHTRNeo: inv translate(0, -1, 0) scale(1.5); common scale(0.5), renderAllExcept("Exhaust")
         Dejson.item(NS, "machine_htrf4neo")
                 .definition(MachineObjModel.of("ntmspace:models/fusion/htrf4.obj", "ntmspace:textures/models/fusion/htrf4.png")

@@ -347,6 +347,8 @@ public final class RecipeChangeChemGameTests {
         liquefy(errors, "ntmspace:dry_ice", "hbm:carbondioxidex1000");
         liquefy(errors, "ntmspace:flesh", "hbm:bloodx100");
         liquefy(errors, "hbm:ingot_osmiridium", "hbm:ethanolx24000");
+        liquefy(errors, "ntmspace:laythe_root", Fluids.MUG.getRegistryName() + "x100");
+        liquefy(errors, "minecraft:oak_log", "none");
         for (String id : new String[] {"minecraft:cobblestone", "minecraft:stone"}) {
             Item item = BuiltInRegistries.ITEM.getOptional(Ids.parse(id)).orElseThrow();
             if (LiquefactionRecipes.getItemRecipes().containsKey(item)) errors.add("liquefaction " + id + " is still an item row (1.7: ore-dict key)");

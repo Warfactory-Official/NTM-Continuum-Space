@@ -19,7 +19,6 @@ import com.hbm.tileentity.TilePort;
 import com.hbm.uninos.networkproviders.FluidNetProvider;
 import com.hbm.world.chunk.ChunkLoaderTicket;
 import com.hbm.world.chunk.ChunkLoadingManager;
-import com.ntmspace.block.machine.MachinePorts;
 import com.ntmspace.item.ItemTransporterLinker;
 import com.ntmspace.item.ItemTransporterLinker.TransporterInfo;
 import dev.golem.core.data.DataIn;
@@ -57,8 +56,8 @@ import org.jspecify.annotations.Nullable;
  * <p>Port notes: the linked transporter's level is saved by id ({@code "dimension"}, 1.7 {@code dimensionId}); a pad keeps
  * its own chunk loaded through HBM's {@link ChunkLoadingManager} (1.7 {@code ChunkLoaderManager.forceChunk} on placement),
  * claimed on its first server tick and released when the block is removed. As in 1.7, the fuel tanks belong to a separate
- * {@link FuelReceiver} (HIGH priority) whose ports sit at the tank points ({@link #fluidUserAt}); the cargo points reach
- * the pad itself, whose receiving tanks are the cargo input tanks.
+ * {@link FuelReceiver} (HIGH priority) that owns the fuel ports ({@link #fluidUserAt}); the cargo ports reach the pad
+ * itself, whose receiving tanks are the cargo input tanks.
  */
 public abstract class TileEntityTransporterBase extends TileEntityMachineBase
         implements IControlReceiver, IFluidStandardTransceiverMK2, IFluidMultiUserMK2, WorldlyContainer {
@@ -117,6 +116,8 @@ public abstract class TileEntityTransporterBase extends TileEntityMachineBase
             ticket = ChunkLoadingManager.requestTicket(server, "ntmspace:transporter");
             ticket.force(worldPosition.getX() >> 4, worldPosition.getZ() >> 4);
         }
+
+        updatePorts();
 
         // Set tank types and split fills
         for (int i = 0; i < inputTankMax; i++) {
@@ -218,23 +219,21 @@ public abstract class TileEntityTransporterBase extends TileEntityMachineBase
         return rest;
     }
 
-    /**
-     * 1.7 {@code updateConnections}: cargo tanks at the cargo points, fuel tanks at the tank points; the inserter pulls one
-     * item a tick from the inventory at {@link #getInsertPos}, the extractor pushes one into the one at {@link #getExtractPos}.
-     */
-    private void updateConnections() {
-        if (cachedPorts == null) cachedPorts = MachinePorts.ports(level, getBlockState(), worldPosition, getConPos());
-        setupFluidPorts(cachedPorts);
+    private void updatePorts() {
+        setupFluidPorts(getFluidPorts());
         updatePortFIFO();
         if (fuelPorts == null) {
-            PortDef fuel = PortDef.combine(MachinePorts.ports(level, getBlockState(), worldPosition, getTankPos()));
-            fuelPorts = TilePort.oneToMany(fuelReceiver, tanks.length - outputTankMax, fuel);
+            fuelPorts = TilePort.oneToMany(fuelReceiver, tanks.length - outputTankMax, PortDef.combine(getFuelPorts()));
         }
         for (int i = 0; i < fuelPorts.length; i++) {
             fuelPorts[i].setupFluids(tanks[outputTankMax + i], level);
             fuelPorts[i].update(level);
             fuelPorts[i].checkSubscribe(level);
         }
+    }
+
+    /** 1.7 {@code updateConnections}: one item a tick in from {@link #getInsertPos}, one out to {@link #getExtractPos}. */
+    private void updateConnections() {
         for (DirPos pos : getInsertPos()) tryLoad(pos.getPos(), pos.getDir());
         for (DirPos pos : getExtractPos()) tryUnload(pos.getPos(), pos.getDir());
     }
@@ -334,12 +333,12 @@ public abstract class TileEntityTransporterBase extends TileEntityMachineBase
         return Arrays.copyOfRange(tanks, 0, inputTankMax);
     }
 
-    /** 1.7 {@code trySubscribeFuel} at {@code getTankPos}: a duct sitting on a tank point reaches the fuel receiver. */
+    /** A duct on a connection of the fuel ports reaches the fuel receiver. */
     @Override
     public @Nullable IFluidUserMK2 fluidUserAt(BlockPos pos, @Nullable Direction face) {
         if (face == null) return null;
         BlockPos duct = pos.relative(face);
-        for (DirPos point : getTankPos()) {
+        for (DirPos point : PortDef.connections(getFuelPorts())) {
             if (point.getPos().equals(duct)) return fuelReceiver;
         }
         return null;
@@ -351,12 +350,12 @@ public abstract class TileEntityTransporterBase extends TileEntityMachineBase
     }
 
     private final FuelReceiver fuelReceiver = new FuelReceiver();
-    private PortDef[] cachedPorts;
     private TilePort[] fuelPorts;
 
-    /** 1.7 {@code FuelReceiver}: receives into the extra (fuel) tanks, HIGH priority; gone with the pad (1.7 {@code invalidate}). */
+    /** 1.7 {@code FuelReceiver}: receives into the extra (fuel) tanks, HIGH priority. */
     private class FuelReceiver implements IFluidStandardReceiverMK2 {
 
+        // port: gone with its pad; 1.7's is its own always-loaded tile
         @Override
         public boolean isLoaded() {
             return !isRemoved() && TileEntityTransporterBase.this.isLoaded();
@@ -426,8 +425,11 @@ public abstract class TileEntityTransporterBase extends TileEntityMachineBase
 
     // ---------------------------------------------------------------------------------------------- subclass
 
-    protected abstract DirPos[] getConPos();
-    protected abstract DirPos[] getTankPos();
+    protected PortDef[] cachedFluidPorts;
+    protected PortDef[] cachedFuelPorts;
+
+    protected abstract PortDef[] getFluidPorts();
+    protected abstract PortDef[] getFuelPorts();
     protected abstract DirPos[] getInsertPos();
     protected abstract DirPos[] getExtractPos();
 
@@ -550,7 +552,7 @@ public abstract class TileEntityTransporterBase extends TileEntityMachineBase
 
     @Override
     public void setRemoved() {
-        if (level != null && fuelPorts != null) for (TilePort port : fuelPorts) port.disableIfPresent(level);
+        if (level != null && fuelPorts != null) for (TilePort port : fuelPorts) port.release(level, this);
         super.setRemoved();
     }
 

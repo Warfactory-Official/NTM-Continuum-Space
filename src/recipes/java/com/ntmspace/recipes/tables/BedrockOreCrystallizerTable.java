@@ -74,7 +74,7 @@ public final class BedrockOreCrystallizerTable extends RecipeSource<Row> {
             registerRecipe(in(Grade.PRIMARY_RAD, type), new CrystallizerRecipe(make(Grade.PRIMARY_FIRST, type), bedrock), primary);
             registerRecipe(in(Grade.PRIMARY_NORAD, type), new CrystallizerRecipe(make(Grade.PRIMARY_FIRST, type), bedrock), primary);
 
-            registerRecipe(in(Grade.CRUMBS, type), new CrystallizerRecipe(make(Grade.BASE, type), bedrock).setReq(64), new FluidStack(Fluids.SLOP, 1000));
+            registerRecipe(in(Grade.CRUMBS, type), new CrystallizerRecipe(make(Grade.BASE_WASHED, type), bedrock).setReq(64), new FluidStack(Fluids.SLOP, 1000));
         }
     }
 

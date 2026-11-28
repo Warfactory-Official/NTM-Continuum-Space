@@ -15,9 +15,9 @@ import net.minecraft.world.item.Item;
 
 /**
  * hbm-space {@code LiquefactionRecipes.registerDefaults}: the rows hbm-space adds or changes. {@code Blocks.cobblestone}
- * and {@code Blocks.stone} became {@code KEY_COBBLESTONE} and {@code KEY_STONE}, and packed ice yields 2,000 mB instead
- * of 1,000 (HBM's rows removed by {@code recipe_removals/liquefaction.json}). The id is the input as HBM spells it.
- * Replaces the former {@code gen_recipe_changes_chem.py}'s liquefaction rows.
+ * and {@code Blocks.stone} became {@code KEY_COBBLESTONE} and {@code KEY_STONE}, packed ice yields 2,000 mB instead
+ * of 1,000, and root beer takes the Laythe root instead of any log (HBM's rows removed by
+ * {@code recipe_removals/liquefaction.json}). The id is the input as HBM spells it.
  */
 public final class LiquefactionTable extends RecipeSource<Row> {
 
@@ -28,6 +28,7 @@ public final class LiquefactionTable extends RecipeSource<Row> {
     @Override
     protected void registerDefaults() {
         // 1.7's descriptive row ids (the tests address rows by them, not by input).
+        remove("hbm:liquefaction/tag_minecraft_logs");
         register("log", new Row(Either.right(item("ntmspace:laythe_root")), new FluidStack(100, Fluids.MUG)));
         remove("hbm:liquefaction/cobblestone");
         register("cobblestone", new Row(Either.left(tag("c:cobblestones")), new FluidStack(250, Fluids.LAVA)));

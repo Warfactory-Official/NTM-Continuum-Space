@@ -19,8 +19,8 @@ import net.minecraft.world.phys.AABB;
 /**
  * hbm-space's {@code MachineGasDock} (Gas Giant Harvester): a 3x3 pad ({@code getDimensions} {0, 0, 1, 1, 1, 1},
  * offset 1), 12 px tall on every cell ({@code setBlockBoundsBasedOnState}), core in the middle. Every cell that is not
- * the core is a {@code TileEntityProxyCombo().fluid()}. The ports are the nine blocks below the pad and the twelve
- * around it (1.7 {@code getConPos}, in world axes). No GUI.
+ * the core is a {@code TileEntityProxyCombo().fluid()}. The ports face the nine blocks below the pad and the twelve
+ * around it (1.7 {@code getPorts}, in world axes), for fluid only. No GUI.
  */
 public class MachineGasDock extends BlockMultiblockMachine implements IFluidConnectorBlockMK2, ILookOverlay {
 

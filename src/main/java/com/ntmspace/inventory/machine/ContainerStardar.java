@@ -1,5 +1,6 @@
 package com.ntmspace.inventory.machine;
 
+import com.hbm.util.InventoryUtil;
 import com.ntmspace.registry.SpaceMachinesD;
 import com.ntmspace.tileentity.machine.StardarHeightmap;
 import net.minecraft.server.level.ServerPlayer;
@@ -70,8 +71,8 @@ public class ContainerStardar extends AbstractContainerMenu {
             ItemStack stack = slot.getItem();
             result = stack.copy();
             if (index == 0) {
-                if (!moveItemStackTo(stack, 1, slots.size(), true)) return ItemStack.EMPTY;
-            } else if (!moveItemStackTo(stack, 0, 1, false)) {
+                if (!InventoryUtil.mergeItemStack(slots, stack, 1, slots.size(), true)) return ItemStack.EMPTY;
+            } else if (!InventoryUtil.mergeItemStack(slots, stack, 0, 1, false)) {
                 return ItemStack.EMPTY;
             }
             if (stack.isEmpty()) slot.setByPlayer(ItemStack.EMPTY);

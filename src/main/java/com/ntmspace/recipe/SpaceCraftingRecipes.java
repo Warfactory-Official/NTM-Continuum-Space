@@ -12,6 +12,7 @@ import static dev.golem.core.dejson.Crafting.rows;
 import static dev.golem.core.dejson.Crafting.shaped;
 import static dev.golem.core.dejson.Crafting.shapeless;
 import static dev.golem.core.dejson.Crafting.smelt;
+import static dev.golem.core.dejson.Crafting.special;
 import static dev.golem.core.dejson.Crafting.stack;
 
 /**
@@ -193,6 +194,8 @@ public final class SpaceCraftingRecipes {
                 "#c:dusts/calcium", "#c:dusts/red_phosphorus", ns("ammonium_nitrate"));
         shapeless(NS, "crafting/powder_fertilizer_1", "hbm:powder_fertilizer", 4,
                 "#c:dusts/ash", "#c:dusts/red_phosphorus", "#c:dusts/niter", ns("ammonium_nitrate"));
+        // steel scraps: COAL.dust() to ANY_COAL_COKE.dust()
+        special(NS, "crafting/steel_scraps_coke", "ntmspace:steel_scraps_coke");
     }
 
     // -------------------------------------------------------------------------------------------- ConsumableRecipes
@@ -276,6 +279,7 @@ public final class SpaceCraftingRecipes {
         shaped(NS, "stick_pvc", ns("stick_pvc"), 3, rows("L", "L"), "L", ns("pvc_planks"));
         shapeless(NS, "vinyl_planks", ns("vinyl_planks"), 4, ns("vinyl_log"));
         shapeless(NS, "pvc_planks", ns("pvc_planks"), 4, ns("pvc_log"));
+        shapeless(NS, "oak_planks_from_laythe_root", "minecraft:oak_planks", 4, ns("laythe_root"));
         shaped(NS, "paper_from_vinyl_planks", "minecraft:paper", 3, rows("LL"), "L", ns("vinyl_planks"));
 
         shaped(NS, "crafting/stonebrick", "minecraft:stone_bricks", 4, rows("SS", "SS"), "S", "#c:stones");

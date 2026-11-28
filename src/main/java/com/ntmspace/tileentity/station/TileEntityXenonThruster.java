@@ -4,14 +4,14 @@ import com.hbm.api.energymk2.IEnergyReceiverMK2;
 import com.hbm.api.fluidmk2.IFluidStandardReceiverMK2;
 import com.hbm.inventory.fluid.Fluids;
 import com.hbm.inventory.fluid.tank.FluidTankNTM;
-import com.hbm.lib.DirPos;
 import com.hbm.lib.ForgeDirection;
+import com.hbm.module.portmanager.ModulePortManFluidAdaptive;
+import com.hbm.module.portmanager.ModulePortManPower;
 import com.hbm.tileentity.MachineCore;
 import com.hbm.tileentity.TileEntityMachineBase;
 import com.hbm.tileentity.GraphResident;
 import com.hbm.tileentity.TilePort.PortDef;
 import com.hbm.util.BobMathUtil;
-import com.ntmspace.block.machine.MachinePorts;
 import com.ntmspace.fluid.trait.FT_Rocket;
 import com.ntmspace.orbit.Orbit;
 import com.ntmspace.orbit.Propulsion;
@@ -33,7 +33,7 @@ import net.minecraft.world.phys.AABB;
 /**
  * hbm-space's {@code TileEntityXenonThruster}: an ion engine that burns xenon (4,000 mB tank) and 5,000 HE per mB burned
  * (20 MHE buffer) for 1.4 MN of thrust; ten seconds to start and ten to cool. It powers the station only facing west
- * (prograde) and only in orbit. Power and xenon come in at the three blocks behind it.
+ * (prograde) and only in orbit. Power and xenon come in at the back of the core row.
  */
 public class TileEntityXenonThruster extends TileEntityMachineBase implements Propulsion, IFluidStandardReceiverMK2, IEnergyReceiverMK2, OrbitConnector, GraphResident {
 
@@ -51,9 +51,15 @@ public class TileEntityXenonThruster extends TileEntityMachineBase implements Pr
 
     public int fuelCost;
 
+    protected final ModulePortManFluidAdaptive moduleFluidPorts;
+    protected final ModulePortManPower modulePowerPorts;
+
     public TileEntityXenonThruster(BlockPos pos, BlockState state) {
         super(StationBlocks.XENON_THRUSTER_BE.get(), pos, state, 0);
         tanks = new FluidTankNTM[] {new FluidTankNTM(Fluids.XENON, 4_000)};
+
+        moduleFluidPorts = new ModulePortManFluidAdaptive(this).setInputTanks(getReceivingTanks());
+        modulePowerPorts = new ModulePortManPower(this);
     }
 
     @Override
@@ -87,14 +93,14 @@ public class TileEntityXenonThruster extends TileEntityMachineBase implements Pr
     public static void serverTick(Level level, BlockPos pos, BlockState state, TileEntityXenonThruster te) {
         if (!Orbit.inOrbit(level)) return;
 
+        te.updatePorts();
+
         if (!te.hasRegistered) {
             if (te.isFacingPrograde()) te.registerPropulsion();
             te.hasRegistered = true;
             te.isOn = false;
         }
 
-        te.setupAllPorts(te.getPorts());
-        te.updatePortPIFIFO();
         te.setChanged();
         te.networkPackNT();
     }
@@ -110,32 +116,37 @@ public class TileEntityXenonThruster extends TileEntityMachineBase implements Pr
         }
     }
 
+    /** The xenon and power ports, which 1.7 updates first each tick in orbit (GameTests call it outside orbit). */
+    public void updatePorts() {
+        moduleFluidPorts.update(getPorts());
+        modulePowerPorts.update(getPorts());
+    }
+
     private PortDef[] cachedPorts;
 
     public PortDef[] getPorts() {
-        if (cachedPorts == null) cachedPorts = MachinePorts.ports(level, getBlockState(), worldPosition, getConPos());
+        if (cachedPorts == null) cachedPorts = ports(worldPosition, MachineCore.facing(getBlockState()));
         return cachedPorts;
     }
 
-    /** 1.7 {@code getConPos}: the three blocks behind the engine (relative to its facing). */
-    public DirPos[] getConPos() {
-        return conPos(worldPosition, MachineCore.facing(getBlockState()));
-    }
-
-    /** {@link #getConPos} for a core at {@code core} facing {@code dir}. */
-    public static DirPos[] conPos(BlockPos core, ForgeDirection dir) {
+    /** 1.7 {@code getPorts} for a core at {@code core} facing {@code dir}: the core row, open to the back. */
+    public static PortDef[] ports(BlockPos core, ForgeDirection dir) {
         ForgeDirection rot = dir.getRotation(ForgeDirection.UP);
         int x = core.getX(), y = core.getY(), z = core.getZ();
-        return new DirPos[] {
-                new DirPos(x - dir.offsetX - rot.offsetX, y, z - dir.offsetZ - rot.offsetZ, dir),
-                new DirPos(x - dir.offsetX, y, z - dir.offsetZ, dir),
-                new DirPos(x - dir.offsetX + rot.offsetX, y, z - dir.offsetZ + rot.offsetZ, dir),
+        return new PortDef[] {
+                PortDef.make(x - rot.offsetX, y, z - rot.offsetZ, dir.getOpposite()),
+                PortDef.make(x, y, z, dir.getOpposite()),
+                PortDef.make(x + rot.offsetX, y, z + rot.offsetZ, dir.getOpposite()),
         };
     }
 
     /** 1.7 {@code invalidate} and {@code onChunkUnload}. */
     @Override
     public void setRemoved() {
+        if (level != null) {
+            moduleFluidPorts.destroy();
+            modulePowerPorts.destroy();
+        }
         super.setRemoved();
         if (hasRegistered) {
             unregisterPropulsion();

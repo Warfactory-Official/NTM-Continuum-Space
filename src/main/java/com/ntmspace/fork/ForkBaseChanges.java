@@ -12,7 +12,7 @@ import com.ntmspace.registry.SpaceItems;
 import net.minecraft.world.item.ItemStack;
 import com.hbm.blocks.ModPowerGenBlocks;
 import com.hbm.blocks.generic.BlockBobble.BobbleType;
-import com.hbm.blocks.machine.MachineElectrolyser;
+import com.hbm.blocks.machine.MachineCapacitor;
 import com.hbm.blocks.machine.ModMachineBlocks;
 import com.hbm.blocks.multiblock.BlockMultiblockCore;
 import com.hbm.creativetabs.HbmTab;
@@ -34,7 +34,6 @@ import dev.golem.core.data.GolemComponent;
 import dev.golem.core.dejson.Variants;
 import dev.golem.core.dejson.Models;
 import dev.golem.core.hook.Verdict;
-import dev.golem.core.registry.BlockEntities;
 import dev.golem.core.registry.BlockTag;
 import dev.golem.core.registry.DeferredRegister;
 import dev.golem.core.registry.Loot;
@@ -44,14 +43,12 @@ import dev.golem.core.world.Compat;
 import dev.golem.core.world.ItemModels;
 import java.util.List;
 import net.minecraft.core.registries.Registries;
-import net.minecraft.network.chat.Component;
 import net.minecraft.tags.TagKey;
 import net.minecraft.world.entity.EntityType;
 import net.minecraft.world.item.BlockItem;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.SoundType;
-import net.minecraft.world.level.block.entity.BlockEntityType;
 
 /**
  * The rest of hbm-space's small changes to base-HBM classes (fork-content triage item 7, part 3), each through an HBM
@@ -61,9 +58,7 @@ import net.minecraft.world.level.block.entity.BlockEntityType;
  *       they just placed walks out of it ({@code BlockMultiblockCore.wallPlacement/walkOutAfterPlacing}, V-175);</li>
  *   <li>{@code CranePartitioner}: 96 queue and 8 declog slots (V-176);</li>
  *   <li>{@code PneumoTube}: a compressor takes any non-corrosive, non-antimatter gas a fluid identifier picks (V-177);</li>
- *   <li>{@code MachineElectrolyser}: two more proxies and four more connection points on the long sides (V-178);</li>
- *   <li>{@code MachineCapacitor}: the creative {@code capacitor_complex} ("Wavefunction Capacitor (LEGACY)", 1e17 HE,
- *       cadmium-plated), still a working store with its capacity lines first (V-179);</li>
+ *   <li>{@code MachineCapacitor}: the creative, decorative {@code capacitor_complex};</li>
  *   <li>{@code IToolAreaAbility}: with {@code recursiveStone} off the vein miner also stops at anything in the "stone"
  *       or "cobblestone" ore dictionary entries (the {@code c:stones} / {@code c:cobblestones} item tags, V-180);</li>
  *   <li>{@code EntityTNTPrimedBase}: primed charges tumble (V-181);</li>
@@ -85,34 +80,21 @@ public final class ForkBaseChanges {
     public static final DeferredRegister.BlockEntityTypes BLOCK_ENTITIES = DeferredRegister.createBlockEntityTypes(NS);
     private static final Registrar REG = Registrar.of(BLOCKS, ITEMS, BLOCK_ENTITIES);
 
-    /** A carried complex capacitor keeps its stored charge and actual capacity together. */
+    /** Kept registered so stacks that carry it still load. */
     public static final GolemComponent<CapacitorCharge> CAPACITOR_STATE =
             GolemComponent.of(NS, "capacitor_state", CapacitorCharge.CODEC);
-    /** hbm-space {@code MachineCapacitor.addInformation}'s lines for {@code capacitor_complex}, after the description. */
-    public static final List<String> COMPLEX_LORE = List.of(
-            "TaCdSa236-7 N-Boosted Anti Mass core surrounded by",
-            "Flashlead antimatter lattice in a BF Stabilization Matrix",
-            "subjected to the Ferric Osmiridium-Lutece",
-            "ψ(x,t)=Aeiℏ(px−Et) Wavefunction.");
 
-    /**
-     * hbm-space {@code capacitor_complex}: {@code MachineCapacitor(iron, 100_000_000_000_000_000L, "complex")}, hardness 5,
-     * resistance 10, machine tab, {@code @Deprecated} like the other legacy capacitors (no recipe: creative only).
-     */
-    public static final RegistryObject<ComplexCapacitor> CAPACITOR_COMPLEX = REG.block("capacitor_complex",
-                    p -> new ComplexCapacitor(p, 100_000_000_000_000_000L),
+    /** hbm-space {@code capacitor_complex}: a decorative {@code MachineCapacitor}, creative only. */
+    public static final RegistryObject<MachineCapacitor> CAPACITOR_COMPLEX = REG.block("capacitor_complex",
+                    MachineCapacitor::new,
                     p -> p.strength(5.0F, 10.0F).sound(SoundType.METAL).requiresCorrectToolForDrops().noOcclusion())
             .transform(Presets.statesOnly(Variants.facingUp()))
             .icon(d -> d.models(Models.blockItem(NS + ":block/capacitor_complex")))
             .loot(Loot.self()).tag(BlockTag.PICKAXE);
     public static final RegistryObject<BlockItem> CAPACITOR_COMPLEX_ITEM = REG.<BlockItem>item("capacitor_complex",
                     (Item.Properties p) -> new EnergyNetBlockItem(CAPACITOR_COMPLEX.get(), Compat.blockDescription(p),
-                            stack -> CAPACITOR_COMPLEX.get().tooltip(stack, COMPLEX_LORE.stream()
-                                    .<Component>map(Component::literal).toList())))
+                            stack -> List.of()))
             .tab(HbmTab.MACHINES);
-    public static final RegistryObject<BlockEntityType<ComplexCapacitorEntity>> CAPACITOR_COMPLEX_BE =
-            REG.blockEntity("capacitor_complex", () -> BlockEntities.serverTicking(ComplexCapacitorEntity::new,
-                    ComplexCapacitorEntity::serverTick, CAPACITOR_COMPLEX.get()));
 
     private ForkBaseChanges() {}
 
@@ -131,9 +113,7 @@ public final class ForkBaseChanges {
         TileEntityCranePartitioner.inputCount = 96;
         TileEntityCranePartitioner.outputCount = 8;
         TileEntityPneumoTube.anyGas = true;
-        MachineElectrolyser.sidePorts = true;
-        // hbm-space's electrolyser hull and the damaged machines' wrecks on HBM's items (MachineItemDeclarations)
-        ItemModels.alias(ModMachineBlocks.machine_electrolyser, NS, "machine_electrolyser");
+        // the damaged machines' wrecks on HBM's items (MachineItemDeclarations)
         ItemModels.alias(ModPowerGenBlocks.MACHINE_CHUNGUS, NS, "machine_chungus");
         ItemModels.alias(ModMachineBlocks.machine_condenser_powered, NS, "machine_condenser_powered");
         EntityTntNtm.spin = true;

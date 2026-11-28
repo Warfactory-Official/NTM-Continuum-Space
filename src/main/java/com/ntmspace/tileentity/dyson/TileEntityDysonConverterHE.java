@@ -1,13 +1,11 @@
 package com.ntmspace.tileentity.dyson;
 
 import com.hbm.api.energymk2.IEnergyProviderMK2;
-import com.hbm.lib.DirPos;
 import com.hbm.lib.ForgeDirection;
 import com.hbm.particle.helper.HbmEffectNT;
 import com.hbm.tileentity.MachineCore;
 import com.hbm.tileentity.TileEntityLoadedBase;
 import com.hbm.tileentity.TilePort.PortDef;
-import com.ntmspace.block.machine.MachinePorts;
 import com.ntmspace.dyson.DysonConverter;
 import com.ntmspace.registry.DysonContent;
 import net.minecraft.core.BlockPos;
@@ -42,17 +40,18 @@ public class TileEntityDysonConverterHE extends TileEntityLoadedBase implements 
         te.step(level);
     }
 
-    /** The power output: 1.7 {@code DirPos(core + dir * 5, dir)} with {@code dir} the facing's opposite. */
-    public static DirPos output(BlockPos core, ForgeDirection facing) {
-        ForgeDirection dir = facing.getOpposite();
-        return new DirPos(core.getX() + dir.offsetX * 5, core.getY(), core.getZ() + dir.offsetZ * 5, dir);
-    }
-
     private PortDef[] cachedPorts;
 
     public PortDef[] getPorts() {
-        if (cachedPorts == null) cachedPorts = MachinePorts.ports(level, getBlockState(), worldPosition, output(worldPosition, MachineCore.facing(getBlockState())));
+        if (cachedPorts == null) cachedPorts = ports(worldPosition, MachineCore.facing(getBlockState()));
         return cachedPorts;
+    }
+
+    public static PortDef[] ports(BlockPos core, ForgeDirection facing) {
+        ForgeDirection dir = facing.getOpposite();
+        return new PortDef[] {
+                PortDef.make(core.getX() + dir.offsetX * 4, core.getY(), core.getZ() + dir.offsetZ * 4, dir),
+        };
     }
 
     public void step(Level level) {

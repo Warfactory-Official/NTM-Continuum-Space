@@ -11,8 +11,7 @@ import dev.golem.harness.api.*;
  *       player (01-ceiling-placement); positive signal: the core block.</li>
  *   <li>the refueler's look overlay: its title and the tank's fluid name in the fluid's colour (02-refueler-overlay).</li>
  *   <li>a primed charge tumbling (03/04-tnt-tumble, two frames ten ticks apart).</li>
- *   <li>{@code ntmspace:capacitor_complex} on the floor, cadmium-plated (05-capacitor-complex). Its tooltip order is
- *       covered by the GameTest {@code fork_base_machines}.</li>
+ *   <li>{@code ntmspace:capacitor_complex} on the floor, cadmium-plated and decorative (05-capacitor-complex).</li>
  *   <li>neutron activation, off and on (06/07 tooltips, {@code space_neutron_check} log lines); see
  *       {@link #neutronActivation}.</li>
  *   <li>hbm-space's dosimeter click gate and ash-glasses cloud rate (08 radon through the glasses); see

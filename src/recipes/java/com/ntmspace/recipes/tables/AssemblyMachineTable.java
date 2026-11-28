@@ -33,6 +33,7 @@ import com.hbm.items.ModFuelItems;
 import com.hbm.items.ModIngredientItems;
 import com.hbm.items.ModIntermediateItems;
 import com.hbm.items.ModItems;
+import com.hbm.items.ModSatelliteItems;
 import com.hbm.items.machine.ItemBatteryPack.EnumBatteryPack;
 import com.ntmspace.fluid.SpaceFluids;
 import com.ntmspace.fork.ForkContent;
@@ -63,8 +64,8 @@ import net.minecraft.world.level.block.Blocks;
 import com.hbm.items.ModMachineItems;
 
 /**
- * hbm-space {@code AssemblyMachineRecipes.registerDefaults}: the rows hbm-space adds to HBM's table, and the two it changes
- * ({@code ass.electrolyzer}, {@code ass.entanglementkit}: they replace HBM's rows, removed by
+ * hbm-space {@code AssemblyMachineRecipes.registerDefaults}: the rows hbm-space adds to HBM's table, and the three it changes
+ * ({@code ass.electrolyzer}, {@code ass.entanglementkit}, {@code ass.relaysat}: they replace HBM's rows, removed by
  * {@code recipe_removals/assembly_machine.json}, and take HBM's {@code order}). Added rows carry no {@code order}: they
  * sort after HBM's rows, by id. 1.7's {@code GeneralConfig.enable528 ? a : b} fluid is one row per branch, the second
  * named {@code <id>_528}, each carrying its branch as {@code requires}. Rows hbm-space changes only by a port spelling
@@ -182,18 +183,26 @@ public final class AssemblyMachineTable extends GenericTableSource<GenericRecipe
                 .inputItems(
                         STEEL.plateCast().count(8),
                         CU.plate().count(16),
-                        TI.shell().count(3),
                         RUBBER.ingot().count(8),
                         new ComparableStack(ModItems.ingot_firebrick.get(), 16),
-                        new ComparableStack(ModItems.coil_copper.get(), 16),
-                        new ComparableStack(ModIntermediateItems.circuit(EnumCircuitType.BASIC), 8))
+                        new ComparableStack(ModMachineItems.arc_electrode.get(), 1),
+                        new ComparableStack(ModIntermediateItems.circuit(EnumCircuitType.BASIC), 4))
                 .inputItemsEx(
                         new ComparableStack(ModIntermediateItems.expensive(EnumExpensiveType.HEAVY_FRAME), 4),
-                        TI.shell().count(3),
                         RUBBER.ingot().count(8),
                         new ComparableStack(ModItems.ingot_firebrick.get(), 16),
                         new ComparableStack(ModItems.coil_copper.get(), 16),
                         new ComparableStack(ModIntermediateItems.circuit(EnumCircuitType.ANALOG), 24))));
+
+        // 1.7 makes sat_relay (the radar relay), not the relay satellite
+        remove("hbm:assembly_machine/relaysat");
+        this.register(replacing(new GenericRecipe("ass.relaysat").setup(1_200, 25_000).outputItems(new ItemStack(ModSatelliteItems.sat_relay.get(), 1))
+                .inputItems(
+                        AL.shell().count(16),
+                        new ComparableStack(ModItems.photo_panel.get(), 16),
+                        new ComparableStack(ModIntermediateItems.circuit(EnumCircuitType.BASIC), 24),
+                        new ComparableStack(ModIngredientItems.part(EnumPartType.LDE), 16),
+                        new ComparableStack(ModIntermediateItems.circuit(EnumCircuitType.CONTROLLER), 1))));
 
         this.register(new GenericRecipe("ass.nukeantimatter").setup(400, 100).outputItems(new ItemStack(ForkContent.NUKE_ANTIMATTER.get().asItem(), 1))
                 .inputItems(

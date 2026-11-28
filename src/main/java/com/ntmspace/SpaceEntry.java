@@ -13,6 +13,7 @@ import com.ntmspace.fork.SpaceImpactEffects;
 import com.ntmspace.fork.SpacePedestalConditions;
 import com.ntmspace.fork.SpaceOilDetector;
 import com.ntmspace.fork.V1ArmorEffects;
+import com.ntmspace.recipe.SteelScrapsRecipe;
 import com.ntmspace.registry.SpaceCreativeOrder;
 import com.ntmspace.registry.SpaceDashSounds;
 import com.ntmspace.registry.SpaceParticles;
@@ -132,6 +133,7 @@ public final class SpaceEntry implements ModEntry {
         com.ntmspace.registry.LeftoverContent.init();
         OverworldFlora.init();
         OverworldFloraData.init();
+        SteelScrapsRecipe.init();
         SpaceCreativeOrder.init();
         com.ntmspace.trait.TraitSync.init();
         V1ArmorEffects.init();

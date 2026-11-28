@@ -9,8 +9,9 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 /**
- * A charged HBM diesel feeds Space's complex capacitor (west input face) through another mod's cable: Mekanism's where
- * loaded, else Pipez's. Fabric has no cable mod on disk, so there both faces are asked through Team Reborn Energy.
+ * A charged HBM diesel feeds Space's CO2 scrubber (power in on every side) through another mod's cable:
+ * Mekanism's where loaded, else Pipez's. Fabric has no cable mod on disk, so there both faces are asked through Team
+ * Reborn Energy.
  */
 public final class GhSpaceForeignCables implements Scenario {
 
@@ -36,7 +37,7 @@ public final class GhSpaceForeignCables implements Scenario {
         if (cable != null) Fixtures.placeOnTop(c, cable, 0, Y, Z);
         else Fixtures.setBlock(c, 0, G, Z, "hbm:test_fe_cell");
         Fixtures.setBlock(c, -1, G, Z, "hbm:machine_diesel");
-        Fixtures.setBlock(c, 1, G, Z, "ntmspace:capacitor_complex[facing=west]");
+        Fixtures.setBlock(c, 1, G, Z, "ntmspace:air_scrubber");
         c.cmd("data merge block -1 " + G + " " + Z + " {powerTime:50000L}");
         // a Pipez pipe carries nothing until one end is wrenched to extract: the generator end, as a player sets it
         if ("pipez:energy_pipe".equals(cable)) {
@@ -65,16 +66,16 @@ public final class GhSpaceForeignCables implements Scenario {
         c.waitTicks(10);
         c.screenshot("foreign-01-placed");
 
-        check(exposes(c, 1, "west"), "the Space capacitor exposes energy on its west face");
+        check(exposes(c, 1, "west"), "the Space scrubber exposes energy on its west face");
         check(exposes(c, -1, "east"), "the generator exposes energy on its east face");
         c.waitServerTicks(100);
         c.screenshot("foreign-02-after-100-ticks");
 
-        long generator = power(c, -1), capacitor = power(c, 1);
-        System.out.println("[Foreign] " + c.node() + " generator " + generator + " capacitor " + capacitor);
+        long generator = power(c, -1), scrubber = power(c, 1);
+        System.out.println("[Foreign] " + c.node() + " generator " + generator + " scrubber " + scrubber);
         check(generator < 50_000L, "the generator gave power into the foreign block: " + generator);
         if (cable != null) {
-            check(capacitor > 0L, "the foreign cable fed the Space capacitor: " + capacitor);
+            check(scrubber > 0L, "the foreign cable fed the Space scrubber: " + scrubber);
             // Mekanism keeps its connections in the block entity and draws them; Pipez states them in the block
             if (cable.startsWith("pipez")) check(arms(c).contains("east=true") && arms(c).contains("west=true"),
                     "the pipe connects to both machines: " + arms(c));

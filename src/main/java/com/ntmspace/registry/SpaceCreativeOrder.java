@@ -79,8 +79,8 @@ public final class SpaceCreativeOrder {
         ModTabs.insertAfter(HbmTab.MACHINES, "hbm:machine_catalytic_reformer", "ntmspace:machine_milk_reformer");
         ModTabs.insertAfter(HbmTab.MACHINES, "hbm:machine_hephaestus", "ntmspace:machine_solar");
         ModTabs.insertAfter(HbmTab.MACHINES, "hbm:machine_condenser_powered", "ntmspace:machine_radiator");
-        ModTabs.insertAfter(HbmTab.MACHINES, "hbm:machine_lpw2", "ntmspace:machine_htr3", "ntmspace:machine_htrf4",
-                "ntmspace:machine_htrf4neo", "ntmspace:machine_xenon_thruster");
+        ModTabs.insertAfter(HbmTab.MACHINES, "hbm:machine_lpw2", "ntmspace:machine_htr3", "ntmspace:machine_htrf4neo",
+                "ntmspace:machine_xenon_thruster");
         // The first machine-tab item follows the station, Dyson and orrery block registrations; HBM lists the drone.
         ModTabs.insertBefore(HbmTab.MACHINES, "hbm:drone_patrol", "ntmspace:atmosphere_editor", "ntmspace:transporter_rocket",
                 "ntmspace:orbital_station_port", "ntmspace:orbital_station_launcher", "ntmspace:orbital_station_computer",
@@ -168,9 +168,14 @@ public final class SpaceCreativeOrder {
         // ModItems:5752, 6649-6653, 7177: charge variants and the remaining item anchors.
         ModTabs.displayStacks(HbmTab.CONTROL, SpaceMobs.CORE_ANGEL, () -> SpaceMobs.CORE_ANGEL.get().creativeStacks());
         ModTabs.insertAfter(HbmTab.CONTROL, "hbm:cube_power", "ntmspace:core_angel");
-        // 1.7 science variants before Gerald: sensor, gerald, chip, dyson relay, coord.
-        ModTabs.insertAfter(HbmTab.MISSILES, "hbm:satellite_science_sensor", "hbm:sat_gerald", "hbm:sat_chip",
-                "ntmspace:sat_dyson_relay", "hbm:sat_coord");
+        // 1.7 ModItems: the two science modules, the ID chip, then the satellites in registration order.
+        ModTabs.insertAfter(HbmTab.MISSILES, "hbm:satellite_science_assembler", "hbm:satellite_science_sensor",
+                "hbm:sat_chip", "hbm:satellite_spy", "hbm:satellite_scanner", "hbm:satellite_radar",
+                "hbm:satellite_death_ray", "hbm:satellite_relay", "hbm:satellite_xenium_resonator",
+                "hbm:satellite_miner_astro", "hbm:satellite_miner_lunar", "hbm:sat_gerald",
+                "hbm:satellite_precision_laser", "hbm:satellite_detector", "hbm:satellite_ray_scan",
+                "hbm:satellite_science", "ntmspace:sat_dyson_relay", "hbm:sat_coord", "hbm:sat_designator",
+                "hbm:sat_relay");
         // 1.7 ModBlocks:3338/3398: the antimatter bomb precedes fstbmb, the oil barrel follows vitrified.
         ModTabs.insertBefore(HbmTab.BOMBS, "hbm:nuke_fstbmb", "ntmspace:nuke_antimatter");
         ModTabs.insertAfter(HbmTab.BOMBS, "hbm:vitrified_barrel", "ntmspace:oil_barrel");

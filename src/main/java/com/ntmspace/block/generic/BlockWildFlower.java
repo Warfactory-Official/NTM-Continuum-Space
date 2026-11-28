@@ -19,8 +19,8 @@ import net.minecraft.world.level.block.state.BlockState;
  * dirt, farmland, dead or oily dirt ({@link BlockTerrainPlant#isFlowerGround}); it never grows by itself; bone meal
  * always succeeds and "grows" it by dropping its harvest where it stands ({@code dropBlockAsItem}). Harvested, the
  * strawberries give one {@code ntmspace:strawberry} and the mint one {@code ntmspace:mint_leaves} (hbm-space's
- * {@code getItemDropped}; its mint kept the flower's metadata 7 as the leaves' damage, which a plain item has no use
- * for) - the loot tables say so. Earth generation: {@code world.WildFlowers}.
+ * {@code getItemDropped}, both through {@code getDropsWithoutDamage}) - the loot tables say so. Earth generation:
+ * {@code world.WildFlowers}.
  */
 public class BlockWildFlower extends BlockTerrainPlant implements CompatBonemealableBlock {
 

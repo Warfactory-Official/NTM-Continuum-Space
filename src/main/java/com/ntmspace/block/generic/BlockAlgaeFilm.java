@@ -42,7 +42,7 @@ public class BlockAlgaeFilm extends CompatBlock implements TickingBlock, ILookOv
     @Override
     public MachineCaps caps() {
         return MachineCaps.of(LeftoverContent.ALGAE_FILM_BE).fluidIn().fluidOut()
-                .fluidFaces(TileEntityAlgaeFilm.class, (be, side) -> side.getAxis() == be.getBlockState().getValue(FACING).getClockWise().getAxis());
+                .fluidFaces(TileEntityAlgaeFilm.class, (be, side) -> side != Direction.UP);
     }
 
     public BlockAlgaeFilm(Properties properties) {

@@ -5,6 +5,7 @@ import com.hbm.inventory.material.MaterialShapes;
 import com.hbm.inventory.material.Mats;
 import com.hbm.inventory.material.NTMMaterial;
 import com.hbm.items.ModAutogenItems;
+import com.hbm.items.machine.ItemScraps;
 import com.ntmspace.NtmSpace;
 import dev.golem.core.Ids;
 import dev.golem.core.data.DataFiles;
@@ -163,6 +164,9 @@ public final class RecipeChangeCraftingGameTests {
         ItemStack c = stack("ntmspace:ingot_stainless");
         craft(level, errors, "crane_inserter stainless", 3, 3, List.of(c, c, c, c, ItemStack.EMPTY, c, c,
                 stack("hbm:conveyor_wand_regular"), c), "hbm:crane_inserter", 8);
+        craft(level, errors, "planks from laythe_root", 1, 1, List.of(stack("ntmspace:laythe_root")), "minecraft:oak_planks", 4);
+        steelScraps(level, errors, 1, "ntmspace:powder_coke_coal");
+        steelScraps(level, errors, 4, "ntmspace:powder_coke_petroleum");
         // SmeltingRecipes
         smelt(level, errors, "ntmspace:crystal_nickel", "ntmspace:ingot_nickel", 2);
         smelt(level, errors, "ntmspace:flour", "minecraft:bread", 1);
@@ -188,6 +192,20 @@ public final class RecipeChangeCraftingGameTests {
         ItemStack r = result.get();
         if (!String.valueOf(BuiltInRegistries.ITEM.getKey(r.getItem())).equals(out) || r.getCount() != count) {
             errors.add(what + ": got " + BuiltInRegistries.ITEM.getKey(r.getItem()) + " x" + r.getCount());
+        }
+    }
+
+    /** The four-ingot grid mixes one coal dust in with the coke. */
+    private static void steelScraps(ServerLevel level, List<String> errors, int ingots, String coke) {
+        List<ItemStack> grid = new ArrayList<>(Collections.nCopies(9, ItemStack.EMPTY));
+        for (int i = 0; i < ingots; i++) {
+            grid.set(i, stack("hbm:powder_iron"));
+            grid.set(4 + i, stack(ingots == 4 && i == 0 ? "hbm:powder_coal" : coke));
+        }
+        Mats.MaterialStack made = Recipes.craftingResult(level, 3, 3, grid).map(ItemScraps::getMats).orElse(null);
+        if (made == null || made.material != Mats.MAT_STEEL || made.amount != MaterialShapes.INGOT.quantity * ingots) {
+            errors.add("steel scraps x" + ingots + " with " + coke + ": "
+                    + (made == null ? "no recipe" : made.material.name + " " + made.amount));
         }
     }
 

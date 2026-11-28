@@ -92,7 +92,7 @@ public class TileEntityAirPump extends TileEntityLoadedBase implements IFluidSta
     }
 
     private void updateServer(Level level) {
-        setupAllPorts(getPorts());
+        setupFluidPorts(getPorts());
         updatePortFIFO();
         if (onTicks > 0) onTicks--;
 
@@ -236,7 +236,7 @@ public class TileEntityAirPump extends TileEntityLoadedBase implements IFluidSta
 
     private PortDef[] cachedPorts;
 
-    /** 1.7 {@code subscribeToAllAround}: the vent takes its gas on all six sides. */
+    /** 1.7 {@code TilePortShapes.around}: the vent takes its gas on all six sides, and has no power port. */
     public PortDef[] getPorts() {
         if (cachedPorts == null) cachedPorts = TilePortShapes.around(worldPosition.getX(), worldPosition.getY(), worldPosition.getZ());
         return cachedPorts;

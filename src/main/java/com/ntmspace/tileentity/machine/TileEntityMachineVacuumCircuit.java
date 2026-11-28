@@ -7,7 +7,6 @@ import com.hbm.api.energymk2.IEnergyReceiverMK2;
 import com.hbm.inventory.UpgradeManagerNT;
 import com.hbm.inventory.recipes.loader.GenericRecipe;
 import com.hbm.items.machine.ItemMachineUpgrade.UpgradeType;
-import com.hbm.lib.DirPos;
 import com.hbm.lib.ForgeDirection;
 import com.hbm.lib.Library;
 import com.hbm.particle.helper.HbmEffectNT;
@@ -16,7 +15,6 @@ import com.hbm.tileentity.MachineCore;
 import com.hbm.tileentity.TileEntityMachineBase;
 import com.hbm.tileentity.TilePort.PortDef;
 import com.ntmspace.atmosphere.AtmosphereHandler;
-import com.ntmspace.block.machine.MachinePorts;
 import com.ntmspace.inventory.machine.ContainerVacuumCircuit;
 import com.ntmspace.recipe.VacuumCircuitRecipes;
 import com.ntmspace.recipe.VacuumCircuitRecipes.VacuumCircuitRecipe;
@@ -226,22 +224,23 @@ public class TileEntityMachineVacuumCircuit extends TileEntityMachineBase implem
     private PortDef[] cachedPorts;
 
     public PortDef[] getPorts() {
-        if (cachedPorts == null) cachedPorts = MachinePorts.ports(level, getBlockState(), worldPosition, conPos(worldPosition));
+        if (cachedPorts == null) cachedPorts = ports(worldPosition);
         return cachedPorts;
     }
 
-    /** 1.7 {@code getConPos}: two points beyond each side of the 3 x 3 (world directions, it does not turn). */
-    public static DirPos[] conPos(BlockPos core) {
+    /** 1.7 {@code getPorts}: the four corners, in world directions (it does not turn). Each corner is listed twice, and a
+     * power port that finds a node on its cell takes that one over, so only the X faces carry power, as in 1.7. */
+    public static PortDef[] ports(BlockPos core) {
         int x = core.getX(), y = core.getY(), z = core.getZ();
-        return new DirPos[] {
-                new DirPos(x + 2, y, z + 1, Library.POS_X),
-                new DirPos(x + 2, y, z - 1, Library.POS_X),
-                new DirPos(x - 2, y, z + 1, Library.NEG_X),
-                new DirPos(x - 2, y, z - 1, Library.NEG_X),
-                new DirPos(x + 1, y, z + 2, Library.POS_Z),
-                new DirPos(x - 1, y, z + 2, Library.POS_Z),
-                new DirPos(x + 1, y, z - 2, Library.NEG_Z),
-                new DirPos(x - 1, y, z - 2, Library.NEG_Z),
+        return new PortDef[] {
+                PortDef.make(x + 1, y, z + 1, Library.POS_X),
+                PortDef.make(x + 1, y, z - 1, Library.POS_X),
+                PortDef.make(x - 1, y, z + 1, Library.NEG_X),
+                PortDef.make(x - 1, y, z - 1, Library.NEG_X),
+                PortDef.make(x + 1, y, z + 1, Library.POS_Z),
+                PortDef.make(x - 1, y, z + 1, Library.POS_Z),
+                PortDef.make(x + 1, y, z - 1, Library.NEG_Z),
+                PortDef.make(x - 1, y, z - 1, Library.NEG_Z),
         };
     }
 

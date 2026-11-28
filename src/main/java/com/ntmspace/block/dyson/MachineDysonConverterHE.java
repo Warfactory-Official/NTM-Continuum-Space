@@ -2,7 +2,6 @@ package com.ntmspace.block.dyson;
 
 import com.hbm.api.energymk2.IEnergyConnectorBlock;
 import com.hbm.blocks.multiblock.BlockMultiblockMachine;
-import com.hbm.lib.DirPos;
 import com.ntmspace.block.machine.MachinePorts;
 import com.ntmspace.tileentity.dyson.TileEntityDysonConverterHE;
 import net.minecraft.core.BlockPos;
@@ -29,17 +28,10 @@ public class MachineDysonConverterHE extends BlockMultiblockMachine implements I
     @Override public int[] getDimensions() { return new int[] {2, 0, 4, 4, 1, 1}; }
     @Override public int getOffset() { return 4; }
 
-    /** The {@code makeExtra} cell: four behind the core. */
-    public static BlockPos powerCell(BlockPos core, Direction facing) {
-        return core.relative(facing, -4);
-    }
-
     @Override
     protected void visitCells(BlockPos core, Direction facing, CellVisitor visitor) {
         super.visitCells(core, facing, visitor);
-        BlockPos cell = powerCell(core, facing);
-        DirPos out = TileEntityDysonConverterHE.output(core, MachinePorts.dir(facing));
-        MachinePorts.ports(core, facing, cell::equals, new DirPos[] {out}, ROLE_POWER, visitor);
+        MachinePorts.portFaces(core, facing, TileEntityDysonConverterHE.ports(core, MachinePorts.dir(facing)), ROLE_POWER, visitor);
     }
 
 }

@@ -25,8 +25,8 @@ import org.jspecify.annotations.Nullable;
 
 /**
  * hbm-space's {@code TileEntityChungus} damaged state over HBM's Leviathan: a damaged turbine (blown open, or placed by
- * an NBT structure) does nothing but sync; it is repaired with a blowtorch and six welded steel plates, eight steel
- * pipes, eight resistant-alloy ingots, 24 dense gold wires and a beryllium flywheel. Saved as {@code damaged}.
+ * an NBT structure) only runs its ports and syncs; it is repaired with a blowtorch and six welded steel plates, eight
+ * steel pipes, eight resistant-alloy ingots, 24 dense gold wires and a beryllium flywheel. Saved as {@code damaged}.
  *
  * The steam-tier lever clears both tanks while preserving their capacities and the current running state.
  */
@@ -41,6 +41,9 @@ public class TileEntityChungusSpace extends TileEntityChungus implements Damaged
 
     public static void serverTick(Level level, BlockPos pos, BlockState state, TileEntityChungusSpace turbine) {
         if (turbine.isDamaged()) {
+            turbine.setupPowerPorts(turbine.getPowerPorts());
+            turbine.setupFluidPorts(turbine.getFluidPorts());
+            turbine.updatePortPOFIFO();
             turbine.powerBuffer = 0;
             turbine.operational = false;
             turbine.stopTurning();

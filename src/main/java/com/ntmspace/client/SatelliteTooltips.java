@@ -1,12 +1,14 @@
 package com.ntmspace.client;
 
 import com.hbm.items.ISatChip;
+import com.hbm.items.ModSatelliteItems;
 import com.hbm.items.weapon.ItemCustomMissilePart;
 import com.hbm.saveddata.satellites.XSatelliteRegistry;
 import com.ntmspace.orbit.Orbit;
 import com.ntmspace.rocket.RocketFuels;
 import com.ntmspace.satellite.SpaceSatellites;
 import dev.golem.core.client.Tooltips;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
 import net.minecraft.ChatFormatting;
@@ -29,8 +31,14 @@ public final class SatelliteTooltips {
         if (type == null || !SpaceSatellites.isSpace(type)) return;
         var client = Minecraft.getInstance();
         int mass = SpaceSatellites.launchMass(stack);
-        var frequency = Language.getInstance().getOrDefault("satchip.frequency") + ": " + ISatChip.getFreqS(stack);
-        lines.removeIf(line -> line.getString().equals(frequency));
+        // HBM's chip lines: 1.7 ItemSatellite shows the frequency under Shift and Gerald's text after the orbit
+        var language = Language.getInstance();
+        var chipLines = new ArrayList<String>();
+        chipLines.add(language.getOrDefault("satchip.frequency") + ": " + ISatChip.getFreqS(stack));
+        if (stack.is(ModSatelliteItems.sat_gerald.get())) {
+            chipLines.addAll(List.of(language.getOrDefault("satchip.gerald.desc").split("\\$")));
+        }
+        lines.removeIf(line -> chipLines.contains(line.getString()));
         if (!(stack.getItem() instanceof ItemCustomMissilePart)) {
             lines.add(ItemCustomMissilePart.stat("size", ItemCustomMissilePart.PartSize.SIZE_20.getDisplay()));
             lines.add(ItemCustomMissilePart.stat("type", RocketFuels.SATELLITE.getDisplay()));
@@ -57,7 +65,7 @@ public final class SatelliteTooltips {
             }
             case "relay" -> lines.add(Component.translatable("item.ntmspace.sat.desc.foeq"));
             case "ntmspace:railgun" -> lines.add(Component.translatable("item.ntmspace.sat.desc.war"));
-            case "precision_laser", "detector", "ray_scan" -> {
+            case "precision_laser", "detector", "ray_scan", "science" -> {
             }
             default ->
                     lines.add(Component.translatable("item.ntmspace.sat.desc." + type.name().replace("ntmspace:", "")));

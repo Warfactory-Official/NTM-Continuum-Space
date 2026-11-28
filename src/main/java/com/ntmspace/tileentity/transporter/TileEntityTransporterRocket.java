@@ -5,6 +5,7 @@ import com.hbm.lib.DirPos;
 import com.hbm.lib.ForgeDirection;
 import com.hbm.particle.helper.HbmEffectNT;
 import com.hbm.tileentity.MachineCore;
+import com.hbm.tileentity.TilePort.PortDef;
 import com.ntmspace.fluid.trait.FT_Rocket;
 import com.ntmspace.inventory.ContainerTransporterRocket;
 import com.ntmspace.orbit.Orbit;
@@ -207,13 +208,15 @@ public class TileEntityTransporterRocket extends TileEntityTransporterBase imple
     }
 
     @Override
-    protected DirPos[] getConPos() {
-        return conPos(worldPosition, dir());
+    protected PortDef[] getFluidPorts() {
+        if (cachedFluidPorts == null) cachedFluidPorts = fluidPorts(worldPosition, dir());
+        return cachedFluidPorts;
     }
 
     @Override
-    protected DirPos[] getTankPos() {
-        return tankPos(worldPosition, dir());
+    protected PortDef[] getFuelPorts() {
+        if (cachedFuelPorts == null) cachedFuelPorts = fuelPorts(worldPosition, dir());
+        return cachedFuelPorts;
     }
 
     @Override
@@ -234,30 +237,28 @@ public class TileEntityTransporterRocket extends TileEntityTransporterBase imple
         };
     }
 
-    /** 1.7 {@code getConPos} for a core at {@code core} facing {@code dir}: the cargo duct points. */
-    public static DirPos[] conPos(BlockPos core, ForgeDirection dir) {
+    public static PortDef[] fluidPorts(BlockPos core, ForgeDirection dir) {
         ForgeDirection rot = dir.getRotation(ForgeDirection.UP);
         int x = core.getX(), y = core.getY(), z = core.getZ();
-        return new DirPos[] {
-                new DirPos(x + dir.offsetX * 2 - rot.offsetX, y, z + dir.offsetZ * 2 - rot.offsetZ, dir.getOpposite()),
-                new DirPos(x + dir.offsetX * 2 + rot.offsetX, y, z + dir.offsetZ * 2 + rot.offsetZ, dir.getOpposite()),
-                new DirPos(x - dir.offsetX * 2 - rot.offsetX, y, z - dir.offsetZ * 2 - rot.offsetZ, dir),
-                new DirPos(x - dir.offsetX * 2 + rot.offsetX, y, z - dir.offsetZ * 2 + rot.offsetZ, dir),
+        return new PortDef[] {
+                PortDef.make(x + dir.offsetX - rot.offsetX, y, z + dir.offsetZ - rot.offsetZ, dir),
+                PortDef.make(x + dir.offsetX + rot.offsetX, y, z + dir.offsetZ + rot.offsetZ, dir),
+                PortDef.make(x - dir.offsetX - rot.offsetX, y, z - dir.offsetZ - rot.offsetZ, dir.getOpposite()),
+                PortDef.make(x - dir.offsetX + rot.offsetX, y, z - dir.offsetZ + rot.offsetZ, dir.getOpposite()),
 
-                new DirPos(x + dir.offsetX - rot.offsetX, y + 1, z + dir.offsetZ - rot.offsetZ, ForgeDirection.UP),
-                new DirPos(x + dir.offsetX + rot.offsetX, y + 1, z + dir.offsetZ + rot.offsetZ, ForgeDirection.UP),
-                new DirPos(x - dir.offsetX - rot.offsetX, y + 1, z - dir.offsetZ - rot.offsetZ, ForgeDirection.UP),
-                new DirPos(x - dir.offsetX + rot.offsetX, y + 1, z - dir.offsetZ + rot.offsetZ, ForgeDirection.UP),
+                PortDef.make(x + dir.offsetX - rot.offsetX, y, z + dir.offsetZ - rot.offsetZ, ForgeDirection.UP),
+                PortDef.make(x + dir.offsetX + rot.offsetX, y, z + dir.offsetZ + rot.offsetZ, ForgeDirection.UP),
+                PortDef.make(x - dir.offsetX - rot.offsetX, y, z - dir.offsetZ - rot.offsetZ, ForgeDirection.UP),
+                PortDef.make(x - dir.offsetX + rot.offsetX, y, z - dir.offsetZ + rot.offsetZ, ForgeDirection.UP),
         };
     }
 
-    /** 1.7 {@code getTankPos}: the two fuel duct points. */
-    public static DirPos[] tankPos(BlockPos core, ForgeDirection dir) {
+    public static PortDef[] fuelPorts(BlockPos core, ForgeDirection dir) {
         ForgeDirection rot = dir.getRotation(ForgeDirection.UP);
         int x = core.getX(), y = core.getY(), z = core.getZ();
-        return new DirPos[] {
-                new DirPos(x + dir.offsetX - rot.offsetX * 3, y, z + dir.offsetZ - rot.offsetZ * 3, rot),
-                new DirPos(x - dir.offsetX - rot.offsetX * 3, y, z - dir.offsetZ - rot.offsetZ * 3, rot),
+        return new PortDef[] {
+                PortDef.make(x + dir.offsetX - rot.offsetX * 2, y, z + dir.offsetZ - rot.offsetZ * 2, rot.getOpposite()),
+                PortDef.make(x - dir.offsetX - rot.offsetX * 2, y, z - dir.offsetZ - rot.offsetZ * 2, rot.getOpposite()),
         };
     }
 

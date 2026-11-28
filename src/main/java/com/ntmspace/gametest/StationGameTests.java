@@ -1,13 +1,23 @@
 package com.ntmspace.gametest;
 
+import com.hbm.blocks.ModRadarUtilityBlocks;
 import com.hbm.blocks.machine.ModMachineBlocks;
 import com.hbm.blocks.multiblock.BlockMultiblockCore;
 import com.hbm.blocks.multiblock.MultiblockHandlerXR;
 import com.hbm.blocks.multiblock.MultiblockSurface;
+import com.hbm.capability.CapRole;
 import com.hbm.capability.MachineCaps;
+import com.hbm.inventory.fluid.FluidType;
+import com.hbm.inventory.fluid.tank.FluidTankNTM;
+import com.hbm.lib.DirPos;
 import com.hbm.lib.ForgeDirection;
+import com.hbm.tileentity.TilePort.PortDef;
+import com.hbm.tileentity.machine.TileEntityMachineTeleporter;
 import com.hbm.tileentity.machine.fusion.FusionLink;
 import com.hbm.tileentity.machine.fusion.TileEntityFusionTorus;
+import com.hbm.uninos.PortNodes;
+import com.hbm.uninos.networkproviders.FluidNetProvider;
+import com.hbm.uninos.networkproviders.PowerNetProvider;
 import com.ntmspace.fluid.SpaceFluids;
 import com.ntmspace.orbit.Orbit;
 import com.ntmspace.orbit.OrbitChunkGenerator;
@@ -15,26 +25,36 @@ import com.ntmspace.orbit.OrbitalStation;
 import com.ntmspace.orbit.StationData;
 import com.ntmspace.registry.StationBlocks;
 import com.ntmspace.tileentity.station.TileEntityMachineHTR3;
-import com.ntmspace.tileentity.station.TileEntityMachineHTRF4;
 import com.ntmspace.tileentity.station.TileEntityMachineHTRNeo;
 import com.ntmspace.tileentity.station.TileEntityOrbitalStation;
 import com.ntmspace.tileentity.station.TileEntityStationPropulsionCreative;
 import com.ntmspace.tileentity.station.TileEntityXenonThruster;
 import com.ntmspace.world.SolarSystem;
+import dev.golem.core.Ids;
 import dev.golem.core.gametest.GameTestHelpers;
 import dev.golem.core.gametest.GameTests;
 import java.util.ArrayList;
 import java.util.List;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
+import net.minecraft.core.GlobalPos;
+import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.gametest.framework.GameTestHelper;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.nbt.NbtOps;
 import net.minecraft.nbt.Tag;
 import net.minecraft.network.chat.Component;
 import net.minecraft.server.level.ServerLevel;
+import net.minecraft.world.entity.item.ItemEntity;
+import net.minecraft.world.entity.monster.Slime;
+import net.minecraft.world.item.Item;
+import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.item.Items;
 import net.minecraft.world.level.NoiseColumn;
+import net.minecraft.world.level.block.Block;
+import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.block.state.BlockState;
+import net.minecraft.world.phys.AABB;
 
 /**
  * The orbit and station GameTests. Expected numbers come from hbm-space's own code run outside the game (its
@@ -75,9 +95,97 @@ public final class StationGameTests {
     public static final GameTests.Function NEO_TORUS = TESTS.function("station_neo_fed_by_touching_torus", 40, 32,
             () -> StationGameTests::neoFedByTouchingTorus);
 
+    /** The xenon thruster's ports are 1.7's {@code getPorts}: the core row, taking power and xenon at the back. */
+    public static final GameTests.Function XENON_PORTS = TESTS.function("station_xenon_thruster_ports", 20, 12,
+            () -> StationGameTests::xenonPorts);
+
+    /** The LPW-3N's port is 1.7's {@code getPorts}: the propellant cell at the end of its long axis. */
+    public static final GameTests.Function HTR3_PORTS = TESTS.function("station_htr3_ports", 20, 12,
+            () -> StationGameTests::htr3Ports);
+
+    /** The docking port's rim is 1.7's twelve ports and takes hydrazine with nothing docked. */
+    public static final GameTests.Function RIM = TESTS.function("station_rim_takes_fuel_undocked", 40, 8,
+            () -> StationGameTests::rimTakesFuelUndocked);
+
+    /** Space's teleporter takes N-MASS at all six faces (1.7 {@code setupFluidPorts} and {@code updatePortFIFO}). */
+    public static final GameTests.Function TELEPORTER = TESTS.function("teleporter_takes_nmass_from_ducts", 40,
+            () -> StationGameTests::teleporterTakesNmass);
+
+    /** A bread item sent through Space's teleporter leaves a slime at the exit; another item leaves none. */
+    public static final GameTests.Function TELEPORTER_BREAD = TESTS.function("teleporter_bread_leaves_slime", 20, 8,
+            () -> StationGameTests::teleporterBread);
+
     private StationGameTests() {}
 
     public static void init() {}
+
+    /** A 1.7 port: one cell at an offset from the core, open on one face. */
+    record Port(int dx, int dy, int dz, ForgeDirection out) {}
+
+    static void assertPorts(GameTestHelper helper, String what, BlockPos core, PortDef[] ports, Port... expected) {
+        helper.assertTrue(ports.length == expected.length, what + ": " + ports.length + " ports, 1.7 has " + expected.length);
+        for (int i = 0; i < expected.length; i++) {
+            Port port = expected[i];
+            BlockPos cell = core.offset(port.dx, port.dy, port.dz);
+            PortDef def = ports[i];
+            helper.assertTrue(def.portPositions.length == 1 && def.portPositions[0].equals(cell),
+                    what + " port " + i + " is not the cell " + port);
+            helper.assertTrue(def.portConnections.length == 1 && def.portConnections[0].getDir() == port.out
+                    && def.portConnections[0].getPos().equals(cell.relative(port.out.toDirection())),
+                    what + " port " + i + " is not open " + port.out);
+        }
+    }
+
+    /** Each port is a cell of the placed structure (or its core), open on its face for {@code roles} and no other. */
+    static void assertOpen(GameTestHelper helper, String what, BlockPos core, PortDef[] ports, int roles) {
+        ServerLevel level = helper.getLevel();
+        BlockState state = level.getBlockState(core);
+        BlockMultiblockCore block = (BlockMultiblockCore) state.getBlock();
+        Direction facing = state.getValue(BlockMultiblockCore.FACING);
+        for (DirPos con : PortDef.connections(ports)) {
+            Direction out = con.getDir().toDirection();
+            BlockPos cell = con.getPos().relative(out.getOpposite());
+            boolean atCore = cell.equals(core);
+            helper.assertTrue(atCore || core.equals(MultiblockSurface.coreOfCell(level, cell)),
+                    what + ": the port cell " + cell + " is not part of the structure");
+            for (CapRole role : CapRole.VALUES) {
+                boolean open = block.isOpenAt(facing, cell.getX() - core.getX(), cell.getY() - core.getY(),
+                        cell.getZ() - core.getZ(), out, BlockMultiblockCore.PASSIVE_NONE, role);
+                // the core answers for every role
+                helper.assertTrue(open == (atCore || (roles & role.bit) != 0),
+                        what + ": " + cell + " open " + out + " for " + role + " is " + open);
+            }
+        }
+    }
+
+    /** Places {@code block} at the padded centre and answers its core's block entity. */
+    static <T extends BlockEntity> T placed(GameTestHelper helper, BlockMultiblockCore block, Direction facing, Class<T> type) {
+        BlockPos core = helper.absolutePos(GameTests.paddedCentre(12, 5));
+        MultiblockHandlerXR.placeAssembled(helper.getLevel(), core, block, facing);
+        return GameTestHelpers.blockEntity(helper, GameTests.relativePos(helper, core), type);
+    }
+
+    /** Whether a cable beyond {@code port} reaches {@code te} as a power receiver. */
+    static boolean powered(ServerLevel level, Object te, BlockPos core, Port port) {
+        BlockPos outside = core.offset(port.dx, port.dy, port.dz).relative(port.out.toDirection());
+        return PortNodes.isPorted(level, te, true)
+                && PortNodes.allows(level, outside.asLong(), port.out, te, PowerNetProvider.THE_PROVIDER, true);
+    }
+
+    /** Whether a duct beyond {@code port} reaches {@code te} as a receiver of {@code tank}'s fluid. */
+    static boolean takes(ServerLevel level, Object te, BlockPos core, Port port, FluidTankNTM tank) {
+        if (!PortNodes.isPorted(level, te, false)) return false;
+        BlockPos outside = core.offset(port.dx, port.dy, port.dz).relative(port.out.toDirection());
+        return fluidPort(level, te, new DirPos(outside, port.out), tank, true);
+    }
+
+    /** Whether {@code te} has a port for {@code tank}'s fluid aimed at {@code con}, receiving or providing. */
+    private static boolean fluidPort(ServerLevel level, Object te, DirPos con, FluidTankNTM tank, boolean receiving) {
+        for (FluidType type : tank.connectionTypes()) {
+            if (PortNodes.allows(level, con.getPos().asLong(), con.getDir(), te, FluidNetProvider.of(type), receiving)) return true;
+        }
+        return false;
+    }
 
     private static void savedData(GameTestHelper helper) {
         StationData data = new StationData();
@@ -203,15 +311,8 @@ public final class StationGameTests {
                 "LPW-3N: 20,900 mB to Duna (ISP 900), 800 MN");
         helper.assertTrue(htr3.startBurn() == 80 && htr3.tanks[0].getFill() == 1_280_000 - 20900 && htr3.endBurn() == 80, "LPW-3N burn");
 
-        TileEntityMachineHTRF4 htrf4 = core(helper, StationBlocks.MACHINE_HTRF4.get(), new BlockPos(5, 2, 1), Direction.SOUTH,
-                TileEntityMachineHTRF4.class);
-        htrf4.tanks[0].setFill(64000);
-        htrf4.power = TileEntityMachineHTRF4.maxPower;
-        helper.assertTrue(htrf4.canPerformBurn(200_000, toDuna) && htrf4.fuelCost == 1500 && htrf4.getThrust() == 1_600_000_000F,
-                "HTR-F4: 1,500 mB of D-T plasma (ISP 12,000), 1.6 GN");
-        helper.assertTrue(htrf4.startBurn() == 180 && htrf4.power == 1_000_000_000L - 1500L * 250_000L && htrf4.tanks[0].getFill() == 62500,
-                "HTR-F4 start: 375 MHE and 1,500 mB");
-        helper.assertTrue(htrf4.getReceivingTanks().length == 0, "HTR-F4 takes no plasma from ducts (1.7)");
+        helper.assertTrue(BuiltInRegistries.BLOCK.getOptional(Ids.of("ntmspace", "machine_htrf4")).isEmpty(),
+                "machine_htrf4 is not registered");
 
         TileEntityMachineHTRNeo neo = core(helper, StationBlocks.MACHINE_HTRF4NEO.get(), new BlockPos(7, 2, 1), Direction.SOUTH,
                 TileEntityMachineHTRNeo.class);
@@ -230,7 +331,7 @@ public final class StationGameTests {
         helper.succeed();
     }
 
-    private static <T extends net.minecraft.world.level.block.entity.BlockEntity> T core(GameTestHelper helper, net.minecraft.world.level.block.Block block, BlockPos relative, Direction facing,
+    private static <T extends BlockEntity> T core(GameTestHelper helper, Block block, BlockPos relative, Direction facing,
                               Class<T> type) {
         BlockState state = block.defaultBlockState();
         if (facing != null) state = state.setValue(BlockMultiblockCore.FACING, facing);
@@ -334,6 +435,108 @@ public final class StationGameTests {
         helper.succeed();
     }
 
+    private static void xenonPorts(GameTestHelper helper) {
+        ServerLevel level = helper.getLevel();
+        // facing north: dir is (0, 0, -1) and dir.getRotation(UP) is east
+        TileEntityXenonThruster xenon = placed(helper, StationBlocks.MACHINE_XENON_THRUSTER.get(), Direction.NORTH,
+                TileEntityXenonThruster.class);
+        BlockPos core = xenon.getBlockPos();
+        Port[] row = {new Port(-1, 0, 0, ForgeDirection.SOUTH), new Port(0, 0, 0, ForgeDirection.SOUTH),
+                new Port(1, 0, 0, ForgeDirection.SOUTH)};
+        assertPorts(helper, "xenon thruster", core, xenon.getPorts(), row);
+        assertOpen(helper, "xenon thruster", core, xenon.getPorts(), BlockMultiblockCore.ROLE_POWER_IN | BlockMultiblockCore.ROLE_FLUID_IN);
+
+        // 1.7 updates the ports only in orbit; a GameTest world is not the orbit
+        xenon.updatePorts();
+        for (Port port : row) {
+            helper.assertTrue(takes(level, xenon, core, port, xenon.tanks[0]), "the thruster takes no xenon at " + port);
+            helper.assertTrue(powered(level, xenon, core, port), "the thruster takes no power at " + port);
+        }
+        helper.succeed();
+    }
+
+    private static void htr3Ports(GameTestHelper helper) {
+        // facing north: 1.7's dir, the facing turned about UP, is east
+        TileEntityMachineHTR3 htr3 = placed(helper, StationBlocks.MACHINE_HTR3.get(), Direction.NORTH, TileEntityMachineHTR3.class);
+        assertPorts(helper, "LPW-3N", htr3.getBlockPos(), htr3.getPorts(), new Port(-5, 0, 0, ForgeDirection.WEST));
+        assertOpen(helper, "LPW-3N", htr3.getBlockPos(), htr3.getPorts(), BlockMultiblockCore.ROLE_FLUID_IN);
+        helper.succeed();
+    }
+
+    private static void rimTakesFuelUndocked(GameTestHelper helper) {
+        BlockPos core = helper.absolutePos(GameTests.paddedCentre(8, 2));
+        MultiblockHandlerXR.placeAssembled(helper.getLevel(), core, StationBlocks.ORBITAL_STATION.get(), Direction.NORTH);
+        TileEntityOrbitalStation te = GameTestHelpers.blockEntity(helper, GameTests.relativePos(helper, core), TileEntityOrbitalStation.class);
+        Port[] rim = {
+                new Port(-1, 1, 2, ForgeDirection.SOUTH), new Port(0, 1, 2, ForgeDirection.SOUTH), new Port(1, 1, 2, ForgeDirection.SOUTH),
+                new Port(-1, 1, -2, ForgeDirection.NORTH), new Port(0, 1, -2, ForgeDirection.NORTH), new Port(1, 1, -2, ForgeDirection.NORTH),
+                new Port(2, 1, -1, ForgeDirection.EAST), new Port(2, 1, 0, ForgeDirection.EAST), new Port(2, 1, 1, ForgeDirection.EAST),
+                new Port(-2, 1, -1, ForgeDirection.WEST), new Port(-2, 1, 0, ForgeDirection.WEST), new Port(-2, 1, 1, ForgeDirection.WEST)};
+        assertPorts(helper, "docking port", core, te.getPorts(), rim);
+
+        te.updatePorts();
+        helper.assertTrue(te.getDocked() == null && te.getReceivingTanks() == te.tanks, "nothing docked, the tank still receives");
+        for (Port port : rim) {
+            helper.assertTrue(takes(helper.getLevel(), te, core, port, te.tanks[0]), "the rim takes no hydrazine at " + port);
+        }
+        helper.assertTrue(te.transferFluid(SpaceFluids.HYDRAZINE, 0, 1000) == 0 && te.tanks[0].getFill() == 1000,
+                "the tank takes hydrazine with nothing docked");
+        helper.succeed();
+    }
+
+    private static void teleporterTakesNmass(GameTestHelper helper) {
+        BlockPos pad = new BlockPos(1, 2, 1);
+        helper.setBlock(pad, ModRadarUtilityBlocks.machine_teleporter.get().defaultBlockState());
+        TileEntityMachineTeleporter tele = GameTestHelpers.blockEntity(helper, pad, TileEntityMachineTeleporter.class);
+        FluidTankNTM tank = tele.getCrossingTank();
+        helper.assertTrue(tank != null && tank.getTankType() == SpaceFluids.NMASS && tank.getMaxFill() == 16_000
+                && tele.getCrossingCost() == 100, "16,000 mB of N-MASS, 100 mB a crossing");
+        BlockPos at = helper.absolutePos(pad);
+        helper.succeedWhen(() -> {
+            for (ForgeDirection side : ForgeDirection.VALID_DIRECTIONS) {
+                helper.assertTrue(takes(helper.getLevel(), tele, at, new Port(0, 0, 0, side), tank), "no N-MASS from " + side);
+            }
+        });
+    }
+
+    private static void teleporterBread(GameTestHelper helper) {
+        ServerLevel level = helper.getLevel();
+        BlockPos pad = GameTests.paddedCentre(8, 2);
+        helper.setBlock(pad, ModRadarUtilityBlocks.machine_teleporter.get().defaultBlockState());
+        TileEntityMachineTeleporter tele = GameTestHelpers.blockEntity(helper, pad, TileEntityMachineTeleporter.class);
+        BlockPos from = helper.absolutePos(pad);
+        BlockPos exit = from.offset(0, 0, 3);
+        // 1.7 checks the item after either kind of send, so the same level will do
+        tele.setTarget(GlobalPos.of(level.dimension(), exit));
+        AABB around = new AABB(exit).inflate(2);
+
+        tele.power = TileEntityMachineTeleporter.maxPower;
+        ItemEntity stone = onPad(level, from, Items.STONE);
+        tele.teleport(stone);
+        helper.assertTrue(level.getEntitiesOfClass(Slime.class, around).isEmpty(), "a stone left a slime");
+
+        tele.power = TileEntityMachineTeleporter.maxPower;
+        ItemEntity bread = onPad(level, from, Items.BREAD);
+        tele.teleport(bread);
+        List<Slime> slimes = level.getEntitiesOfClass(Slime.class, around);
+        helper.assertTrue(slimes.size() == 1, "bread leaves one slime, got " + slimes.size());
+        Slime slime = slimes.get(0);
+        helper.assertTrue(slime.position().distanceTo(bread.position()) < 1e-6
+                && Math.abs(slime.getY() - (exit.getY() + 1.5)) < 1e-6, "the slime is not at the exit: " + slime.position());
+        helper.assertTrue(slime.getSize() == 1 || slime.getSize() == 2 || slime.getSize() == 4, "1.7 sizes are 1, 2, 4: " + slime.getSize());
+        stone.discard();
+        bread.discard();
+        slime.discard();
+        helper.succeed();
+    }
+
+    private static ItemEntity onPad(ServerLevel level, BlockPos pad, Item item) {
+        ItemEntity entity = new ItemEntity(level, pad.getX() + 0.5, pad.getY() + 1.0, pad.getZ() + 0.5, new ItemStack(item));
+        entity.setNoGravity(true);
+        level.addFreshEntity(entity);
+        return entity;
+    }
+
     private static void neoFedByTouchingTorus(GameTestHelper helper) {
         ServerLevel level = helper.getLevel();
         ForgeDirection rot = ForgeDirection.getOrientation(Direction.SOUTH).getRotation(ForgeDirection.UP);
@@ -356,6 +559,20 @@ public final class StationGameTests {
             boolean linked = false;
             for (boolean arm : torus.connections) linked |= arm;
             helper.assertTrue(linked, "the torus sees no receiver on any arm");
+
+            // facing south: dir is (0, 0, 1) and dir.getRotation(UP) is west
+            assertPorts(helper, "HTR-F4 NEO", neoCore, neo.getPorts(), new Port(5, -2, -2, ForgeDirection.NORTH),
+                    new Port(-1, -2, -2, ForgeDirection.NORTH), new Port(5, -2, 2, ForgeDirection.SOUTH),
+                    new Port(-1, -2, 2, ForgeDirection.SOUTH));
+            assertOpen(helper, "HTR-F4 NEO", neoCore, neo.getPorts(), BlockMultiblockCore.ROLE_POWER_IN | BlockMultiblockCore.ROLE_FLUID);
+
+            helper.assertTrue(PortNodes.isPorted(level, neo, true) && PortNodes.isPorted(level, neo, false), "the NEO has no ports");
+            for (DirPos con : PortDef.connections(neo.getPorts())) {
+                helper.assertTrue(PortNodes.allows(level, con.getPos().asLong(), con.getDir(), neo, PowerNetProvider.THE_PROVIDER, true),
+                        "no power port at " + con.getPos());
+                helper.assertTrue(fluidPort(level, neo, con, neo.coolantTanks[0], true) && fluidPort(level, neo, con, neo.coolantTanks[1], false),
+                        "cold coolant in and warm coolant out at " + con.getPos());
+            }
             helper.succeed();
         });
     }

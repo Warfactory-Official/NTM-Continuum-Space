@@ -7,13 +7,12 @@ import com.hbm.inventory.fluid.tank.FluidTankNTM;
 import com.hbm.lib.ForgeDirection;
 import com.hbm.tileentity.TileEntityMachineBase;
 import com.hbm.tileentity.TilePort.PortDef;
-import com.ntmspace.block.generic.BlockAlgaeFilm;
+import com.hbm.tileentity.TilePortShapes;
 import com.ntmspace.orbit.Orbit;
 import com.ntmspace.registry.LeftoverContent;
 import dev.golem.core.data.DataIn;
 import dev.golem.core.data.DataOut;
 import net.minecraft.core.BlockPos;
-import net.minecraft.core.Direction;
 import net.minecraft.network.RegistryFriendlyByteBuf;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.state.BlockState;
@@ -21,10 +20,9 @@ import net.minecraft.world.level.block.state.BlockState;
 /**
  * hbm-space's {@code TileEntityAlgaeFilm}: an 8,000 mB carbon dioxide tank and an 8,000 mB oxygen tank. In orbit
  * ({@code worldObj.provider instanceof WorldProviderOrbit}), on half the ticks ({@code rand.nextBoolean()}), one mB of
- * CO2 becomes one mB of oxygen while there is CO2 and room. Every tick it takes CO2 from, and gives oxygen to, the two
- * sides square to its facing (1.7 {@code getOrientation(meta).getRotation(UP)}, east for a north front, and its opposite) - the port's net finds
- * it there ({@link IFluidDirectionalMK2}: both roles on those two sides, none elsewhere) - and syncs both tanks and the
- * orbit flag. Tanks saved as {@code t0}/{@code t1}, as 1.7.
+ * CO2 becomes one mB of oxygen while there is CO2 and room. It takes CO2 from, and gives oxygen to, its four sides
+ * and the block below (1.7 {@code TilePortShapes.horizontal}; {@link IFluidDirectionalMK2}: both roles there, none on
+ * top), and syncs both tanks and the orbit flag. Tanks saved as {@code t0}/{@code t1}, as 1.7.
  */
 public class TileEntityAlgaeFilm extends TileEntityMachineBase implements IFluidStandardTransceiverMK2, IFluidDirectionalMK2 {
 
@@ -44,7 +42,7 @@ public class TileEntityAlgaeFilm extends TileEntityMachineBase implements IFluid
     }
 
     public static void serverTick(Level level, BlockPos pos, BlockState state, TileEntityAlgaeFilm te) {
-        te.setupAllPorts(te.getPorts());
+        te.setupFluidPorts(te.getPorts());
         te.updatePortFIFO();
         te.step(level, Orbit.inOrbit(level), level.getRandom().nextBoolean());
     }
@@ -66,25 +64,16 @@ public class TileEntityAlgaeFilm extends TileEntityMachineBase implements IFluid
         networkPackNT();
     }
 
-    /** 1.7 {@code d = getOrientation(meta).getRotation(UP)} and {@code d.getOpposite()}: the two sides beside the front. */
-    public static ForgeDirection[] ports(BlockState state) {
-        Direction facing = state.hasProperty(BlockAlgaeFilm.FACING) ? state.getValue(BlockAlgaeFilm.FACING) : Direction.NORTH;
-        ForgeDirection d = ForgeDirection.getOrientation(facing).getRotation(ForgeDirection.UP);
-        return new ForgeDirection[] {d, d.getOpposite()};
-    }
-
     private PortDef[] cachedPorts;
 
+    /** 1.7 {@code TilePortShapes.horizontal}: the four sides and, as 1.7 wrote it, the bottom. Fluid only. */
     public PortDef[] getPorts() {
-        if (cachedPorts == null) cachedPorts = new PortDef[] {PortDef.make(worldPosition, ports(getBlockState()))};
+        if (cachedPorts == null) cachedPorts = TilePortShapes.horizontal(worldPosition.getX(), worldPosition.getY(), worldPosition.getZ());
         return cachedPorts;
     }
 
-    private boolean isPort(ForgeDirection side) {
-        for (ForgeDirection port : ports(getBlockState())) {
-            if (port == side) return true;
-        }
-        return false;
+    public static boolean isPort(ForgeDirection side) {
+        return side != ForgeDirection.UP && side != ForgeDirection.UNKNOWN;
     }
 
     @Override

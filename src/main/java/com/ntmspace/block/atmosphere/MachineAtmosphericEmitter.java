@@ -32,8 +32,8 @@ import net.minecraft.world.phys.BlockHitResult;
 /**
  * hbm-space's {@code MachineAtmosphericEmitter} ({@code machine_atmo_emitter}): a 2x2 base three high
  * ({@code getDimensions} {2, 0, 1, 0, 1, 0}, offset 0), the three base cells besides the core
- * {@code TileEntityProxyCombo().power().fluid()}, eight ports (power and the gas) around the base. A fluid identifier sets
- * the gas, only a gaseous one ("Changed type to ...!").
+ * {@code TileEntityProxyCombo().power().fluid()}. The gas comes in at eight points around the base, power at the four in
+ * front and behind (1.7's port list). A fluid identifier sets the gas, only a gaseous one ("Changed type to ...!").
  *
  * <p>1.7's {@code fillSpace} mixed x and z in two of its three {@code makeExtra} positions; worked through for every
  * facing they still name exactly the three non-core base cells, which is what is ported.

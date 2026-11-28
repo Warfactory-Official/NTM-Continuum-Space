@@ -8,7 +8,6 @@ import com.hbm.lib.ForgeDirection;
 import com.hbm.tileentity.MachineCore;
 import com.hbm.tileentity.TileEntityMachineBase;
 import com.hbm.tileentity.TilePort.PortDef;
-import com.ntmspace.block.machine.MachinePorts;
 import com.ntmspace.registry.DysonContent;
 import com.ntmspace.trait.CBT_Atmosphere;
 import com.ntmspace.trait.CBT_Dyson;
@@ -241,17 +240,16 @@ public class TileEntityDysonLauncher extends TileEntityMachineBase implements IE
     private PortDef[] cachedPorts;
 
     public PortDef[] getPorts() {
-        if (cachedPorts == null) cachedPorts = MachinePorts.ports(level, getBlockState(), worldPosition, conPos(worldPosition, MachineCore.facing(getBlockState())));
+        if (cachedPorts == null) cachedPorts = ports(worldPosition, MachineCore.facing(getBlockState()));
         return cachedPorts;
     }
 
-    /** 1.7 {@code getConPos}: three to the side of the five power cells, facing them. */
-    public static DirPos[] conPos(BlockPos core, ForgeDirection dir) {
+    public static PortDef[] ports(BlockPos core, ForgeDirection dir) {
         ForgeDirection rot = dir.getRotation(ForgeDirection.UP);
         int x = core.getX(), y = core.getY(), z = core.getZ();
-        DirPos[] out = new DirPos[5];
+        PortDef[] out = new PortDef[5];
         for (int k = 0; k < 5; k++) {
-            out[k] = new DirPos(x - dir.offsetX * k - rot.offsetX * 3, y, z - dir.offsetZ * k - rot.offsetZ * 3, rot.getOpposite());
+            out[k] = PortDef.make(x - dir.offsetX * k - rot.offsetX * 2, y, z - dir.offsetZ * k - rot.offsetZ * 2, rot.getOpposite());
         }
         return out;
     }

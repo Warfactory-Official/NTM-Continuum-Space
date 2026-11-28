@@ -192,7 +192,7 @@ public class LaunchPadRocket extends BlockMultiblockMachine implements ILookOver
         var state = level.getBlockState(pos);
         return state.is(this) && state.getValue(LADDER);
     }
-    /** 1.7's 12 + 1 input cells (and the cells its {@code getConPos} reached from behind them). */
+    /** The 12 + 1 input cells of 1.7 {@code getPorts}. */
     public static List<BlockPos> inputs(BlockPos core, Direction facing) {
         ForgeDirection dir = ForgeDirection.getOrientation(facing);
         ForgeDirection rot = dir.getRotation(ForgeDirection.UP);

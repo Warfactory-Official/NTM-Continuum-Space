@@ -58,27 +58,27 @@ public final class CelestialBedrockOre {
             s("mun", "nonmetal", "SULFUR", 18, "FLUORITE", 9, "KNO", 6, "SILICON", 3),
             s("mun", "crystal", "QUARTZ", 18, "LAPIS", 9, "EMERALD", 6, "CINNABAR", 3),
 
-            s("minmus", "light", "COPPER", 18, "TITANIUM", 9, "CHLOROCALCITE", 6, "COPPER", 3),
+            s("minmus", "light", "COPPER", 18, "ILMENITE", 9, "CHLOROCALCITE", 6, "COPPER", 3),
             s("minmus", "heavy", "LEAD", 18, "GOLD", 9, "TUNGSTEN", 6, "BISMUTH", 3),
             s("minmus", "rare", "ZIRCONIUM", 18, "BORON", 9, "COBALT", 6, "STRONTIUM", 3),
             s("minmus", "nonmetal", "SULFUR", 18, "KNO", 9, "FLUORITE", 6, "SILICON", 3),
             s("minmus", "crystal", "EMERALD", 18, "LAPIS", 9, "DIAMOND", 6, "EMERALD", 3),
 
-            s("duna", "light", "IRON", 18, "NICKEL", 9, "TITANIUM", 6, "CHLOROCALCITE", 3),
+            s("duna", "light", "IRON", 18, "NICKEL", 9, "ILMENITE", 6, "CHLOROCALCITE", 3),
             s("duna", "heavy", "BERYLLIUM", 18, "TUNGSTEN", 9, "ZINC", 6, "BISMUTH", 3),
             s("duna", "rare", "RAREEARTH", 18, "BORON", 9, "ZIRCONIUM", 6, "STRONTIUM", 3),
             s("duna", "actinide", "THORIUM", 18, "RADIUM", 9, "POLONIUM", 6, "U233", 3),
             s("duna", "nonmetal", "FLUORITE", 18, "SULFUR", 9, "SILICON", 6, "PHOSPHORUS", 3),
             s("duna", "crystal", "REDSTONE", 18, "CINNABAR", 9, "DIAMOND", 6, "MOLYSITE", 3),
 
-            s("moho", "light", "TITANIUM", 18, "CHLOROCALCITE", 9, "NICKEL", 6, "LITHIUM", 3),
+            s("moho", "light", "ILMENITE", 18, "CHLOROCALCITE", 9, "NICKEL", 6, "LITHIUM", 3),
             s("moho", "heavy", "GOLD", 18, "ZINC", 9, "LEAD", 6, "BISMUTH", 3),
             s("moho", "rare", "NEODYMIUM", 18, "ZIRCONIUM", 9, "BROMINE", 6, "STRONTIUM", 3),
             s("moho", "actinide", "AUSTRALIUM", 18, "AUSTRALIUM", 9, "TASMANITE", 6, "AYERITE", 3),
             s("moho", "nonmetal", "GLOWSTONE", 18, "PHOSPHORUS", 9, "SULFUR", 6, "PHOSPHORUS_W", 3),
             s("moho", "crystal", "CINNABAR", 18, "REDSTONE", 9, "QUARTZ", 6, "MOLYSITE", 3),
 
-            s("dres", "light", "NICKEL", 18, "TITANIUM", 9, "CADMIUM", 6, "GALLIUM", 3),
+            s("dres", "light", "NICKEL", 18, "ILMENITE", 9, "CADMIUM", 6, "GALLIUM", 3),
             s("dres", "heavy", "ZINC", 18, "GOLD", 9, "BISMUTH", 6, "ARSENIC", 3),
             s("dres", "rare", "TANTALIUM", 18, "LANTHANIUM", 9, "NIOBIUM", 6, "STRONTIUM", 3),
             s("dres", "actinide", "URANIUM", 18, "RADIUM", 9, "TECHNETIUM", 6, "U238", 3),
@@ -97,7 +97,7 @@ public final class CelestialBedrockOre {
             s("ike", "rare", "BORON", 18, "NEODYMIUM", 9, "STRONTIUM", 6, "LANTHANIUM", 3),
             s("ike", "hazard", "URANIUM", 18, "U238", 9, "PLUTONIUM", 6, "TECHNETIUM", 3),
 
-            s("laythe", "light", "ALUMINIUM", 18, "TITANIUM", 9, "GALLIUM", 6, "HAFNIUM", 3),
+            s("laythe", "light", "ALUMINIUM", 18, "ILMENITE", 9, "GALLIUM", 6, "HAFNIUM", 3),
             s("laythe", "heavy", "BERYLLIUM", 18, "TUNGSTEN", 9, "LEAD", 6, "ARSENIC", 3),
             s("laythe", "rare", "RAREEARTH", 18, "NEODYMIUM", 9, "STRONTIUM", 6, "NIOBIUM", 3),
             s("laythe", "actinide", "URANIUM", 18, "THORIUM", 9, "POLONIUM", 6, "U235", 3),
@@ -241,6 +241,7 @@ public final class CelestialBedrockOre {
             case "SILICON" -> MAT_SILICON;
             case "CINNABAR" -> MAT_CINNABAR;
             case "TITANIUM" -> MAT_TITANIUM;
+            case "ILMENITE" -> MAT_ILMENITE;
             case "ZIRCONIUM" -> MAT_ZIRCONIUM;
             case "BORON" -> MAT_BORON;
             case "BERYLLIUM" -> MAT_BERYLLIUM;

@@ -1,20 +1,24 @@
 package com.ntmspace.gametest;
 
 import com.hbm.blocks.generic.BlockBobble.BobbleType;
+import com.hbm.blocks.machine.MachineCapacitor;
 import com.hbm.blocks.machine.MachineElectrolyser;
+import com.hbm.blocks.machine.ModMachineBlocks;
 import com.hbm.blocks.multiblock.BlockMultiblockCore;
 import com.hbm.handler.ArmorModHandler;
 import com.hbm.inventory.NTMItemHandler;
 import com.hbm.inventory.fluid.Fluids;
 import com.hbm.inventory.fluid.tank.FluidTankNTM;
 import com.hbm.tileentity.machine.MachineFluidContainerIO;
+import com.hbm.tileentity.machine.TileEntityMachineElectrolyser;
 import com.hbm.tileentity.network.TileEntityCranePartitioner;
 import com.hbm.tileentity.network.pneumatic.TileEntityPneumoTube;
 import com.hbm.util.ContaminationUtil;
 import com.ntmspace.breathing.ItemModOxy;
-import com.ntmspace.fork.ComplexCapacitorEntity;
 import com.ntmspace.fork.ForkBaseChanges;
 import com.ntmspace.fork.machine.DamagedMachines;
+import com.ntmspace.inventory.machine.ContainerHydroponic;
+import com.ntmspace.tileentity.machine.TileEntityHydroponic;
 import dev.golem.core.Ids;
 import dev.golem.core.gametest.GameTestHelpers;
 import dev.golem.core.gametest.GameTests;
@@ -29,6 +33,7 @@ import net.minecraft.world.InteractionHand;
 import net.minecraft.world.entity.EntityType;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.item.Items;
 import net.minecraft.world.item.context.UseOnContext;
 import net.minecraft.world.level.GameType;
 import net.minecraft.world.level.block.Block;
@@ -56,6 +61,8 @@ public final class ForkGameTests3 {
             TESTS.function("fork_armor_mod_refill", 20, () -> ForkGameTests3::armorMods);
     public static final GameTests.Function DAMAGED_ITEM =
             TESTS.function("fork_damaged_machine_item", 20, 8, () -> ForkGameTests3::damagedItem);
+    public static final GameTests.Function CONTAINER_MERGE =
+            TESTS.function("fork_container_base_merge", 20, () -> ForkGameTests3::containerMerge);
 
     private ForkGameTests3() {}
 
@@ -84,7 +91,7 @@ public final class ForkGameTests3 {
             errors.add("partitioner " + TileEntityCranePartitioner.inputCount + "+" + TileEntityCranePartitioner.outputCount + ", hbm-space 96+8");
         }
         if (!TileEntityPneumoTube.anyGas) errors.add("compressors take air only");
-        if (!MachineElectrolyser.sidePorts) errors.add("electrolyser side ports off");
+        if (MachineElectrolyser.sidePorts) errors.add("electrolyser side ports on, hbm-space has 1.7's ports");
         if (!com.hbm.entity.item.EntityTntNtm.spin) errors.add("charges do not tumble");
         if (!com.hbm.entity.mob.EntityGhost.watchPlayers) errors.add("ghosts do not watch players");
         if (!com.hbm.tileentity.machine.TileEntityGeiger.probabilisticClicks) errors.add("geiger click gate off");
@@ -170,7 +177,20 @@ public final class ForkGameTests3 {
         }
     }
 
-    // ------------------------------------------------------------------------------------------------ machines
+    /** 1.7 {@code ContainerBase} shift-click ({@code InventoryUtil.mergeItemStack}): no top-up of a take-only slot. */
+    private static void containerMerge(GameTestHelper helper) {
+        List<String> errors = new ArrayList<>();
+        Player player = GameTestHelpers.mockPlayer(helper, GameType.SURVIVAL);
+        var menu = new ContainerHydroponic(0, player.getInventory(), (TileEntityHydroponic) null);
+        for (int i = 0; i < 3; i++) menu.getSlot(i).set(new ItemStack(Items.DIRT));
+        menu.getSlot(3).set(new ItemStack(Items.WHEAT_SEEDS, 10));
+        int playerSlot = 6;
+        menu.getSlot(playerSlot).set(new ItemStack(Items.WHEAT_SEEDS, 5));
+        menu.quickMoveStack(player, playerSlot);
+        if (menu.getSlot(3).getItem().getCount() != 10) errors.add("seeds topped up the output: " + menu.getSlot(3).getItem());
+        if (menu.getSlot(playerSlot).getItem().getCount() != 5) errors.add("seeds left the player: " + menu.getSlot(playerSlot).getItem());
+        finish(helper, errors);
+    }
 
     private static void machines(GameTestHelper helper) {
         List<String> errors = new ArrayList<>();
@@ -191,33 +211,17 @@ public final class ForkGameTests3 {
         } else {
             errors.add("no pneumatic tube block entity");
         }
-        // electrolyser: four more connection points and the side cells open toward them (local frame: facing south)
-        MachineElectrolyser electrolyser = com.hbm.blocks.machine.ModMachineBlocks.machine_electrolyser.get();
-        if ((electrolyser.maskAt(3, 0, 0) & BlockMultiblockCore.MASK_EAST) == 0
-                || (electrolyser.maskAt(-1, 0, 0) & BlockMultiblockCore.MASK_WEST) == 0
-                || (electrolyser.maskAt(-1, 0, 5) & BlockMultiblockCore.MASK_WEST) == 0
-                || (electrolyser.maskAt(-1, 0, -5) & BlockMultiblockCore.MASK_WEST) == 0
-                || (electrolyser.maskAt(-1, 0, 5) & BlockMultiblockCore.MASK_SOUTH) == 0) {
-            errors.add("electrolyser side ports missing from the mask table");
-        }
+        MachineElectrolyser electrolyser = ModMachineBlocks.machine_electrolyser.get();
         BlockPos electrolyserPos = helper.absolutePos(new BlockPos(6, 2, 6));
         level.setBlock(electrolyserPos, electrolyser.defaultBlockState(), 3);
-        if (!(level.getBlockEntity(electrolyserPos) instanceof com.hbm.tileentity.machine.TileEntityMachineElectrolyser te)
-                || te.getConPos().length != 18) {
-            errors.add("the electrolyser does not have 1.7's sixteen connection points and hbm-space's two side cells");
+        if (!(level.getBlockEntity(electrolyserPos) instanceof TileEntityMachineElectrolyser te)
+                || te.getConPos().length != 16) {
+            errors.add("the electrolyser does not have 1.7's sixteen connection points");
         }
-        // capacitor_complex: 1e17 HE in a block entity of its own, capacity lines first then the lore
         BlockPos capPos = helper.absolutePos(new BlockPos(1, 2, 4));
         level.setBlock(capPos, ForkBaseChanges.CAPACITOR_COMPLEX.get().defaultBlockState(), 3);
-        if (!(level.getBlockEntity(capPos) instanceof ComplexCapacitorEntity cap)
-                || cap.getMaxPower() != 100_000_000_000_000_000L) {
-            errors.add("capacitor_complex block entity: " + level.getBlockEntity(capPos));
-        }
-        var tooltip = ForkBaseChanges.CAPACITOR_COMPLEX.get().tooltip(new ItemStack(ForkBaseChanges.CAPACITOR_COMPLEX_ITEM.get()),
-                List.of(net.minecraft.network.chat.Component.literal(ForkBaseChanges.COMPLEX_LORE.get(0))));
-        if (tooltip.isEmpty() || !tooltip.get(0).getString().startsWith("Stores up to")
-                || !tooltip.get(5).getString().startsWith("TaCdSa236-7")) {
-            errors.add("capacitor tooltip order: " + tooltip);
+        if (!(level.getBlockState(capPos).getBlock() instanceof MachineCapacitor) || level.getBlockEntity(capPos) != null) {
+            errors.add("capacitor_complex is not decorative: " + level.getBlockEntity(capPos));
         }
         // TNT: a primed charge turns every tick
         var tnt = new com.hbm.entity.item.EntityTntNtm(com.hbm.entity.ModNtmEntities.TNT_NTM.get(), level);

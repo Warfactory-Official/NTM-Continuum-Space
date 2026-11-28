@@ -8,7 +8,6 @@ import com.hbm.lib.Library;
 import com.hbm.tileentity.TileEntityMachineBase;
 import com.hbm.tileentity.TilePort.PortDef;
 import com.hbm.tileentity.machine.MachineFluidContainerIO;
-import com.ntmspace.block.machine.MachinePorts;
 import com.ntmspace.fluid.SpaceFluids;
 import com.ntmspace.inventory.machine.ContainerMachineMilkReformer;
 import com.ntmspace.registry.SpaceMachines;
@@ -100,23 +99,30 @@ public class TileEntityMachineMilkReformer extends TileEntityMachineBase impleme
     private PortDef[] cachedPorts;
 
     public PortDef[] getPorts() {
-        if (cachedPorts == null) cachedPorts = MachinePorts.ports(level, getBlockState(), worldPosition, conPos(worldPosition));
+        if (cachedPorts == null) cachedPorts = ports(worldPosition);
         return cachedPorts;
     }
 
-    /** 1.7 {@code getConPos} (world directions; the tower is symmetric). */
-    public static DirPos[] conPos(BlockPos core) {
+    /**
+     * 1.7 {@code getPorts}: the four bottom corners, in world directions (the tower is symmetric). Each corner is listed
+     * twice, and a power port that finds a node on its cell takes that one over, so only the X faces carry power.
+     */
+    public static PortDef[] ports(BlockPos core) {
         int x = core.getX(), y = core.getY(), z = core.getZ();
-        return new DirPos[] {
-                new DirPos(x + 2, y, z + 1, Library.POS_X),
-                new DirPos(x + 2, y, z - 1, Library.POS_X),
-                new DirPos(x - 2, y, z + 1, Library.NEG_X),
-                new DirPos(x - 2, y, z - 1, Library.NEG_X),
-                new DirPos(x + 1, y, z + 2, Library.POS_Z),
-                new DirPos(x - 1, y, z + 2, Library.POS_Z),
-                new DirPos(x + 1, y, z - 2, Library.NEG_Z),
-                new DirPos(x - 1, y, z - 2, Library.NEG_Z),
+        return new PortDef[] {
+                PortDef.make(x + 1, y, z + 1, Library.POS_X),
+                PortDef.make(x + 1, y, z - 1, Library.POS_X),
+                PortDef.make(x - 1, y, z + 1, Library.NEG_X),
+                PortDef.make(x - 1, y, z - 1, Library.NEG_X),
+                PortDef.make(x + 1, y, z + 1, Library.POS_Z),
+                PortDef.make(x - 1, y, z + 1, Library.POS_Z),
+                PortDef.make(x + 1, y, z - 1, Library.NEG_Z),
+                PortDef.make(x - 1, y, z - 1, Library.NEG_Z),
         };
+    }
+
+    public static DirPos[] conPos(BlockPos core) {
+        return PortDef.connections(ports(core));
     }
 
     /** 1.7 {@code getRenderBoundingBox}. */

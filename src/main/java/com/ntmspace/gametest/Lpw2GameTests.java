@@ -3,6 +3,7 @@ package com.ntmspace.gametest;
 import com.hbm.blocks.ModPowerGenBlocks;
 import com.hbm.blocks.multiblock.BlockMultiblockCore;
 import com.hbm.inventory.fluid.Fluids;
+import com.hbm.lib.ForgeDirection;
 import com.hbm.tileentity.ModPowerGenBlockEntities;
 import com.ntmspace.block.station.SpaceMachineLPW2;
 import com.ntmspace.fluid.trait.FT_Rocket;
@@ -41,6 +42,10 @@ public final class Lpw2GameTests {
     /** Outside orbit the engine does nothing (1.7 returns first): no propulsion registration, no clock, no overlay. */
     public static final GameTests.Function OFF_ORBIT = TESTS.function("lpw2_inert_off_orbit", 20,
             () -> Lpw2GameTests::offOrbit);
+
+    /** 1.7 {@code getPorts}: the outer cells either side of the engine, three up, open outward for propellant. */
+    public static final GameTests.Function PORTS = TESTS.function("lpw2_ports", 20, 12,
+            () -> Lpw2GameTests::ports);
 
     private Lpw2GameTests() {}
 
@@ -92,6 +97,16 @@ public final class Lpw2GameTests {
         te.tanks[0].setTankType(Fluids.WATER); // empties the tank (1.7 setTankType)
         te.tanks[0].setFill(256_000);
         helper.assertTrue(te.canPerformBurn(200_000, 1000) && te.fuelCost == 40_500, "no rocket trait: ISP 300, 40,500 mB");
+        helper.succeed();
+    }
+
+    private static void ports(GameTestHelper helper) {
+        // facing north: dir is (0, 0, -1) and dir.getRotation(UP) is east
+        TileEntityMachineLPW2Space te = StationGameTests.placed(helper, ModPowerGenBlocks.MACHINE_LPW2.get(), Direction.NORTH,
+                TileEntityMachineLPW2Space.class);
+        StationGameTests.assertPorts(helper, "LPW-2", te.getBlockPos(), te.getPorts(),
+                new StationGameTests.Port(-1, 3, -3, ForgeDirection.NORTH), new StationGameTests.Port(-1, 3, 3, ForgeDirection.SOUTH));
+        StationGameTests.assertOpen(helper, "LPW-2", te.getBlockPos(), te.getPorts(), BlockMultiblockCore.ROLE_FLUID_IN);
         helper.succeed();
     }
 

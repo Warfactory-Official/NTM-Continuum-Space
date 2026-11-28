@@ -57,9 +57,9 @@ public final class AnvilConstructionTable extends RecipeSource<ConstructionRow> 
         add(2, after("hbm:anvil_construction/machine_ashpit"), null, out("hbm:machine_ashpit", 1), tag("c:stones", 8), tag("c:plates/steel", 2), tag("c:ingots/iron", 4));
         // AtmosphereMachines, after the deuterium tower
         add(2, after("hbm:anvil_construction/machine_deuterium_tower"), null, out("ntmspace:machine_atmo_tower", 1),
-                mat("steel", MaterialShapes.SHELL, 6), tag("c:plates/stainless", 8), comp("hbm:concrete_smooth", 4), comp("hbm:heater_heatex", 1));
+                mat("steel", MaterialShapes.SHELL, 6), tag("c:plates/stainless", 8), tag("c:concretes", 4), comp("hbm:heater_heatex", 1));
         add(2, after("hbm:anvil_construction/machine_deuterium_tower"), null, out("ntmspace:machine_atmo_vent", 1),
-                mat("steel", MaterialShapes.SHELL, 4), tag("c:plates/stainless", 4), comp("hbm:concrete_smooth", 4), comp("hbm:turbine_titanium", 1));
+                mat("steel", MaterialShapes.SHELL, 4), tag("c:plates/stainless", 4), tag("c:concretes", 4), comp("hbm:turbine_titanium", 1));
         add(2, after("hbm:anvil_construction/machine_deuterium_tower"), null, out("ntmspace:machine_atmo_emitter", 1),
                 mat("steel", MaterialShapes.PIPE, 6), mat("stainless", MaterialShapes.CASTPLATE, 8), tag("c:ingots/any_plastic", 4), comp("hbm:turbine_titanium", 1));
         // flask_infusion NITAN (after plate_armor_dnt)

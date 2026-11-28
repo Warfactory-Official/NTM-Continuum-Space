@@ -3,9 +3,12 @@ package com.ntmspace.tileentity.station;
 import com.hbm.capability.MachineCaps;
 import com.hbm.lib.DirPos;
 import com.hbm.lib.ForgeDirection;
+import com.hbm.module.portmanager.ModulePortManFluidAdaptive;
+import com.hbm.module.portmanager.ModulePortManPower;
 import com.hbm.sound.AudioSystem;
 import com.hbm.sound.AudioWrapper;
 import com.hbm.tileentity.MachineCore;
+import com.hbm.tileentity.TilePort.PortDef;
 import com.hbm.tileentity.machine.albion.TileEntityCooledBase;
 import com.hbm.tileentity.machine.fusion.FusionLink;
 import com.hbm.tileentity.machine.fusion.IFusionPowerReceiver;
@@ -65,20 +68,28 @@ public class TileEntityMachineHTRNeo extends TileEntityCooledBase implements Pro
     public float plasmaG;
     public float plasmaB;
 
+    protected final ModulePortManFluidAdaptive moduleFluidPorts;
+    protected final ModulePortManPower modulePowerPorts;
+
     public TileEntityMachineHTRNeo(BlockPos pos, BlockState state) {
         super(StationBlocks.HTRF4_NEO_BE.get(), pos, state, 0);
+
+        moduleFluidPorts = new ModulePortManFluidAdaptive(this).setInputTanks(getReceivingTanks()).setOutputTanks(getSendingTanks());
+        modulePowerPorts = new ModulePortManPower(this);
     }
 
     public static void serverTick(Level level, BlockPos pos, BlockState state, TileEntityMachineHTRNeo te) {
         // 1.7 updateEntity has no inOrbit check here, unlike the other thrusters: the NEO registers with the station of
         // its square wherever it stands (kept; the station travel GameTest uses a square of its own because of it)
+        te.moduleFluidPorts.update(te.getPorts());
+        te.modulePowerPorts.update(te.getPorts());
+
         if (!te.hasRegistered) {
             if (te.isFacingPrograde()) te.registerPropulsion();
             te.hasRegistered = true;
             te.isOn = false;
         }
 
-        te.exchangeCoolant(level);
         te.plasmaEnergySync = te.plasmaEnergy;
         te.updateCooling();
 
@@ -163,6 +174,10 @@ public class TileEntityMachineHTRNeo extends TileEntityCooledBase implements Pro
 
     @Override
     public void setRemoved() {
+        if (level != null) {
+            moduleFluidPorts.destroy();
+            modulePowerPorts.destroy();
+        }
         if (level != null && !level.isClientSide()) FusionLink.release(level, plasmaPos());
         super.setRemoved();
         if (hasRegistered) {
@@ -189,21 +204,27 @@ public class TileEntityMachineHTRNeo extends TileEntityCooledBase implements Pro
         plasmaB = b;
     }
 
-    /** 1.7 {@code getConPos}: power and coolant at the four corners of the base, two below the core. */
     @Override
-    public List<DirPos> getConPos() {
-        return conPos(worldPosition, MachineCore.facing(getBlockState()));
+    public PortDef[] getPorts() {
+        if (cachedPorts == null) cachedPorts = ports(worldPosition, MachineCore.facing(getBlockState()));
+        return cachedPorts;
     }
 
-    /** {@link #getConPos} for a core at {@code core} facing {@code dir}. */
-    public static List<DirPos> conPos(BlockPos core, ForgeDirection dir) {
+    /** 1.7 {@code getPorts} for a core at {@code core} facing {@code dir}: four base cells, two below the core, open outward. */
+    public static PortDef[] ports(BlockPos core, ForgeDirection dir) {
         ForgeDirection rot = dir.getRotation(ForgeDirection.UP);
         int x = core.getX(), y = core.getY(), z = core.getZ();
-        return List.of(
-                new DirPos(x - rot.offsetX * 5 - dir.offsetX * 3, y - 2, z - rot.offsetZ * 5 - dir.offsetZ * 3, dir.getOpposite()),
-                new DirPos(x - rot.offsetX * -1 - dir.offsetX * 3, y - 2, z - rot.offsetZ * -1 - dir.offsetZ * 3, dir.getOpposite()),
-                new DirPos(x - rot.offsetX * 5 - dir.offsetX * -3, y - 2, z - rot.offsetZ * 5 - dir.offsetZ * -3, dir),
-                new DirPos(x - rot.offsetX * -1 - dir.offsetX * -3, y - 2, z - rot.offsetZ * -1 - dir.offsetZ * -3, dir));
+        return new PortDef[] {
+                PortDef.make(x - rot.offsetX * 5 - dir.offsetX * 2, y - 2, z - rot.offsetZ * 5 - dir.offsetZ * 2, dir.getOpposite()),
+                PortDef.make(x - rot.offsetX * -1 - dir.offsetX * 2, y - 2, z - rot.offsetZ * -1 - dir.offsetZ * 2, dir.getOpposite()),
+                PortDef.make(x - rot.offsetX * 5 - dir.offsetX * -2, y - 2, z - rot.offsetZ * 5 - dir.offsetZ * -2, dir),
+                PortDef.make(x - rot.offsetX * -1 - dir.offsetX * -2, y - 2, z - rot.offsetZ * -1 - dir.offsetZ * -2, dir),
+        };
+    }
+
+    @Override
+    public List<DirPos> getConPos() {
+        return List.of(PortDef.connections(getPorts()));
     }
 
     @Override

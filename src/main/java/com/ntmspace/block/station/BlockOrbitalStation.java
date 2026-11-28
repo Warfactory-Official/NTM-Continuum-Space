@@ -10,8 +10,6 @@ import com.hbm.blocks.multiblock.MultiblockMaskTable;
 import com.hbm.blocks.multiblock.MultiblockSurface;
 import com.hbm.interfaces.ILookOverlay;
 import com.hbm.inventory.fluid.tank.FluidTankNTM;
-import com.hbm.lib.ForgeDirection;
-import com.hbm.tileentity.TilePort.PortDef;
 import com.hbm.util.BobMathUtil;
 import com.ntmspace.atmosphere.BlockSealable;
 import com.ntmspace.orbit.Orbit;
@@ -53,7 +51,7 @@ public class BlockOrbitalStation extends BlockMultiblockMachine implements IFlui
     @Override
     public MachineCaps caps() {
         return MachineCaps.of(StationBlocks.ORBITAL_STATION_BE).fluidIn().itemsAtCells()
-                .fluidFaces(TileEntityOrbitalStation.class, (be, side) -> be.needsFuel);
+                .fluidFaces(TileEntityOrbitalStation.class, (be, side) -> Orbit.inOrbit(be.getLevel()));
     }
 
     public BlockOrbitalStation(Properties properties, boolean core) {
@@ -101,19 +99,6 @@ public class BlockOrbitalStation extends BlockMultiblockMachine implements IFlui
             rim(visitor, corePos.offset(i, 1, 2), Direction.SOUTH, facing);
             rim(visitor, corePos.offset(i, 1, -2), Direction.NORTH, facing);
         }
-    }
-
-    /** 1.7 {@code getConPos} (world axes): the twelve rim cells, each aimed out of its outward face. */
-    public static PortDef[] rimPorts(BlockPos corePos) {
-        PortDef[] ports = new PortDef[12];
-        int n = 0;
-        for (int i = -1; i <= 1; i++) {
-            ports[n++] = PortDef.make(corePos.offset(i, 1, 2), ForgeDirection.SOUTH);
-            ports[n++] = PortDef.make(corePos.offset(i, 1, -2), ForgeDirection.NORTH);
-            ports[n++] = PortDef.make(corePos.offset(2, 1, i), ForgeDirection.EAST);
-            ports[n++] = PortDef.make(corePos.offset(-2, 1, i), ForgeDirection.WEST);
-        }
-        return ports;
     }
 
     private static void rim(CellVisitor visitor, BlockPos pos, Direction outward, Direction facing) {

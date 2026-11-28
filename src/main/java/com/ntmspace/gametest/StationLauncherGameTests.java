@@ -2,10 +2,12 @@ package com.ntmspace.gametest;
 
 import com.hbm.blocks.multiblock.MultiblockHandlerXR;
 import com.hbm.blocks.multiblock.MultiblockSurface;
+import com.hbm.inventory.fluid.FluidType;
 import com.hbm.inventory.fluid.Fluids;
 import com.hbm.inventory.fluid.tank.FluidTankNTM;
 import com.hbm.items.ModCustomMissileItems;
 import com.hbm.items.ModFuelItems;
+import com.hbm.lib.ForgeDirection;
 import com.ntmspace.block.station.BlockOrbitalStationLauncher;
 import com.ntmspace.entity.rocket.EntityRideableRocket;
 import com.ntmspace.entity.rocket.EntityRideableRocket.RocketState;
@@ -88,6 +90,21 @@ public final class StationLauncherGameTests {
         te.solidFuel.level = te.solidFuel.max;
     }
 
+    private static int typed(TileEntityOrbitalStationLauncher te) {
+        int count = 0;
+        for (FluidTankNTM tank : te.tanks) if (tank.getTankType() != Fluids.NONE) count++;
+        return count;
+    }
+
+    /** Whether a duct south of the rim reaches the launcher's tank of {@code type}. */
+    private static boolean rimTakes(GameTestHelper helper, TileEntityOrbitalStationLauncher te, FluidType type) {
+        StationGameTests.Port south = new StationGameTests.Port(0, 1, 2, ForgeDirection.SOUTH);
+        for (FluidTankNTM tank : te.tanks) {
+            if (tank.getTankType() == type) return StationGameTests.takes(helper.getLevel(), te, te.getBlockPos(), south, tank);
+        }
+        return false;
+    }
+
     private static boolean hasIssue(List<Component> issues, String text) {
         for (Component issue : issues) if (issue.getString().equals(text)) return true;
         return false;
@@ -128,8 +145,9 @@ public final class StationLauncherGameTests {
         TileEntityOrbitalStationLauncher te = place(helper);
 
         te.updateServer();
-        helper.assertTrue(!te.rocket.validate() && te.findIssues().isEmpty() && te.getReceivingTanks().length == 0,
-                "an empty launcher has no rocket, no issues and takes no fluid");
+        helper.assertTrue(!te.rocket.validate() && te.findIssues().isEmpty() && typed(te) == 0 && te.getReceivingTanks() == te.tanks,
+                "an empty launcher has no rocket, no issues and ten untyped receiving tanks");
+        helper.assertTrue(te.transferFluid(Fluids.KEROSENE, 0, 500) == 500, "an untyped tank takes nothing");
 
         // stage in the second slot group: the launcher must pull it down into the empty first stage
         loadR1(te, 1);
@@ -142,7 +160,10 @@ public final class StationLauncherGameTests {
         List<Component> issues = te.findIssues();
         helper.assertTrue(issues.size() == 3 && hasIssue(issues, "0/64000mB Kerosene") && hasIssue(issues, "0/64000mB Peroxide")
                 && hasIssue(issues, "No destination drive installed"), "tanks and missing drive, got " + issues);
-        helper.assertTrue(te.getReceivingTanks().length == 2, "a valid rocket opens its two typed tanks to ducts");
+        // 1.7 updates the ports before it reads the rocket, so they follow the tanks a tick later
+        te.updateServer();
+        helper.assertTrue(typed(te) == 2 && rimTakes(helper, te, Fluids.KEROSENE) && rimTakes(helper, te, Fluids.PEROXIDE),
+                "R1 types two tanks and the rim takes both fuels");
 
         te.setItem(TileEntityOrbitalStationLauncher.SLOT_DRIVE, drive(DriveBody.MUN, 100, 100, false));
         helper.assertTrue(hasIssue(te.findIssues(), "Destination drive needs processing"), "unprocessed drive: " + te.findIssues());
@@ -155,6 +176,9 @@ public final class StationLauncherGameTests {
         for (int i = TileEntityOrbitalStationLauncher.SLOT_STAGES; i < TileEntityOrbitalStationLauncher.SLOT_DRIVES; i++) te.setItem(i, ItemStack.EMPTY);
         te.updateServer();
         helper.assertTrue(!te.rocket.validate() && te.findIssues().isEmpty() && !te.canLaunch(), "a capsule without stages cannot launch");
+        // 1.7's ports follow the tanks alone, and the tanks keep their fluids without a valid rocket
+        helper.assertTrue(typed(te) == 2 && rimTakes(helper, te, Fluids.KEROSENE) && te.transferFluid(Fluids.KEROSENE, 0, 500) == 0,
+                "the typed tanks still take fuel from the rim without a valid rocket");
         helper.succeed();
     }
 

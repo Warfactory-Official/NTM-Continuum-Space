@@ -4,6 +4,7 @@ import com.hbm.entity.effect.EntityNukeTorex;
 import com.hbm.entity.logic.EntityBalefire;
 import com.hbm.explosion.ExplosionBalefire;
 import com.hbm.explosion.ExplosionNukeCustom;
+import com.hbm.tileentity.machine.storage.TileEntityBarrel;
 import com.ntmspace.fork.ForkContent;
 import com.ntmspace.fork.antimatter.AntimatterBalefire;
 import com.ntmspace.fork.antimatter.TileEntityAntimatter;
@@ -171,8 +172,10 @@ public final class ForkGameTests2 {
         var level = helper.getLevel();
         if (com.hbm.tileentity.bomb.TileEntityNukeCustom.amatNukeFloor != 0F) errors.add("custom nuke amat floor is not 0");
         if (com.hbm.items.special.ItemCell.antimatterDropStrength != 5F) errors.add("antimatter cell drop strength is not 5");
-        if (!com.hbm.tileentity.machine.storage.TileEntityBarrel.ANTIMATTER_BLAST.iterator().hasNext()) {
-            errors.add("no barrel antimatter blast listener");
+        List<Object> barrelBlasts = new ArrayList<>(TileEntityBarrel.ANTIMATTER_BLAST.listeners());
+        barrelBlasts.addAll(TileEntityBarrel.PRESSURE_BLAST.listeners());
+        for (Object listener : barrelBlasts) {
+            if (!listener.getClass().getName().startsWith("com.ntmspace.probe.")) errors.add("barrel blast listener " + listener);
         }
         BlockPos at = helper.absolutePos(new BlockPos(2, 2, 2));
         double x = at.getX() + 0.5, y = at.getY() + 0.5, z = at.getZ() + 0.5;

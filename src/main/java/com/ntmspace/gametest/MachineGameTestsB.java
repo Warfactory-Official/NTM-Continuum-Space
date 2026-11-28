@@ -5,10 +5,14 @@ import com.hbm.blocks.multiblock.MultiblockHandlerXR;
 import com.hbm.blocks.multiblock.MultiblockSurface;
 import com.hbm.inventory.RecipesCommon.AStack;
 import com.hbm.inventory.RecipesCommon.ComparableStack;
+import com.hbm.inventory.fluid.Fluids;
 import com.hbm.items.ItemEnums.EnumCircuitType;
 import com.hbm.items.ModIntermediateItems;
 import com.hbm.lib.ForgeDirection;
+import com.hbm.uninos.PortNodes;
+import com.hbm.uninos.networkproviders.PowerNetProvider;
 import com.ntmspace.block.machine.MachineHydroponic;
+import com.ntmspace.block.machine.MachineVacuumCircuit;
 import com.ntmspace.recipe.VacuumCircuitRecipes;
 import com.ntmspace.recipe.VacuumCircuitRecipes.VacuumCircuitRecipe;
 import com.ntmspace.registry.SpaceMachineItems;
@@ -47,8 +51,12 @@ public final class MachineGameTestsB {
             () -> MachineGameTestsB::vacuumCircuitTable);
     public static final GameTests.Function VACUUM_CIRCUIT = TESTS.function("vacuum_circuit_step", 40, 8,
             () -> MachineGameTestsB::vacuumCircuit);
+    public static final GameTests.Function VACUUM_CIRCUIT_PORTS = TESTS.function("vacuum_circuit_ports_as_1_7", 40, 8,
+            () -> MachineGameTestsB::vacuumCircuitPorts);
     public static final GameTests.Function HYDROBAY = TESTS.function("hydrobay_step", 40, 8,
             () -> MachineGameTestsB::hydrobay);
+    public static final GameTests.Function HYDROBAY_PORTS = TESTS.function("hydrobay_ports_as_1_7", 20, 8,
+            () -> MachineGameTestsB::hydrobayPorts);
     public static final GameTests.Function HYDROBAY_FERTILIZER = TESTS.function("hydrobay_fertilizer", 40, 8,
             () -> MachineGameTestsB::hydrobayFertilizer);
 
@@ -202,6 +210,55 @@ public final class MachineGameTestsB {
     private static void setAge(ServerLevel level, BlockPos pos, int age) {
         BlockState state = level.getBlockState(pos);
         level.setBlock(pos, HydroponicPlants.withStage(state, age), Block.UPDATE_CLIENTS | Block.UPDATE_KNOWN_SHAPE);
+    }
+
+    private static void vacuumCircuitPorts(GameTestHelper helper) {
+        BlockPos core = helper.absolutePos(GameTests.paddedCentre(8, 1));
+        ServerLevel level = helper.getLevel();
+        MultiblockHandlerXR.placeAssembled(level, core, SpaceMachinesB.MACHINE_VACUUM_CIRCUIT.get(), Direction.NORTH);
+        MachineVacuumCircuit block = SpaceMachinesB.MACHINE_VACUUM_CIRCUIT.get();
+
+        helper.succeedWhen(() -> {
+            Object te = level.getBlockEntity(core);
+            helper.assertTrue(PortNodes.isPorted(level, te, true), "the machine has power ports");
+            for (int x = -1; x <= 1; x += 2) {
+                for (int z = -1; z <= 1; z += 2) {
+                    BlockPos corner = core.offset(x, 0, z);
+                    ForgeDirection alongX = x > 0 ? ForgeDirection.EAST : ForgeDirection.WEST;
+                    ForgeDirection alongZ = z > 0 ? ForgeDirection.SOUTH : ForgeDirection.NORTH;
+                    helper.assertTrue(block.canConnect(level, corner, alongX) && block.canConnect(level, corner, alongZ),
+                            "cables attach on both outer faces of " + corner);
+                    helper.assertTrue(PortNodes.allows(level, corner.offset(x, 0, 0).asLong(), alongX, te, PowerNetProvider.THE_PROVIDER, true),
+                            "power comes in on the X face of " + corner);
+                    helper.assertTrue(!PortNodes.allows(level, corner.offset(0, 0, z).asLong(), alongZ, te, PowerNetProvider.THE_PROVIDER, true),
+                            "no power comes in on the Z face of " + corner);
+                }
+            }
+        });
+    }
+
+    private static void hydrobayPorts(GameTestHelper helper) {
+        BlockPos core = helper.absolutePos(GameTests.paddedCentre(8, 1));
+        ServerLevel level = helper.getLevel();
+        MultiblockHandlerXR.placeAssembled(level, core, SpaceMachinesB.HYDROBAY.get(), Direction.NORTH);
+        MachineHydroponic block = SpaceMachinesB.HYDROBAY.get();
+        List<String> errors = new ArrayList<>();
+
+        // facing north the base runs east to west; its two ends take ducts from the north and the south
+        for (int side = -2; side <= 2; side += 4) {
+            BlockPos end = core.offset(side, 0, 0);
+            for (ForgeDirection face : new ForgeDirection[] {ForgeDirection.NORTH, ForgeDirection.SOUTH}) {
+                if (!block.canConnect(Fluids.OXYGEN, level, end.getX(), end.getY(), end.getZ(), face)) errors.add("no duct face " + face + " on " + end);
+                // the frame over the duct's position is part of the machine, but 1.7 has no port on it
+                BlockPos frame = end.offset(0, 1, face.offsetZ);
+                if (!core.equals(MultiblockSurface.coreOfCell(level, frame))) errors.add("no frame at " + frame);
+                if (block.canConnect(Fluids.OXYGEN, level, frame.getX(), frame.getY(), frame.getZ(), ForgeDirection.DOWN)) errors.add("a duct face under the frame at " + frame);
+            }
+        }
+        if (!block.canConnect(level, core.above(2), ForgeDirection.UP)) errors.add("no cable face on the top centre");
+
+        helper.assertTrue(errors.isEmpty(), String.join("; ", errors));
+        helper.succeed();
     }
 
     /**

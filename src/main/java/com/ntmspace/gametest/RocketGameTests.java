@@ -8,7 +8,13 @@ import com.hbm.items.ISatChip;
 import com.hbm.items.ModCustomMissileItems;
 import com.hbm.items.ModSatelliteItems;
 import com.hbm.items.machine.ItemSatellite;
+import com.hbm.lib.DirPos;
+import com.hbm.lib.ForgeDirection;
 import com.hbm.saveddata.SatelliteSavedData;
+import com.hbm.tileentity.TilePort.PortDef;
+import com.hbm.uninos.PortNodes;
+import com.hbm.uninos.networkproviders.FluidNetProvider;
+import com.hbm.uninos.networkproviders.PowerNetProvider;
 import com.mojang.serialization.JsonOps;
 import com.ntmspace.entity.rocket.EntityRideableRocket;
 import com.ntmspace.entity.rocket.EntityRideableRocket.RocketState;
@@ -39,12 +45,12 @@ import dev.golem.core.world.Teleports;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.gametest.framework.GameTestHelper;
 import net.minecraft.network.chat.Component;
 import net.minecraft.network.chat.contents.TranslatableContents;
+import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.GameType;
@@ -87,6 +93,9 @@ public final class RocketGameTests {
     /** The pad takes a fuelled rocket and a processed drive, fills its tanks, launches and empties. */
     public static final GameTests.Function PAD = TESTS.function("rocket_launch_pad", 60, 8,
             () -> RocketGameTests::pad);
+
+    public static final GameTests.Function PAD_PORTS = TESTS.function("rocket_launch_pad_ports", 40, 8,
+            () -> RocketGameTests::padPorts);
 
     /** A satellite rocket launches at once, climbs past y 900 and puts its satellite in orbit (no dimension change). */
     public static final GameTests.Function SATELLITE_FLIGHT = TESTS.function("rocket_satellite_flight", 1200, 4,
@@ -282,9 +291,7 @@ public final class RocketGameTests {
                 && new ItemStack(RocketItems.MP_THRUSTER_20_METHALOX.get()).getMaxStackSize() == 64
                 && new ItemStack(RocketItems.RP_L_20.get()).getMaxStackSize() == 1
                 && new ItemStack(RocketItems.RP_C_20.get()).getMaxStackSize() == 1, "NTM: Space's parts as hbm-space");
-        var science = Set.of("hbm:satellite_science", "hbm:satellite_science_sensor", "hbm:satellite_science_assembler");
-        var legacy = RocketParts.all().stream().filter(part -> !science.contains(part.id())).count();
-        helper.assertTrue(legacy == 147, "147 legacy rocket parts, found " + legacy);
+        helper.assertTrue(RocketParts.all().size() == 147, "147 rocket parts, found " + RocketParts.all().size());
         int missing = 0;
         for (RocketPart part : RocketParts.all()) if (part.item() == net.minecraft.world.item.Items.AIR) missing++;
         helper.assertTrue(missing == 0, missing + " rocket parts have no registered item");
@@ -384,6 +391,39 @@ public final class RocketGameTests {
                     && Math.abs(rockets.get(0).getY() - (core.getY() + 3)) < 1e-6, "the rocket stands 3 up, awaiting its pilot");
             rockets.get(0).discard();
             helper.succeed();
+        });
+    }
+
+    private static void padPorts(GameTestHelper helper) {
+        BlockPos core = helper.absolutePos(GameTests.paddedCentre(8, 1));
+        MultiblockHandlerXR.placeAssembled(helper.getLevel(), core, RocketBlocks.LAUNCH_PAD_ROCKET.get(), Direction.NORTH);
+        TileEntityLaunchPadRocket pad = GameTestHelpers.blockEntity(helper, GameTests.relativePos(helper, core), TileEntityLaunchPadRocket.class);
+
+        // facing north the back is to the south: cells seven out, ducts eight out
+        DirPos[] cons = PortDef.connections(pad.getPorts());
+        helper.assertTrue(cons.length == 13, "13 ports, got " + cons.length);
+        int n = 0;
+        for (int or = 1; or < 5; or++) {
+            for (int oy = 0; oy < 3; oy++) {
+                helper.assertTrue(cons[n].getPos().equals(core.offset(-or, oy, 8)) && cons[n].getDir() == ForgeDirection.SOUTH,
+                        "port " + n + " connects at " + cons[n].getPos());
+                n++;
+            }
+        }
+        helper.assertTrue(cons[12].getPos().equals(core.offset(3, 0, 8)) && cons[12].getDir() == ForgeDirection.SOUTH,
+                "the lone port connects at " + cons[12].getPos());
+
+        pad.tanks[0].setTankType(Fluids.KEROSENE);
+        ServerLevel level = helper.getLevel();
+        helper.succeedWhen(() -> {
+            helper.assertTrue(PortNodes.isPorted(level, pad, true) && PortNodes.isPorted(level, pad, false), "the pad has ports");
+            for (DirPos con : cons) {
+                long cell = con.getPos().asLong();
+                helper.assertTrue(PortNodes.allows(level, cell, con.getDir(), pad, PowerNetProvider.THE_PROVIDER, true),
+                        "power at " + con.getPos());
+                helper.assertTrue(PortNodes.allows(level, cell, con.getDir(), pad, FluidNetProvider.of(Fluids.KEROSENE), true),
+                        "kerosene with no rocket at " + con.getPos());
+            }
         });
     }
 

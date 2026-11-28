@@ -149,7 +149,6 @@ public final class ProbeHooks {
         com.hbm.blocks.machine.DemonLamp.TileEntityDemonLamp.IRRADIATED.register((level, lamp, entity, dose) -> ProbeMarks.call("demon_lamp"));
         com.hbm.entity.logic.EntityBalefire.TICK.register((balefire, finished) -> ProbeMarks.call("balefire"));
         com.hbm.explosion.ExplosionNukeCustom.ANTIMATTER.register((level, x, y, z, amat) -> false);
-        com.hbm.tileentity.machine.storage.TileEntityBarrel.ANTIMATTER_BLAST.register((level, pos, type) -> false);
         com.hbm.entity.logic.EntityBomber.LOOP_SOUND.register(bomber -> null);
         com.hbm.entity.logic.EntityPlaneBase.CRASH.register((plane, x, y, z) -> ProbeMarks.call("plane_crash"));
         com.hbm.tileentity.machine.storage.TileEntityFileCabinet.TICK.register(cabinet -> {});

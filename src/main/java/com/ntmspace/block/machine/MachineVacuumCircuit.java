@@ -23,7 +23,7 @@ import org.jspecify.annotations.Nullable;
 /**
  * hbm-space's {@code MachineVacuumCircuit} ({@code machine_vacuum_circuit}, the Vacuum Solderer): a 3 x 3 x 1 machine,
  * offset 0, whose every cell is a {@code TileEntityProxyCombo().inventory().power().fluid()} (the machine has no tanks,
- * so the fluid flag reaches nothing). Power comes in at the eight 1.7 {@code getConPos} points around the sides. Opens
+ * so the fluid flag reaches nothing). Power comes in at the corner cells of 1.7 {@code getPorts}. Opens
  * the GUI on use; the look overlay warns "REQUIRES VACUUM" while the machine is not in a near vacuum.
  */
 public class MachineVacuumCircuit extends BlockMultiblockMachine implements IEnergyConnectorBlock, ILookOverlay,
@@ -44,9 +44,7 @@ public class MachineVacuumCircuit extends BlockMultiblockMachine implements IEne
     @Override
     protected void visitCells(BlockPos core, Direction facing, CellVisitor visitor) {
         super.visitCells(core, facing, visitor);
-        MachinePorts.Cells cells = pos -> Math.abs(pos.getX() - core.getX()) <= 1 && pos.getY() == core.getY()
-                && Math.abs(pos.getZ() - core.getZ()) <= 1;
-        MachinePorts.ports(core, facing, cells, TileEntityMachineVacuumCircuit.conPos(core), ROLE_POWER_IN, visitor);
+        MachinePorts.portFaces(core, facing, TileEntityMachineVacuumCircuit.ports(core), ROLE_POWER_IN, visitor);
     }
 
     /** Every cell is a proxy (items, power). */

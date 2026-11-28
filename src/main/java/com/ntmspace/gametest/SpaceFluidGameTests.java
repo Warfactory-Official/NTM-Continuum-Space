@@ -1,5 +1,6 @@
 package com.ntmspace.gametest;
 
+import com.hbm.api.environment.Environment;
 import com.hbm.inventory.fluid.FluidType;
 import com.hbm.inventory.fluid.Fluids;
 import com.hbm.inventory.fluid.trait.FT_Combustible;
@@ -12,8 +13,10 @@ import com.hbm.inventory.fluid.trait.FT_Poison;
 import com.hbm.inventory.fluid.trait.FT_Polluting;
 import com.hbm.inventory.fluid.trait.FT_VentRadiation;
 import com.hbm.inventory.fluid.trait.FluidTraitSimple;
+import com.ntmspace.fluid.SpaceFluids;
 import com.ntmspace.fluid.trait.FT_Rocket;
 import com.ntmspace.fluid.trait.SpaceFluidTraits;
+import com.ntmspace.registry.DunaBlocks;
 import com.ntmspace.registry.SpaceFluidBlocks;
 import dev.golem.core.gametest.GameTests;
 import java.util.ArrayList;
@@ -24,6 +27,9 @@ import java.util.TreeMap;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.gametest.framework.GameTestHelper;
+import net.minecraft.server.level.ServerLevel;
+import net.minecraft.world.level.block.Block;
+import net.minecraft.world.level.block.Blocks;
 
 /**
  * NTM: Space's fluids against hbm-space's {@code Fluids.java}. The expected table below was extracted mechanically from
@@ -54,7 +60,41 @@ public final class SpaceFluidGameTests {
     public static final GameTests.Function SKY = SpaceGameTests.TESTS.function("space_sky_owner", 20,
             () -> SpaceFluidGameTests::skyOwner);
 
+    public static final GameTests.Function TERRAFORMING = SpaceGameTests.TESTS.function("space_fluid_ammonia_terraforms_duna_sands",
+            100, 8, () -> SpaceFluidGameTests::terraforming);
+
     public static void init() {}
+
+    /** 1.7 {@code EntityChemical}: a terraformer spray turns only its body's soil into dirt and spreads through that soil. */
+    private static void terraforming(GameTestHelper helper) {
+        BlockPos centre = GameTests.paddedCentre(8, 1);
+        Block sands = DunaBlocks.DUNA_SANDS.get();
+        for (int dx = -2; dx <= 2; dx++) {
+            for (int dz = -2; dz <= 2; dz++) {
+                helper.setBlock(centre.offset(dx, -1, dz), Blocks.STONE);
+                helper.setBlock(centre.offset(dx, 0, dz), sands);
+            }
+        }
+        BlockPos stone = centre.offset(4, 0, 0);
+        BlockPos water = centre.offset(-4, 0, 0);
+        helper.setBlock(stone, Blocks.STONE);
+        helper.setBlock(water.below(), Blocks.STONE);
+        helper.setBlock(water, sands);
+        ServerLevel level = helper.getLevel();
+        Environment.chemicalImpact(level, helper.absolutePos(centre), SpaceFluids.AMMONIA);
+        Environment.chemicalImpact(level, helper.absolutePos(stone), SpaceFluids.AMMONIA);
+        Environment.chemicalImpact(level, helper.absolutePos(water), Fluids.WATER);
+        helper.assertTrue(helper.getBlockState(centre).is(Blocks.DIRT), "ammonia left Duna sands " + helper.getBlockState(centre));
+        helper.succeedWhen(() -> {
+            helper.assertTrue(helper.getBlockState(stone).is(Blocks.STONE), "ammonia changed stone");
+            helper.assertTrue(helper.getBlockState(water).is(sands), "water terraformed Duna sands");
+            int dirt = 0;
+            for (int dx = -2; dx <= 2; dx++) {
+                for (int dz = -2; dz <= 2; dz++) if (helper.getBlockState(centre.offset(dx, 0, dz)).is(Blocks.DIRT)) dirt++;
+            }
+            helper.assertTrue(dirt > 1, "the dirt did not spread through the sands");
+        });
+    }
 
     /**
      * hbm-space's changes to HBM's own fluids ({@code Fluids.java} lines 347-436 and 843-863), applied by the patches in

@@ -5,7 +5,9 @@ import com.hbm.blocks.generic.BlockMetalFence;
 import com.hbm.blocks.multiblock.MultiblockHandlerXR;
 import com.hbm.inventory.recipes.AssemblyMachineRecipes;
 import com.hbm.inventory.recipes.loader.GenericRecipe;
+import com.hbm.lib.DirPos;
 import com.hbm.lib.ForgeDirection;
+import com.hbm.tileentity.TilePort.PortDef;
 import com.ntmspace.block.generic.BlockAlgaeFilm;
 import com.ntmspace.block.generic.BlockFenceGate;
 import com.ntmspace.block.generic.BlockSpacePlushie;
@@ -177,7 +179,7 @@ public final class LeftoverGameTests {
         MachineGameTests.finish(helper, errors);
     }
 
-    /** hbm-space {@code TileEntityAlgaeFilm.updateEntity}: one mB CO2 to one mB oxygen per lucky orbit tick; side ports. */
+    /** hbm-space {@code TileEntityAlgaeFilm.updateEntity}: one mB CO2 to one mB oxygen per lucky orbit tick; its ports. */
     private static void algaeFilm(GameTestHelper helper) {
         List<String> errors = new ArrayList<>();
         BlockPos pos = helper.absolutePos(new BlockPos(1, 1, 1));
@@ -195,12 +197,20 @@ public final class LeftoverGameTests {
         film.tanks[1].setFill(film.tanks[1].getMaxFill());
         film.step(helper.getLevel(), true, true);
         if (film.tanks[0].getFill() != 999) errors.add("converted into a full oxygen tank");
-        // NORTH (2).getRotation(UP) = EAST (5, 1.7 ROTATION_MATRIX[UP]), and WEST: the two sides beside the front
-        ForgeDirection[] ports = TileEntityAlgaeFilm.ports(film.getBlockState());
-        if (ports[0] != ForgeDirection.EAST || ports[1] != ForgeDirection.WEST) errors.add("ports " + Arrays.toString(ports));
-        if (film.receivesOn(ForgeDirection.NORTH) || !film.receivesOn(ForgeDirection.EAST) || film.providesOn(ForgeDirection.UP)) {
+        // 1.7 TilePortShapes.horizontal: one port, facing the four sides and the bottom; fluid only
+        PortDef[] ports = film.getPorts();
+        List<ForgeDirection> sides = new ArrayList<>();
+        for (DirPos con : PortDef.connections(ports)) sides.add(con.getDir());
+        if (ports.length != 1 || !sides.equals(List.of(ForgeDirection.EAST, ForgeDirection.WEST, ForgeDirection.SOUTH,
+                ForgeDirection.NORTH, ForgeDirection.DOWN))) {
+            errors.add("ports " + sides);
+        }
+        if (!film.receivesOn(ForgeDirection.NORTH) || !film.receivesOn(ForgeDirection.EAST) || !film.providesOn(ForgeDirection.DOWN)
+                || film.receivesOn(ForgeDirection.UP) || film.providesOn(ForgeDirection.UP)) {
             errors.add("port roles");
         }
+        TileEntityAlgaeFilm.serverTick(helper.getLevel(), pos, film.getBlockState(), film);
+        if (film.fluidInPorts == null || film.fluidOutPorts == null || film.powerPorts != null) errors.add("port kinds");
         MachineGameTests.finish(helper, errors);
     }
 

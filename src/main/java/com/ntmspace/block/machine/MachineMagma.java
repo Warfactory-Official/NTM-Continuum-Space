@@ -5,7 +5,6 @@ import com.hbm.blocks.multiblock.BlockMultiblockMachine;
 import com.hbm.blocks.multiblock.MultiblockSurface;
 import com.hbm.interfaces.ILookOverlay;
 import com.hbm.inventory.material.Mats;
-import com.hbm.lib.DirPos;
 import com.hbm.lib.ForgeDirection;
 import com.hbm.util.BobMathUtil;
 import com.ntmspace.tileentity.machine.TileEntityMachineMagma;
@@ -23,10 +22,9 @@ import net.minecraft.world.level.block.state.BlockState;
 /**
  * hbm-space's {@code MachineMagma} (Magma Drill): a 7x7x7 cube ({@code getDimensions} {3, 3, 3, 3, 3, 3}, offset 3,
  * three blocks up), core in the middle. Six {@code TileEntityProxyCombo().power().fluid()} cells on the back face
- * ({@code makeExtra} at core - 3 dir, one and two below, and one to each side); the 1.7 {@code getConPos} points are one
- * block further back, so the back faces of those cells are the ports (1.7 subscribed power there only: the drill's
- * fluid side, an empty tank array "probably to handle cooling fluids", was never used and is not ported). It has no
- * GUI; looking at it shows the drill.
+ * ({@code makeExtra} at core - 3 dir, one and two below, and one to each side) are the ports of 1.7 {@code getPorts},
+ * open to the back. They carry power only: the drill's fluid side, an empty tank array "probably to handle cooling
+ * fluids", has nothing to connect and is not ported. It has no GUI; looking at it shows the drill.
  */
 public class MachineMagma extends BlockMultiblockMachine implements IEnergyConnectorBlock, ILookOverlay {
 
@@ -46,10 +44,7 @@ public class MachineMagma extends BlockMultiblockMachine implements IEnergyConne
     @Override
     protected void visitCells(BlockPos core, Direction facing, CellVisitor visitor) {
         super.visitCells(core, facing, visitor);
-        DirPos[] ports = TileEntityMachineMagma.conPos(core, MachinePorts.dir(facing));
-        int[] dims = getDimensions();
-        MachinePorts.ports(core, facing, pos -> MachinePorts.inBox(core, dims, facing, pos), ports,
-                ROLE_POWER_IN, visitor);
+        MachinePorts.portFaces(core, facing, TileEntityMachineMagma.ports(core, MachinePorts.dir(facing)), ROLE_POWER_IN, visitor);
     }
 
     /** The six {@code makeExtra} cells: {@code TileEntityProxyCombo().power().fluid()}. */

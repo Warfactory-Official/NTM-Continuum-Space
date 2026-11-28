@@ -3,8 +3,8 @@ package com.ntmspace.tileentity.station;
 import com.hbm.api.fluidmk2.IFluidStandardReceiverMK2;
 import com.hbm.inventory.fluid.Fluids;
 import com.hbm.inventory.fluid.tank.FluidTankNTM;
-import com.hbm.lib.DirPos;
 import com.hbm.lib.ForgeDirection;
+import com.hbm.module.portmanager.ModulePortManFluidAdaptive;
 import com.hbm.sound.AudioSystem;
 import com.hbm.sound.AudioWrapper;
 import com.hbm.sound.AudioLoop;
@@ -13,7 +13,6 @@ import com.hbm.tileentity.MachineCore;
 import com.hbm.tileentity.ModPowerGenBlockEntities;
 import com.hbm.tileentity.TilePort.PortDef;
 import com.hbm.tileentity.machine.TileEntityMachineLPW2;
-import com.ntmspace.block.machine.MachinePorts;
 import com.ntmspace.fluid.trait.FT_Rocket;
 import com.ntmspace.orbit.Orbit;
 import com.ntmspace.orbit.Propulsion;
@@ -60,25 +59,28 @@ public class TileEntityMachineLPW2Space extends TileEntityMachineLPW2 implements
 
     public int fuelCost;
 
+    protected final ModulePortManFluidAdaptive moduleFluidPorts;
+
     public TileEntityMachineLPW2Space(BlockPos pos, BlockState state) {
         super(ModPowerGenBlockEntities.LPW2.get(), pos, state);
         tanks = new FluidTankNTM[] {
                 new FluidTankNTM(Fluids.KEROSENE_REFORM, 256_000),
                 new FluidTankNTM(Fluids.OXYGEN, 256_000)
         };
+
+        moduleFluidPorts = new ModulePortManFluidAdaptive(this).setInputTanks(getReceivingTanks());
     }
 
     public static void serverTick(Level level, BlockPos pos, BlockState state, TileEntityMachineLPW2Space te) {
         if (!Orbit.inOrbit(level)) return;
+
+        te.moduleFluidPorts.update(te.getPorts());
 
         if (!te.hasRegistered) {
             if (te.isFacingPrograde()) te.registerPropulsion();
             te.hasRegistered = true;
             te.isOn = false;
         }
-
-        te.setupAllPorts(te.getPorts());
-        te.updatePortFIFO();
 
         if (te.isOn) {
             te.soundtime++;
@@ -137,22 +139,17 @@ public class TileEntityMachineLPW2Space extends TileEntityMachineLPW2 implements
     private PortDef[] cachedPorts;
 
     public PortDef[] getPorts() {
-        if (cachedPorts == null) cachedPorts = MachinePorts.ports(level, getBlockState(), worldPosition, getConPos());
+        if (cachedPorts == null) cachedPorts = ports(worldPosition, MachineCore.facing(getBlockState()));
         return cachedPorts;
     }
 
-    /** 1.7 {@code getConPos}: four blocks out either side of the engine, one back along the long axis, three up. */
-    public DirPos[] getConPos() {
-        return conPos(worldPosition, MachineCore.facing(getBlockState()));
-    }
-
-    /** {@link #getConPos} for a core at {@code core} facing {@code dir}. */
-    public static DirPos[] conPos(BlockPos core, ForgeDirection dir) {
+    /** 1.7 {@code getPorts} for a core at {@code core} facing {@code dir}: the outer cells either side, three up. */
+    public static PortDef[] ports(BlockPos core, ForgeDirection dir) {
         ForgeDirection rot = dir.getRotation(ForgeDirection.UP);
         int x = core.getX(), y = core.getY(), z = core.getZ();
-        return new DirPos[] {
-                new DirPos(x + dir.offsetX * 4 - rot.offsetX, y + 3, z + dir.offsetZ * 4 - rot.offsetZ, rot),
-                new DirPos(x - dir.offsetX * 4 - rot.offsetX, y + 3, z - dir.offsetZ * 4 - rot.offsetZ, rot.getOpposite())
+        return new PortDef[] {
+                PortDef.make(x + dir.offsetX * 3 - rot.offsetX, y + 3, z + dir.offsetZ * 3 - rot.offsetZ, dir),
+                PortDef.make(x - dir.offsetX * 3 - rot.offsetX, y + 3, z - dir.offsetZ * 3 - rot.offsetZ, dir.getOpposite())
         };
     }
 
@@ -166,6 +163,7 @@ public class TileEntityMachineLPW2Space extends TileEntityMachineLPW2 implements
     /** 1.7 {@code invalidate} and {@code onChunkUnload}. */
     @Override
     public void setRemoved() {
+        if (level != null) moduleFluidPorts.destroy();
         super.setRemoved();
         if (hasRegistered) {
             unregisterPropulsion();

@@ -106,21 +106,12 @@ public class MachineHydroponic extends BlockMultiblockMachine implements IEnergy
         return MachinePorts.offset(core, MachinePorts.dir(facing), offset[0], MachinePorts.rot(facing), offset[1], offset[2]);
     }
 
-    static boolean isCell(BlockPos core, Direction facing, BlockPos pos) {
-        for (int[][] box : BOXES) {
-            BlockPos origin = origin(core, facing, box[0]);
-            if (!pos.equals(origin) && MachinePorts.inBox(origin, box[1], facing, pos)) return true;
-        }
-        return false;
-    }
-
     @Override
     protected void visitCells(BlockPos core, Direction facing, CellVisitor visitor) {
         for (int[][] box : BOXES) MultiblockHandlerXR.visitBox(origin(core, facing, box[0]), box[1], facing, visitor);
-        TileEntityHydroponic.Ports ports = TileEntityHydroponic.ports(core, MachinePorts.dir(facing));
-        MachinePorts.Cells cells = pos -> isCell(core, facing, pos);
-        MachinePorts.ports(core, facing, cells, ports.fluid(), ROLE_FLUID_IN | ROLE_FLUID_OUT, visitor);
-        MachinePorts.ports(core, facing, cells, ports.power(), ROLE_POWER_IN, visitor);
+        MachinePorts.portFaces(core, facing, TileEntityHydroponic.fluidPorts(core, MachinePorts.dir(facing)),
+                ROLE_FLUID_IN | ROLE_FLUID_OUT, visitor);
+        MachinePorts.portFaces(core, facing, TileEntityHydroponic.powerPorts(core), ROLE_POWER_IN, visitor);
     }
 
     /** The three {@code makeExtra} cells: {@code TileEntityProxyCombo(true, true, true)} (items, power, fluid). */

@@ -17,10 +17,9 @@ import net.minecraft.world.level.BlockGetter;
 import net.minecraft.world.level.block.state.BlockState;
 
 /**
- * Connection geometry for the progression machines (the same rule as the station machines' {@code StationMachines}).
- * 1.7 subscribed a machine to the networks at its {@code getConPos} points, positions just outside the structure. The
- * block entities put a port in every structure cell next to a point, and the blocks open those cells' faces towards it
- * so a duct there connects.
+ * Connection geometry for the progression and station machines. {@link #portFaces} and {@link #corePortFaces} open the
+ * cells of a 1.7 {@code getPorts} declaration; {@link #ports} and {@link #coreFaces} derive ports from the
+ * {@code getConPos} points of the machines still on them.
  */
 public final class MachinePorts {
 
@@ -84,6 +83,26 @@ public final class MachinePorts {
                     mask |= maskOf(MultiblockMaskTable.toLocal(toCell.getOpposite(), facing));
                 }
             }
+        }
+        return mask;
+    }
+
+    /** Opens each cell of 1.7's {@code getPorts} towards its connections, for {@code roles}; the core is {@link #corePortFaces}. */
+    public static void portFaces(BlockPos core, Direction facing, PortDef[] ports, int roles,
+                                 BlockMultiblockCore.CellVisitor visitor) {
+        for (DirPos con : PortDef.connections(ports)) {
+            Direction out = con.getDir().toDirection();
+            BlockPos cell = con.getPos().relative(out.getOpposite());
+            if (!cell.equals(core)) visitor.cell(cell, maskOf(MultiblockMaskTable.toLocal(out, facing)), roles);
+        }
+    }
+
+    /** The local faces of the core among the connections of {@code ports} (for {@code coreMask}). */
+    public static int corePortFaces(BlockPos core, Direction facing, PortDef[] ports) {
+        int mask = BlockMultiblockCore.MASK_NONE;
+        for (DirPos con : PortDef.connections(ports)) {
+            Direction out = con.getDir().toDirection();
+            if (con.getPos().relative(out.getOpposite()).equals(core)) mask |= maskOf(MultiblockMaskTable.toLocal(out, facing));
         }
         return mask;
     }

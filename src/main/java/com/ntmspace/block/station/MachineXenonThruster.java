@@ -12,6 +12,7 @@ import com.hbm.interfaces.ILookOverlay;
 import com.hbm.inventory.fluid.tank.FluidTankNTM;
 import com.hbm.lib.ForgeDirection;
 import com.hbm.util.BobMathUtil;
+import com.ntmspace.block.machine.MachinePorts;
 import com.ntmspace.orbit.Orbit;
 import com.ntmspace.tileentity.station.TileEntityXenonThruster;
 import java.util.ArrayList;
@@ -27,8 +28,8 @@ import net.minecraft.world.level.block.state.BlockState;
 
 /**
  * hbm-space's {@code MachineXenonThruster}: 3 x 3 x 2 ({@code {1, 1, 0, 1, 1, 1}}, offset 1, one block above the clicked
- * one), the two side cells of the core row are power and fluid proxies, and the three blocks behind the core row take
- * power and xenon.
+ * one), the two side cells of the core row are power and fluid proxies, and the core row takes power and xenon at
+ * its back.
  */
 public class MachineXenonThruster extends BlockMultiblockMachine implements IEnergyConnectorBlock, IFluidConnectorBlockMK2, ILookOverlay, ICapabilityBlock {
 
@@ -57,14 +58,14 @@ public class MachineXenonThruster extends BlockMultiblockMachine implements IEne
     @Override
     protected void visitCells(BlockPos core, Direction facing, CellVisitor visitor) {
         super.visitCells(core, facing, visitor);
-        StationMachines.ports(core, DIMS, facing, List.of(TileEntityXenonThruster.conPos(core, ForgeDirection.getOrientation(facing))),
+        MachinePorts.portFaces(core, facing, TileEntityXenonThruster.ports(core, ForgeDirection.getOrientation(facing)),
                 ROLE_POWER_IN | ROLE_FLUID_IN, visitor);
     }
 
     @Override
     public int coreMask() {
-        return StationMachines.coreFaces(BlockPos.ZERO, Direction.SOUTH,
-                List.of(TileEntityXenonThruster.conPos(BlockPos.ZERO, ForgeDirection.SOUTH)));
+        return MachinePorts.corePortFaces(BlockPos.ZERO, Direction.SOUTH,
+                TileEntityXenonThruster.ports(BlockPos.ZERO, ForgeDirection.SOUTH));
     }
 
     /** 1.7 {@code makeExtra} either side of the core: {@code TileEntityProxyCombo(false, true, true)}. */

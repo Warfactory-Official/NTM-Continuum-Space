@@ -7,6 +7,9 @@ import com.hbm.blocks.multiblock.MultiblockSurface;
 import com.hbm.inventory.fluid.Fluids;
 import com.hbm.items.ISatChip;
 import com.hbm.items.ModSatelliteItems;
+import com.hbm.lib.DirPos;
+import com.hbm.lib.ForgeDirection;
+import com.hbm.tileentity.TilePort.PortDef;
 import com.ntmspace.registry.DysonContent;
 import com.ntmspace.tileentity.dyson.TileEntityDysonConverterAnatmogenesis;
 import com.ntmspace.tileentity.dyson.TileEntityDysonConverterHE;
@@ -52,6 +55,10 @@ public final class DysonGameTests {
     public static final GameTests.Function FORMULA = TESTS.function("dyson_energy_formula", 20, () -> DysonGameTests::formula);
     public static final GameTests.Function DECAY = TESTS.function("dyson_swarm_decay", 20, () -> DysonGameTests::decay);
     public static final GameTests.Function LAUNCH = TESTS.function("dyson_launcher_launch", 40, 12, () -> DysonGameTests::launch);
+    public static final GameTests.Function LAUNCHER_PORTS = TESTS.function("dyson_launcher_ports_as_1_7", 20,
+            () -> DysonGameTests::launcherPorts);
+    public static final GameTests.Function CONVERTER_HE_PORTS = TESTS.function("dyson_converter_he_ports_as_1_7", 20,
+            () -> DysonGameTests::converterHePorts);
     public static final GameTests.Function HE = TESTS.function("dyson_receiver_he", 40, 24, () -> DysonGameTests::receiverHe);
     public static final GameTests.Function TU = TESTS.function("dyson_receiver_tu", 40, 24, () -> DysonGameTests::receiverTu);
     public static final GameTests.Function ANATMOGENESIS = TESTS.function("dyson_receiver_anatmogenesis", 40, 24,
@@ -105,6 +112,28 @@ public final class DysonGameTests {
         BlockEntity te = level.getBlockEntity(pos);
         if (!type.isInstance(te)) throw new IllegalStateException("no " + type.getSimpleName() + " at " + pos + ": " + te);
         return type.cast(te);
+    }
+
+    private static void launcherPorts(GameTestHelper helper) {
+        PortDef[] ports = TileEntityDysonLauncher.ports(BlockPos.ZERO, ForgeDirection.NORTH);
+        helper.assertTrue(ports.length == 5, "five ports, got " + ports.length);
+        for (int k = 0; k < 5; k++) {
+            helper.assertTrue(ports[k].portPositions.length == 1 && ports[k].portConnections.length == 1, "port " + k + " is one cell, one face");
+            DirPos con = ports[k].portConnections[0];
+            helper.assertTrue(ports[k].portPositions[0].equals(new BlockPos(-2, 0, k)) && con.getPos().equals(new BlockPos(-3, 0, k))
+                    && con.getDir() == ForgeDirection.WEST, "port " + k + " is " + ports[k].portPositions[0] + " towards " + con.getPos());
+        }
+        helper.succeed();
+    }
+
+    private static void converterHePorts(GameTestHelper helper) {
+        PortDef[] ports = TileEntityDysonConverterHE.ports(BlockPos.ZERO, ForgeDirection.NORTH);
+        helper.assertTrue(ports.length == 1 && ports[0].portPositions.length == 1 && ports[0].portConnections.length == 1,
+                "one port of one cell and one face");
+        DirPos con = ports[0].portConnections[0];
+        helper.assertTrue(ports[0].portPositions[0].equals(new BlockPos(0, 0, 4)) && con.getPos().equals(new BlockPos(0, 0, 5))
+                && con.getDir() == ForgeDirection.SOUTH, "the port is " + ports[0].portPositions[0] + " towards " + con.getPos());
+        helper.succeed();
     }
 
     private static void launch(GameTestHelper helper) {

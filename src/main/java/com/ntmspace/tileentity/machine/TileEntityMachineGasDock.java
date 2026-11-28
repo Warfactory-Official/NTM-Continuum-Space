@@ -5,11 +5,10 @@ import com.hbm.inventory.fluid.FluidType;
 import com.hbm.inventory.fluid.Fluids;
 import com.hbm.inventory.fluid.tank.FluidTankNTM;
 import com.hbm.lib.DirPos;
-import com.hbm.lib.ForgeDirection;
+import com.hbm.lib.Library;
 import com.hbm.particle.helper.HbmEffectNT;
 import com.hbm.tileentity.TileEntityMachineBase;
 import com.hbm.tileentity.TilePort.PortDef;
-import com.ntmspace.block.machine.MachinePorts;
 import com.ntmspace.fluid.SpaceFluids;
 import com.ntmspace.registry.SpaceMachinesC;
 import com.ntmspace.trait.CelestialTraits;
@@ -65,7 +64,7 @@ public class TileEntityMachineGasDock extends TileEntityMachineBase implements I
     }
 
     public static void serverTick(Level level, BlockPos pos, BlockState state, TileEntityMachineGasDock te) {
-        te.setupAllPorts(te.getPorts());
+        te.setupFluidPorts(te.getPorts());
         te.updatePortFIFO();
         te.step(level, CelestialTraits.bodyOf(level));
     }
@@ -128,26 +127,30 @@ public class TileEntityMachineGasDock extends TileEntityMachineBase implements I
     private PortDef[] cachedPorts;
 
     public PortDef[] getPorts() {
-        if (cachedPorts == null) cachedPorts = MachinePorts.ports(level, getBlockState(), worldPosition, conPos(worldPosition));
+        if (cachedPorts == null) cachedPorts = ports(worldPosition);
         return cachedPorts;
     }
 
-    /** 1.7 {@code getConPos}: the 3x3 below the pad, then the three blocks beyond each side (world axes). */
-    public static DirPos[] conPos(BlockPos core) {
+    /** 1.7 {@code getPorts}: every pad cell downwards, and the outer cells outwards (world axes). Fluid only. */
+    public static PortDef[] ports(BlockPos core) {
         int x = core.getX(), y = core.getY(), z = core.getZ();
-        List<DirPos> list = new ArrayList<>();
+        List<PortDef> list = new ArrayList<>();
         // Below
         for (int dx = -1; dx <= 1; dx++) {
-            for (int dz = -1; dz <= 1; dz++) list.add(new DirPos(x + dx, y - 1, z + dz, ForgeDirection.DOWN));
+            for (int dz = -1; dz <= 1; dz++) list.add(PortDef.make(x + dx, y, z + dz, Library.NEG_Y));
         }
         // Sides
         for (int i = -1; i <= 1; i++) {
-            list.add(new DirPos(x + i, y, z + 2, ForgeDirection.SOUTH));
-            list.add(new DirPos(x + i, y, z - 2, ForgeDirection.NORTH));
-            list.add(new DirPos(x + 2, y, z + i, ForgeDirection.EAST));
-            list.add(new DirPos(x - 2, y, z + i, ForgeDirection.WEST));
+            list.add(PortDef.make(x + i, y, z + 1, Library.POS_Z));
+            list.add(PortDef.make(x + i, y, z - 1, Library.NEG_Z));
+            list.add(PortDef.make(x + 1, y, z + i, Library.POS_X));
+            list.add(PortDef.make(x - 1, y, z + i, Library.NEG_X));
         }
-        return list.toArray(new DirPos[0]);
+        return list.toArray(new PortDef[0]);
+    }
+
+    public static DirPos[] conPos(BlockPos core) {
+        return PortDef.connections(ports(core));
     }
 
     @Override

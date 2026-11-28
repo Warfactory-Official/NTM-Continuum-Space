@@ -27,9 +27,8 @@ public final class MachineItemDeclarationsC {
         // RenderRadiator: inv translate(0, -5, 0) scale(1.2); common scale(0.75), renderAll
         item("machine_radiator", MachineObjModel.of("ntmspace:models/machines/radiator.obj",
                 "ntmspace:textures/models/machines/radiator.png").scale(0.75).yaw(0.0).guiScale(1.2), -5.0);
-        // ItemRenderLibrary gas_dock: inv scale(3); common rotate(90 about -Y), satDock with the SAT DOCK's texture
-        // (1.7 bound satdock_tex for the gas dock's item, not gasdock_tex; kept)
-        item("gas_dock", MachineObjModel.of("hbm:models/sat_dock.obj", "hbm:textures/models/sat_dock.png")
+        // ItemRenderLibrary gas_dock: inv scale(3); common rotate(90 about -Y), satDock (the cargo pad) with satdock_tex
+        item("gas_dock", MachineObjModel.of("hbm:models/machines/cargo_pad.obj", "hbm:textures/models/machines/cargo_pad.png")
                 .scale(1.0).yaw(-90.0).guiScale(3.0), 0.0);
     }
 

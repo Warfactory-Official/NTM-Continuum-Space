@@ -8,7 +8,6 @@ import com.mojang.math.Axis;
 import com.ntmspace.NtmSpace;
 import com.ntmspace.registry.StationBlocks;
 import com.ntmspace.tileentity.station.TileEntityMachineHTR3;
-import com.ntmspace.tileentity.station.TileEntityMachineHTRF4;
 import com.ntmspace.tileentity.station.TileEntityMachineHTRNeo;
 import com.ntmspace.tileentity.station.TileEntityOrbitalStation;
 import com.ntmspace.tileentity.station.TileEntityOrbitalStationComputer;
@@ -31,7 +30,7 @@ import net.minecraft.world.phys.Vec3;
 
 /**
  * The station blocks' renderers, hbm-space's {@code RenderOrbitalStation}, {@code RenderOrbitalComputer},
- * {@code RenderHTR3}, {@code RenderHTRF4}, {@code RenderHTRNeo} and {@code RenderXenonThruster}, declared through HBM's
+ * {@code RenderHTR3}, {@code RenderHTRNeo} and {@code RenderXenonThruster}, declared through HBM's
  * {@link HbmBlockEntityRenderers#regGem} (one renderer, both the vanilla and the instanced backend).
  *
  * <p>Each 1.7 renderer turned its model by the block's facing ({@code getBlockMetadata() - offset}); the yaw tables are
@@ -53,7 +52,6 @@ public final class StationRenderers {
         HbmBlockEntityRenderers.regGem(sink, StationBlocks.ORBITAL_STATION_BE.get(), PortRenderer::new);
         HbmBlockEntityRenderers.regGem(sink, StationBlocks.ORBITAL_STATION_COMPUTER_BE.get(), ComputerRenderer::new);
         HbmBlockEntityRenderers.regGem(sink, StationBlocks.HTR3_BE.get(), HTR3Renderer::new);
-        HbmBlockEntityRenderers.regGem(sink, StationBlocks.HTRF4_BE.get(), HTRF4Renderer::new);
         HbmBlockEntityRenderers.regGem(sink, StationBlocks.HTRF4_NEO_BE.get(), HTRNeoRenderer::new);
         HbmBlockEntityRenderers.regGem(sink, StationBlocks.XENON_THRUSTER_BE.get(), XenonRenderer::new);
     }
@@ -76,7 +74,7 @@ public final class StationRenderers {
         };
     }
 
-    /** {@code RenderHTR3} / {@code RenderHTRF4} / {@code RenderHTRNeo}: S 270, E 0, N 90, W 180. */
+    /** {@code RenderHTR3} / {@code RenderHTRNeo}: S 270, E 0, N 90, W 180. */
     static float thrusterYaw(BlockEntity be) {
         return switch (MachineCore.facingOrdinal(be.getBlockState(), 5)) {
             case 3 -> 270F;
@@ -229,36 +227,6 @@ public final class StationRenderers {
 
             double coverTimer = (t / 5D) % (Math.PI * 4);
             state.cover = (float) ((Math.sin(coverTimer) + Math.sin(coverTimer * 2) + Math.sin(coverTimer * 4)) * 0.5);
-        }
-    }
-
-    // ---------------------------------------------------------------------------------------- HTR-F4
-
-    public static final class YawState extends CompatRenderState {
-        public float yaw;
-    }
-
-    /** {@code RenderHTRF4}: the whole model, still. */
-    static final class HTRF4Renderer extends GemBER<TileEntityMachineHTRF4, YawState> {
-        private final WavefrontObj model = obj("machines/htrf4.obj");
-        private final Surface surface = Surface.cutoutCull(tex("machines/lpw2.png"));
-
-        @Override
-        protected void setup(Gem.Model<YawState> declaration) {
-            declaration.offScreen().viewDistance(256).joint()
-                    .translate(0.5F, -2.0F, 0.5F)
-                    .angle(Gem.Axes.Y, state -> state.yaw)
-                    .child(model.all(), surface);
-        }
-
-        @Override
-        public YawState createRenderState() {
-            return new YawState();
-        }
-
-        @Override
-        public void extract(TileEntityMachineHTRF4 be, YawState state, float partialTicks, Vec3 cameraPosition) {
-            state.yaw = thrusterYaw(be);
         }
     }
 

@@ -75,7 +75,7 @@ public final class SpaceSatellites {
 
     /** 1.7 {@code sat_dyson_relay} ({@code ItemSatellite(32_000)}), on the missile tab. */
     public static final RegistryObject<ItemSatChip> SAT_DYSON_RELAY =
-            REG.<ItemSatChip>item("sat_dyson_relay", ItemDysonRelay::new, p -> orbitProperties(p.stacksTo(1), "ntmspace:dyson_relay"))
+            REG.<ItemSatChip>item("sat_dyson_relay", ItemSatChip::new, p -> orbitProperties(p.stacksTo(1), "ntmspace:dyson_relay"))
                     .transform(Presets.sprite("ntmspace:items/sat_dyson_relay")).tab(HbmTab.MISSILES);
     /** 1.7 {@code sat_war} ({@code ItemSatellite(128_000)}, Gerald's sprite), on no tab. */
     public static final RegistryObject<ItemSatChip> SAT_WAR =
@@ -106,6 +106,7 @@ public final class SpaceSatellites {
         COLORS.put("precision_laser", new float[] {0.221F, 1.0F, 0.663F});
         COLORS.put("detector", new float[] {0.1F, 0.2F, 0.3F});
         COLORS.put("ray_scan", new float[] {0.1F, 0.2F, 0.3F});
+        COLORS.put("science", new float[] {0.2F, 0.64F, 0.8F});
     }
 
     private static boolean installed;
@@ -115,8 +116,15 @@ public final class SpaceSatellites {
     public static int launchMass(ItemStack stack) {
         if (stack.is(SAT_DYSON_RELAY.get())) return 32_000;
         if (stack.is(SAT_WAR.get())) return 128_000;
+        if (isLaboratory(stack)) return 28_000;
         return RocketParts.get(stack).mass();
     }
+
+    /** 1.7 {@code sat_science}: a satellite payload ({@code ItemSatellite(28_000)}) that is no rocket part. */
+    public static boolean isLaboratory(ItemStack stack) {
+        return ModSatelliteItems.satellite.is(stack, ItemSatellite.EnumSatType.SCIENCE);
+    }
+
     /** Item defaults are applied while the owning mod constructs each original item class. */
     public static void substitute() {
         for (var type : ItemSatellite.EnumSatType.values()) {
@@ -132,6 +140,7 @@ public final class SpaceSatellites {
                 case RELAY -> "relay";
                 case DETECTOR -> "detector";
                 case RAY_SCAN -> "ray_scan";
+                case SCIENCE -> "science";
                 default -> null;
             };
             if (name == null) continue;

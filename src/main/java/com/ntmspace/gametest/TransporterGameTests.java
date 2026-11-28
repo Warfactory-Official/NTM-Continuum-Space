@@ -7,8 +7,11 @@ import com.hbm.inventory.fluid.FluidType;
 import com.hbm.inventory.fluid.Fluids;
 import com.hbm.lib.DirPos;
 import com.hbm.lib.ForgeDirection;
+import com.hbm.tileentity.TilePort.PortDef;
 import com.hbm.tileentity.machine.storage.TileEntityBarrel;
 import com.hbm.tileentity.network.TileEntityFluidDuctNT;
+import com.hbm.uninos.PortNodes;
+import com.hbm.uninos.networkproviders.FluidNetProvider;
 import com.ntmspace.block.transporter.BlockTransporterRocket;
 import com.ntmspace.fluid.trait.FT_Rocket;
 import com.ntmspace.item.ItemTransporterLinker;
@@ -53,6 +56,12 @@ public final class TransporterGameTests {
     /** The fuel faces reach the separate fuel receiver: hydrogen and oxygen fill the fuel tanks, not the cargo tanks. */
     public static final GameTests.Function FUEL_FACES = TESTS.function("transporter_fuel_faces_fill_fuel", 100, 8,
             () -> TransporterGameTests::fuelFaces);
+
+    public static final GameTests.Function FUEL_PORTS_REMOVED = TESTS.function("transporter_fuel_ports_go_with_pad", 40, 8,
+            () -> TransporterGameTests::fuelPortsRemoved);
+
+    public static final GameTests.Function PORTS = TESTS.function("transporter_ports_as_1_7", 20, 0,
+            () -> TransporterGameTests::ports);
 
     /** The linker saves both pads by level id; a link is made and broken for both pads at once. */
     public static final GameTests.Function LINK = TESTS.function("transporter_link_with_linker", 40, 8,
@@ -114,8 +123,36 @@ public final class TransporterGameTests {
         helper.assertTrue(pad.fluidUserAt(cargoCell, dir.toDirection()) == null && pad.fluidUserAt(cargoCell, Direction.UP) == null,
                 "a cargo face reaches the pad itself");
         helper.assertTrue(block.canConnect(Fluids.WATER, helper.getLevel(), cargoCell.getX(), cargoCell.getY(), cargoCell.getZ(), ForgeDirection.UP),
-                "the floor corner opens upwards too (1.7 getConPos y + 1)");
+                "the floor corner opens upwards too");
+        // the raised row touches the points above the corners, but 1.7 has no port on it
+        BlockPos raised = core.offset(dir.offsetX, 1, dir.offsetZ);
+        helper.assertTrue(core.equals(MultiblockSurface.coreOfCell(helper.getLevel(), raised)), "the raised row belongs to the pad");
+        helper.assertTrue(!block.canConnect(Fluids.WATER, helper.getLevel(), raised.getX(), raised.getY(), raised.getZ(), rot)
+                        && !block.canConnect(Fluids.WATER, helper.getLevel(), raised.getX(), raised.getY(), raised.getZ(), rot.getOpposite()),
+                "the raised row has no cargo face");
         helper.succeed();
+    }
+
+    private static void ports(GameTestHelper helper) {
+        expect(helper, "cargo", PortDef.connections(TileEntityTransporterRocket.fluidPorts(BlockPos.ZERO, ForgeDirection.NORTH)), new Object[][] {
+                {-1, 0, -2, ForgeDirection.NORTH}, {1, 0, -2, ForgeDirection.NORTH},
+                {-1, 0, 2, ForgeDirection.SOUTH}, {1, 0, 2, ForgeDirection.SOUTH},
+                {-1, 1, -1, ForgeDirection.UP}, {1, 1, -1, ForgeDirection.UP},
+                {-1, 1, 1, ForgeDirection.UP}, {1, 1, 1, ForgeDirection.UP},
+        });
+        expect(helper, "fuel", PortDef.connections(TileEntityTransporterRocket.fuelPorts(BlockPos.ZERO, ForgeDirection.NORTH)), new Object[][] {
+                {-3, 0, -1, ForgeDirection.WEST}, {-3, 0, 1, ForgeDirection.WEST},
+        });
+        helper.succeed();
+    }
+
+    private static void expect(GameTestHelper helper, String what, DirPos[] got, Object[][] want) {
+        helper.assertTrue(got.length == want.length, what + ": " + want.length + " connections, got " + got.length);
+        for (int i = 0; i < want.length; i++) {
+            BlockPos at = new BlockPos((int) want[i][0], (int) want[i][1], (int) want[i][2]);
+            helper.assertTrue(got[i].getPos().equals(at) && got[i].getDir() == want[i][3],
+                    what + " connection " + i + " is " + got[i].getPos() + " " + got[i].getDir());
+        }
     }
 
     private static void cargoFaces(GameTestHelper helper) {
@@ -123,8 +160,8 @@ public final class TransporterGameTests {
         TileEntityTransporterRocket pad = place(helper, centre, Direction.NORTH);
         pad.tanks[0].setTankType(Fluids.HYDROGEN);
         pad.tanks[1].setTankType(Fluids.OXYGEN);
-        DirPos[] cargo = TileEntityTransporterRocket.conPos(pad.getBlockPos(), ForgeDirection.NORTH);
-        // conPos[0] and [2]: the points in front of and behind the pad, on opposite ends
+        DirPos[] cargo = PortDef.connections(TileEntityTransporterRocket.fluidPorts(pad.getBlockPos(), ForgeDirection.NORTH));
+        // connections 0 and 2: in front of and behind the pad, on opposite ends
         feed(helper, cargo[0], Fluids.HYDROGEN);
         feed(helper, cargo[2], Fluids.OXYGEN);
 
@@ -142,7 +179,7 @@ public final class TransporterGameTests {
         // cargo tanks that could take the fuel: 1.7 still kept them off the fuel points
         pad.tanks[0].setTankType(Fluids.HYDROGEN);
         pad.tanks[1].setTankType(Fluids.OXYGEN);
-        DirPos[] fuel = TileEntityTransporterRocket.tankPos(pad.getBlockPos(), ForgeDirection.NORTH);
+        DirPos[] fuel = PortDef.connections(TileEntityTransporterRocket.fuelPorts(pad.getBlockPos(), ForgeDirection.NORTH));
         feed(helper, fuel[0], Fluids.HYDROGEN);
         feed(helper, fuel[1], Fluids.OXYGEN);
 
@@ -154,14 +191,33 @@ public final class TransporterGameTests {
         });
     }
 
-    /** A duct of {@code type} on a 1.7 connection point, fed by a full output-mode barrel one block further out. */
+    private static void fuelPortsRemoved(GameTestHelper helper) {
+        BlockPos centre = GameTests.paddedCentre(8, 2);
+        TileEntityTransporterRocket pad = place(helper, centre, Direction.NORTH);
+        var level = helper.getLevel();
+        BlockPos core = pad.getBlockPos();
+        DirPos fuel = PortDef.connections(TileEntityTransporterRocket.fuelPorts(core, ForgeDirection.NORTH))[0];
+        long cell = fuel.getPos().asLong();
+        FluidNetProvider hydrogen = FluidNetProvider.of(Fluids.HYDROGEN);
+
+        helper.runAfterDelay(5, () -> {
+            helper.assertTrue(PortNodes.allows(level, cell, fuel.getDir(), pad.fuelReceiver(), hydrogen, true),
+                    "the fuel port takes hydrogen");
+            level.removeBlock(core, false);
+            helper.assertTrue(!PortNodes.allows(level, cell, fuel.getDir(), pad.fuelReceiver(), hydrogen, true),
+                    "the fuel port went with the pad");
+            helper.succeed();
+        });
+    }
+
+    /** A duct of {@code type} on a port connection, fed by a full output-mode barrel one block further out. */
     private static void feed(GameTestHelper helper, DirPos point, FluidType type) {
         var level = helper.getLevel();
         BlockPos at = point.getPos();
         helper.assertTrue(level.getBlockState(at).isAir(), "the point " + at + " is outside the pad");
         level.setBlock(at, ModFluidNetBlocks.fluid_duct_neo.get().defaultBlockState(), 3);
         ((TileEntityFluidDuctNT) level.getBlockEntity(at)).setFluidType(type);
-        ForgeDirection out = point.getDir().getOpposite();
+        ForgeDirection out = point.getDir();
         BlockPos source = at.offset(out.offsetX, out.offsetY, out.offsetZ);
         level.setBlock(source, ModFluidNetBlocks.barrel_steel.get().defaultBlockState(), 3);
         TileEntityBarrel barrel = (TileEntityBarrel) level.getBlockEntity(source);

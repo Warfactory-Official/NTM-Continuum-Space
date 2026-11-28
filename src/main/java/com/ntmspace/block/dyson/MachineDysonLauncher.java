@@ -32,7 +32,7 @@ import net.minecraft.world.phys.BlockHitResult;
  * real footprint is the 28 boxes of its own {@code checkRequirement}/{@code fillSpace} (legs, back dish, dish, base),
  * each at its 1.7 origin and, as in 1.7's {@code MultiblockHandlerXR.fillSpace}, without that origin cell. Five
  * {@code TileEntityProxyCombo(false, true, false)} power cells along the base's left edge take power through their
- * outer face (1.7 {@code getConPos}, three to the side), and one {@code TileEntityProxyCombo(true, false, false)}
+ * outer face (1.7 {@code getPorts}), and one {@code TileEntityProxyCombo(true, false, false)}
  * inventory cell at the back (eight behind the core) takes swarm members.
  *
  * <p>Right-click: a satellite ID-chip goes into the chip slot (if empty), an empty hand takes it back; a FATO plushie
@@ -112,8 +112,7 @@ public class MachineDysonLauncher extends BlockMultiblockMachine implements ILoo
     protected void visitCells(BlockPos core, Direction facing, CellVisitor visitor) {
         ForgeDirection dir = MachinePorts.dir(facing);
         for (int[] box : BOXES) MultiblockHandlerXR.visitBox(origin(core, dir, box), dims(box), facing, visitor);
-        List<BlockPos> power = powerCells(core, facing);
-        MachinePorts.ports(core, facing, power::contains, TileEntityDysonLauncher.conPos(core, dir), ROLE_POWER_IN, visitor);
+        MachinePorts.portFaces(core, facing, TileEntityDysonLauncher.ports(core, dir), ROLE_POWER_IN, visitor);
     }
 
     /** The five {@code makeExtra} power cells: core - dir * 0..4 - rot * 2. */

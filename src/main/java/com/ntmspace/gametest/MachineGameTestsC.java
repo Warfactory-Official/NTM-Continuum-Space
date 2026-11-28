@@ -8,7 +8,9 @@ import com.hbm.gametest.ForeignEnergyFixture;
 import com.hbm.handler.radiation.ChunkRadiationManager;
 import com.hbm.inventory.fluid.Fluids;
 import com.hbm.inventory.material.Mats;
+import com.hbm.lib.DirPos;
 import com.hbm.lib.ForgeDirection;
+import com.hbm.tileentity.TilePort.PortDef;
 import com.ntmspace.block.machine.MachineSolar;
 import com.ntmspace.fluid.SpaceFluids;
 import com.ntmspace.inventory.material.SpaceMaterials;
@@ -41,6 +43,8 @@ public final class MachineGameTestsC {
 
     public static final GameTests.Function MAGMA = TESTS.function("magma_drill_step", 40, 8,
             () -> MachineGameTestsC::magma);
+    public static final GameTests.Function MAGMA_PORTS = TESTS.function("magma_drill_ports_as_1_7", 20,
+            () -> MachineGameTestsC::magmaPorts);
     public static final GameTests.Function SOLAR = TESTS.function("solar_panel_output", 40, 8,
             () -> MachineGameTestsC::solar);
     public static final GameTests.Function SOLAR_FOREIGN = TESTS.function("solar_foreign_live_connections", 40, 8,
@@ -97,6 +101,20 @@ public final class MachineGameTestsC {
         te.step(helper.getLevel(), state, "moho", 20);
         if (te.operating) errors.add("ran below 10,000 HE");
         MachineGameTests.finish(helper, errors);
+    }
+
+    private static void magmaPorts(GameTestHelper helper) {
+        PortDef[] ports = TileEntityMachineMagma.ports(BlockPos.ZERO, ForgeDirection.NORTH);
+        int[][] cells = {{0, -1}, {0, -2}, {1, -1}, {1, -2}, {-1, -1}, {-1, -2}};
+        helper.assertTrue(ports.length == cells.length, "six ports, got " + ports.length);
+        for (int i = 0; i < cells.length; i++) {
+            helper.assertTrue(ports[i].portPositions.length == 1 && ports[i].portConnections.length == 1, "port " + i + " is one cell, one face");
+            DirPos con = ports[i].portConnections[0];
+            helper.assertTrue(ports[i].portPositions[0].equals(new BlockPos(cells[i][0], cells[i][1], 3))
+                    && con.getPos().equals(new BlockPos(cells[i][0], cells[i][1], 4)) && con.getDir() == ForgeDirection.SOUTH,
+                    "port " + i + " is " + ports[i].portPositions[0] + " towards " + con.getPos());
+        }
+        helper.succeed();
     }
 
     private static int quanta(TileEntityMachineMagma te, Object material) {

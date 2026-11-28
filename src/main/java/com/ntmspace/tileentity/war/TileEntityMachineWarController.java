@@ -33,7 +33,7 @@ import org.jspecify.annotations.Nullable;
  * writes coordinates onto the drive ({@code xcoord}/{@code zcoord}).
  *
  * <p>Ported as found: slots 0 and 3 do nothing; the machine claims to take power (1.7 {@code IEnergyReceiverMK2} with a
- * 0 HE buffer, never subscribed, {@code isLoaded} false), so here it is no energy receiver at all and the GUI shows
+ * 0 HE buffer and no ports), so here it is no energy receiver at all and the GUI shows
  * "0/0HE". An orbit drive has no body: 1.7 crashed on it ({@code getBody()} is null); the port skips it.
  *
  * <p>The GUI read the chosen satellite from the client's satellite cache ({@code getClientSats}); here the server
