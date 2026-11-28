@@ -23,6 +23,10 @@ Follows hbm-space X5853 (was X5778).
 ### Removed
 - The HTR-F4 thruster; placed ones disappear.
 
+### Fixed
+- On 1.20.1 Forge the orbital station port recipe showed "0x air" for its glass (issue 10; the fix is in NTM - Continuum,
+  which now fills `c:glass_blocks/colorless`).
+
 ## 1.0.3
 
 Requires Golem Core 1.0.6 and NTM - Continuum 1.0.6. The 26.1 NeoForge jar accepts NeoForge 26.1.2.114 again.
